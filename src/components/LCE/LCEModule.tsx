@@ -361,20 +361,20 @@ export default function LCEModule({ onBack }: { onBack: () => void }) {
             </div>
 
             {/* Custom Brand Header Text block matching user upload */}
-            <div className="flex flex-col items-center justify-center gap-1.5 mt-1 select-none">
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-base sm:text-lg md:text-xl font-sans tracking-wide leading-tight">
-                <span className="font-bold text-[#461D77]">DESPACHO DIARIO</span>
-                <span className="text-slate-300 font-light select-none">|</span>
-                <span className="font-light text-slate-500">CLORURO DE LITIO</span>
-              </div>
-              <div className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold tracking-wider text-[#461D77] flex items-center gap-1.5">
+            <div className="flex flex-col items-center justify-center gap-1 select-none">
+              <h1 className="text-xl lg:text-2xl font-bold tracking-[0.05em] uppercase flex items-center justify-center flex-wrap gap-x-2.5">
+                <span className="text-[#461D77] font-extrabold">DESPACHO DIARIO</span>
+                <span className="text-[#DFD5E7] font-light">|</span>
+                <span className="text-[#4E7A9F] font-light">CLORURO DE LITIO</span>
+              </h1>
+              <p className="text-[11px] lg:text-xs font-bold tracking-[0.05em] text-[#461D77] mt-1 uppercase flex items-center justify-center gap-1.5">
                 <span>SUBGERENCIA LOGÍSTICA LITIO</span>
-                <span className="text-[7px] font-black text-slate-400 select-none">•</span>
+                <span className="text-[#461D77]/80">&middot;</span>
                 <span>DESPACHO LITIO</span>
-              </div>
-              <div className="text-[7px] sm:text-[8px] font-medium tracking-[0.35em] text-slate-400 mt-0.5">
+              </p>
+              <p className="text-[9px] lg:text-[10px] font-semibold tracking-[0.4em] text-[#8E9AA6] uppercase mt-1">
                 SALAR DE ATACAMA
-              </div>
+              </p>
             </div>
 
             <div className="flex items-center justify-center gap-2 mt-2">
