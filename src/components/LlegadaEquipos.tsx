@@ -29,12 +29,89 @@ interface LlegadaEquiposProps {
 
 const CHART_COLORS = ['#461D77', '#3FAA88', '#C59E4D', '#7177EC', '#4FD1C5', '#171717'];
 
-const renderCompanyLogo = (company: string) => {
+const getBase64FromUrl = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image at ${url}`);
+  }
+  const blob = await response.blob();
+  if (blob.size === 0) {
+    throw new Error(`Image at ${url} is empty (0 bytes)`);
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+const CompanyLogo: React.FC<{ company: string; className?: string }> = ({ company, className = '' }) => {
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const compUpper = String(company || '').trim().toUpperCase();
+    
+    // Choose the logo filename
+    let filename = '';
+    if (compUpper.includes("COSEDUCAM")) {
+      filename = 'coseducam.png';
+    } else if (compUpper.includes("M&Q") || compUpper.includes("M & Q")) {
+      filename = 'mq.png';
+    } else if (compUpper.includes("M S & D") || compUpper.includes("MSD") || compUpper.includes("M S AND D")) {
+      filename = 'msd.png';
+    } else if (compUpper.includes("JORQUERA")) {
+      filename = 'jorquera.png';
+    } else if (compUpper.includes("AG SERVICES") || compUpper.includes("AG ")) {
+      filename = 'ag.png';
+    }
+
+    if (!filename) {
+      setHasError(true);
+      return;
+    }
+
+    const tryLoad = async () => {
+      try {
+        const b64 = await getBase64FromUrl(`/${filename}`);
+        if (active) {
+          setLogoSrc(b64);
+          setHasError(false);
+        }
+      } catch (err) {
+        console.warn(`Could not load PNG logo for ${company} from /${filename}:`, err);
+        if (active) setHasError(true);
+      }
+    };
+
+    tryLoad();
+    return () => {
+      active = false;
+    };
+  }, [company]);
+
+  if (logoSrc && !hasError) {
+    return (
+      <div className={`flex items-center justify-center p-2 h-full w-full ${className}`}>
+        <img
+          src={logoSrc}
+          alt={company}
+          className="max-w-full max-h-full object-contain"
+          onError={() => setHasError(true)}
+        />
+      </div>
+    );
+  }
+
   const compUpper = String(company || '').trim().toUpperCase();
 
   if (compUpper.includes("COSEDUCAM")) {
     return (
-      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+      <div className={`flex flex-col items-center justify-center p-2 text-center h-full w-full ${className}`}>
         <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
           <path d="M50,15 L85,32 L85,68 L50,85 L15,68 L15,32 Z" fill="#fff" stroke="#f59e0b" strokeWidth="6" />
           <circle cx="50" cy="50" r="28" stroke="#f59e0b" strokeWidth="2" strokeDasharray="4,3" fill="none" />
@@ -46,7 +123,7 @@ const renderCompanyLogo = (company: string) => {
   }
   if (compUpper.includes("M&Q") || compUpper.includes("M & Q")) {
     return (
-      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+      <div className={`flex flex-col items-center justify-center p-2 text-center h-full w-full ${className}`}>
         <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
           <rect x="20" y="20" width="60" height="60" rx="16" fill="#fff" stroke="#4f46e5" strokeWidth="6" />
           <path d="M32,65 V35 L50,53 L68,35 V65" stroke="#4f46e5" strokeWidth="8" fill="none" />
@@ -59,7 +136,7 @@ const renderCompanyLogo = (company: string) => {
   }
   if (compUpper.includes("M S & D") || compUpper.includes("MSD") || compUpper.includes("M S AND D")) {
     return (
-      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+      <div className={`flex flex-col items-center justify-center p-2 text-center h-full w-full ${className}`}>
         <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
           <path d="M50,15 L85,32 V68 L50,85 L15,68 V32 Z" fill="#fff" stroke="#7177EC" strokeWidth="6" />
           <path d="M28,45 Q50,70 72,45" stroke="#7177EC" strokeWidth="6" fill="none" />
@@ -71,7 +148,7 @@ const renderCompanyLogo = (company: string) => {
   }
   if (compUpper.includes("JORQUERA")) {
     return (
-      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+      <div className={`flex flex-col items-center justify-center p-2 text-center h-full w-full ${className}`}>
         <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="50,15 88,40 88,80 12,80 12,40" fill="#fff" stroke="#0d9488" strokeWidth="6" />
           <path d="M25,50 L50,28 L75,50" stroke="#0d9488" strokeWidth="7" fill="none" />
@@ -83,7 +160,7 @@ const renderCompanyLogo = (company: string) => {
   }
   if (compUpper.includes("AG SERVICES") || compUpper.includes("AG ")) {
     return (
-      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+      <div className={`flex flex-col items-center justify-center p-2 text-center h-full w-full ${className}`}>
         <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="50" cy="50" r="38" fill="#fff" stroke="#0284c7" strokeWidth="6" />
           <circle cx="50" cy="50" r="28" fill="#0284c7" />
@@ -95,7 +172,7 @@ const renderCompanyLogo = (company: string) => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full text-violeta">
+    <div className={`flex flex-col items-center justify-center p-2 text-center h-full w-full text-violeta ${className}`}>
       <Truck size={36} className="text-[#461D77]" />
       <span className="text-[8px] font-black tracking-tight text-[#461D77] uppercase leading-none mt-1">{company.slice(0, 12)}</span>
     </div>
@@ -447,7 +524,7 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
                 
                 <div className="absolute bottom-6 left-10 flex items-end gap-6">
                   <div className="bg-white p-2 rounded-2xl shadow-2xl flex items-center justify-center w-32 h-32 border-4 border-white/20 backdrop-blur-sm overflow-hidden">
-                    {renderCompanyLogo(selectedCompany)}
+                    <CompanyLogo company={selectedCompany} />
                   </div>
                   <div className="mb-2">
                     <h2 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">{selectedCompany}</h2>

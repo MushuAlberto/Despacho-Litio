@@ -1,4 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+
+// Robust helper to convert local public image URL to base64 data-URL
+const getBase64FromUrl = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image at ${url}`);
+  }
+  const blob = await response.blob();
+  if (blob.size === 0) {
+    throw new Error(`Image at ${url} is empty (0 bytes)`);
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
 
 interface BrandLogoProps {
   className?: string;
@@ -6,6 +26,55 @@ interface BrandLogoProps {
 }
 
 export const NovandinoLogo: React.FC<BrandLogoProps> = ({ className = '', variant = 'medium' }) => {
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const tryLoad = async () => {
+      try {
+        // Try the main novandino.png first
+        const b64 = await getBase64FromUrl('/novandino.png');
+        if (active) setLogoSrc(b64);
+      } catch (err) {
+        // Fallback to logo novandino.png if first fails
+        try {
+          const b64Fallback = await getBase64FromUrl('/logo novandino.png');
+          if (active) setLogoSrc(b64Fallback);
+        } catch (err2) {
+          console.warn("Could not find or convert any Novandino PNG image, using SVG fallback:", err2);
+          if (active) setHasError(true);
+        }
+      }
+    };
+    tryLoad();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (logoSrc && !hasError) {
+    let imgHeightClass = "h-32";
+    if (variant === 'small') {
+      imgHeightClass = "h-[70px]";
+    } else if (variant === 'large') {
+      imgHeightClass = "h-40";
+    } else if (variant === 'print') {
+      imgHeightClass = "h-32";
+    }
+    
+    return (
+      <div className={`flex items-center justify-center ${className}`} style={{ display: 'inline-flex' }}>
+        <img
+          src={logoSrc}
+          alt="Novandino Logo"
+          className={`${imgHeightClass} w-auto object-contain max-w-full`}
+          onError={() => setHasError(true)}
+        />
+      </div>
+    );
+  }
+
   let height = 120;
   let width = 500;
   
