@@ -10,41 +10,7 @@ import {
   Legend, ResponsiveContainer
 } from 'recharts';
 import { normalizeCompanyName, formatDateToCL } from '../utils/dataProcessor';
-
-const coseducamImg = '/coseducam.png';
-const mqImg = '/mq.png';
-const msdImg = '/msd.png';
-const jorqueraImg = '/jorquera.png';
-const agImg = '/ag.png';
-const bannerImg = '/image.png';
-
-// Dynamic Base64 converter to bypass any CORS/cache issues in html2canvas
-const toBase64 = (url: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(img, 0, 0);
-        try {
-          resolve(canvas.toDataURL('image/png'));
-        } catch (e) {
-          reject(e);
-        }
-      } else {
-        reject(new Error('Could not get 2d context'));
-      }
-    };
-    img.onerror = () => {
-      reject(new Error(`Failed to load image at ${url}`));
-    };
-    img.src = url;
-  });
-};
+import { NovandinoLogo } from './BrandLogo';
 
 // Declaraciones para librerías cargadas vía script en index.html
 declare const html2canvas: any;
@@ -61,15 +27,80 @@ interface LlegadaEquiposProps {
   onBack: () => void;
 }
 
-const LOGOS: Record<string, string> = {
-  "COSEDUCAM S A": coseducamImg,
-  "M&Q SPA": mqImg,
-  "M S & D SPA": msdImg,
-  "JORQUERA TRANSPORTE S. A.": jorqueraImg,
-  "AG SERVICES SPA": agImg
-};
-
 const CHART_COLORS = ['#461D77', '#3FAA88', '#C59E4D', '#7177EC', '#4FD1C5', '#171717'];
+
+const renderCompanyLogo = (company: string) => {
+  const compUpper = String(company || '').trim().toUpperCase();
+
+  if (compUpper.includes("COSEDUCAM")) {
+    return (
+      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+        <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M50,15 L85,32 L85,68 L50,85 L15,68 L15,32 Z" fill="#fff" stroke="#f59e0b" strokeWidth="6" />
+          <circle cx="50" cy="50" r="28" stroke="#f59e0b" strokeWidth="2" strokeDasharray="4,3" fill="none" />
+          <text x="50" y="58" textAnchor="middle" fill="#f59e0b" fontFamily="system-ui, sans-serif" fontSize="22" fontWeight="900" stroke="none">CS</text>
+        </svg>
+        <span className="text-[8px] font-black tracking-tight text-amber-600 uppercase leading-none">COSEDUCAM</span>
+      </div>
+    );
+  }
+  if (compUpper.includes("M&Q") || compUpper.includes("M & Q")) {
+    return (
+      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+        <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="20" y="20" width="60" height="60" rx="16" fill="#fff" stroke="#4f46e5" strokeWidth="6" />
+          <path d="M32,65 V35 L50,53 L68,35 V65" stroke="#4f46e5" strokeWidth="8" fill="none" />
+          <circle cx="68" cy="68" r="10" fill="#fff" stroke="#4f46e5" strokeWidth="3" />
+          <path d="M68,68 L77,77" stroke="#4f46e5" strokeWidth="4" />
+        </svg>
+        <span className="text-[8px] font-black tracking-tight text-indigo-600 uppercase leading-none">M&Q SPA</span>
+      </div>
+    );
+  }
+  if (compUpper.includes("M S & D") || compUpper.includes("MSD") || compUpper.includes("M S AND D")) {
+    return (
+      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+        <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M50,15 L85,32 V68 L50,85 L15,68 V32 Z" fill="#fff" stroke="#7177EC" strokeWidth="6" />
+          <path d="M28,45 Q50,70 72,45" stroke="#7177EC" strokeWidth="6" fill="none" />
+          <text x="50" y="54" textAnchor="middle" fill="#7177EC" fontFamily="system-ui, sans-serif" fontSize="20" fontWeight="900" letterSpacing="-0.02em" stroke="none">MSD</text>
+        </svg>
+        <span className="text-[8px] font-black tracking-tight text-indigo-500 uppercase leading-none">M S & D SPA</span>
+      </div>
+    );
+  }
+  if (compUpper.includes("JORQUERA")) {
+    return (
+      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+        <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="50,15 88,40 88,80 12,80 12,40" fill="#fff" stroke="#0d9488" strokeWidth="6" />
+          <path d="M25,50 L50,28 L75,50" stroke="#0d9488" strokeWidth="7" fill="none" />
+          <text x="50" y="72" textAnchor="middle" fill="#0d9488" fontFamily="system-ui, sans-serif" fontSize="24" fontWeight="900" stroke="none">JQ</text>
+        </svg>
+        <span className="text-[8px] font-black tracking-tight text-teal-600 uppercase leading-none">JORQUERA</span>
+      </div>
+    );
+  }
+  if (compUpper.includes("AG SERVICES") || compUpper.includes("AG ")) {
+    return (
+      <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full">
+        <svg viewBox="0 0 100 100" className="w-[64px] h-[64px] mb-1 fill-none" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="50" cy="50" r="38" fill="#fff" stroke="#0284c7" strokeWidth="6" />
+          <circle cx="50" cy="50" r="28" fill="#0284c7" />
+          <text x="50" y="58" textAnchor="middle" fill="#fff" fontFamily="system-ui, sans-serif" fontSize="24" fontWeight="950" stroke="none">AG</text>
+        </svg>
+        <span className="text-[8px] font-black tracking-tight text-sky-600 uppercase leading-none">AG SERVICES</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center p-2 text-center h-full w-full text-violeta">
+      <Truck size={36} className="text-[#461D77]" />
+      <span className="text-[8px] font-black tracking-tight text-[#461D77] uppercase leading-none mt-1">{company.slice(0, 12)}</span>
+    </div>
+  );
+};
 
 export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
   const [data, setData] = useState<ArrivalData[]>([]);
@@ -80,40 +111,6 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
   const [hourRange, setHourRange] = useState<[number, number]>([0, 23]);
-  const [logoErrors, setLogoErrors] = useState<Record<string, boolean>>({});
-  const [bannerBase64, setBannerBase64] = useState<string>('');
-  const [logoBase64, setLogoBase64] = useState<string>('');
-
-  // Dynamically load critical images as inline Base64 data URLs for seamless PDF generation
-  useEffect(() => {
-    let active = true;
-    const loadImages = async () => {
-      try {
-        const b64Banner = await toBase64(`/image.png?cb=${Date.now()}`);
-        if (active) setBannerBase64(b64Banner);
-      } catch (err) {
-        console.warn("Failed to convert banner to Base64:", err);
-        if (active) setBannerBase64('/image.png');
-      }
-
-      if (selectedCompany && LOGOS[selectedCompany]) {
-        try {
-          const b64Logo = await toBase64(`${LOGOS[selectedCompany]}?cb=${Date.now()}`);
-          if (active) setLogoBase64(b64Logo);
-        } catch (err) {
-          console.warn("Failed to convert company logo to Base64:", err);
-          if (active) setLogoBase64(LOGOS[selectedCompany]);
-        }
-      } else {
-        if (active) setLogoBase64('');
-      }
-    };
-
-    loadImages();
-    return () => {
-      active = false;
-    };
-  }, [selectedCompany]);
 
   const processFile = useCallback((file: File) => {
     setLoading(true);
@@ -441,28 +438,16 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
 
             {/* SECCIÓN 1: GRÁFICO (HORIZONTAL) */}
             <div id="arrival-chart-section" className="bg-white rounded-[3rem] border border-calido shadow-xl overflow-hidden mb-8" style={{ backgroundColor: '#ffffff' }}>
-              <div className="relative h-64 overflow-hidden">
-                <img 
-                  src={bannerBase64 || bannerImg} 
-                  alt="Banner" 
-                  className="w-full h-full object-cover" 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="relative h-64 overflow-hidden bg-gradient-to-r from-[#1e1b4b] via-[#311042] to-[#1e1b4b]">
+                {/* Technical grid overlay representing mining and logistic coordinates */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
+                <div className="absolute -top-20 -right-20 w-96 h-96 bg-violeta/10 rounded-full blur-[100px]" />
+                <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-nucleo/15 rounded-full blur-[80px]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/95 via-[#0f172a]/45 to-transparent" />
+                
                 <div className="absolute bottom-6 left-10 flex items-end gap-6">
-                  <div className="bg-white p-4 rounded-2xl shadow-2xl flex items-center justify-center w-32 h-32 border-4 border-white/20 backdrop-blur-sm">
-                    {logoBase64 || (LOGOS[selectedCompany] && !logoErrors[selectedCompany]) ? (
-                      <img 
-                        src={logoBase64 || LOGOS[selectedCompany]} 
-                        alt={selectedCompany} 
-                        className="max-w-full max-h-full object-contain" 
-                        onError={() => setLogoErrors(prev => ({...prev, [selectedCompany]: true}))}
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center gap-1 text-violeta/10">
-                        <Truck size={32} />
-                        <span className="text-[7px] font-black uppercase leading-none text-center">{selectedCompany}</span>
-                      </div>
-                    )}
+                  <div className="bg-white p-2 rounded-2xl shadow-2xl flex items-center justify-center w-32 h-32 border-4 border-white/20 backdrop-blur-sm overflow-hidden">
+                    {renderCompanyLogo(selectedCompany)}
                   </div>
                   <div className="mb-2">
                     <h2 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">{selectedCompany}</h2>
@@ -518,27 +503,48 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm" style={{ borderColor: '#f1f5f9', backgroundColor: '#ffffff' }}>
-                <table className="w-full text-left border-collapse" style={{ backgroundColor: '#ffffff' }}>
+              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm" style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+                <table className="w-full text-left border-collapse" style={{ backgroundColor: '#ffffff', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr className="bg-calido border-b border-calido" style={{ backgroundColor: '#FAF5E6' }}>
-                      <th className="px-6 py-4 text-[11px] font-black uppercase text-violeta/40 tracking-widest" style={{ color: '#7177EC', opacity: 0.8, borderBottom: '2px solid #FAF5E6' }}>Hora</th>
+                    <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                      <th 
+                        className="px-6 py-4 text-[11px] font-black uppercase text-violeta/40 tracking-widest" 
+                        style={{ backgroundColor: '#FAF5E6', color: '#7177EC', borderBottom: '2px solid #e2e8f0', padding: '14px 16px', fontWeight: '900', letterSpacing: '0.05em' }}
+                      >
+                        Hora
+                      </th>
                       {selectedDestinations.map(dest => (
-                        <th key={dest} className="px-6 py-4 text-[11px] font-black uppercase text-nucleo tracking-tighter text-center" style={{ color: '#461D77', borderBottom: '2px solid #FAF5E6' }}>{dest}</th>
+                        <th 
+                          key={dest} 
+                          className="px-6 py-4 text-[11px] font-black uppercase text-nucleo tracking-tighter text-center" 
+                          style={{ backgroundColor: '#FAF5E6', color: '#461D77', borderBottom: '2px solid #e2e8f0', padding: '14px 16px', fontWeight: '900', textAlign: 'center' }}
+                        >
+                          {dest}
+                        </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50" style={{ borderColor: '#f8fafc' }}>
+                  <tbody className="divide-y divide-slate-100" style={{ borderColor: '#e2e8f0' }}>
                     {pivotTable.map((row, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td className="px-6 py-3 text-lg font-black text-tecnico bg-calido/30" style={{ backgroundColor: 'rgba(250, 245, 230, 0.4)', color: '#171717' }}>
+                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                        <td 
+                          className="px-6 py-3 text-lg font-black text-tecnico bg-calido/30" 
+                          style={{ backgroundColor: '#FAF8F0', color: '#171717', borderBottom: '1px solid #e2e8f0', fontWeight: '900', padding: '12px 16px' }}
+                        >
                           {String(row.hora).padStart(2, '0')}:00
                         </td>
                         {selectedDestinations.map(dest => (
-                          <td key={dest} className="px-6 py-3 text-center" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td 
+                            key={dest} 
+                            className="px-6 py-3 text-center" 
+                            style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '12px 16px', textAlign: 'center' }}
+                          >
                             <span 
                               className={`inline-block px-4 py-1.5 rounded-xl text-lg font-black ${row[dest] > 0 ? 'bg-nucleo/10 text-nucleo' : 'text-violeta/10'}`}
-                              style={row[dest] > 0 ? { backgroundColor: 'rgba(70, 29, 119, 0.12)', color: '#461D77', padding: '6px 16px', borderRadius: '12px', display: 'inline-block' } : { color: 'rgba(113, 119, 236, 0.25)', padding: '6px 16px', borderRadius: '12px', display: 'inline-block' }}
+                              style={row[dest] > 0 
+                                ? { backgroundColor: '#F1ECF7', color: '#461D77', padding: '6px 16px', borderRadius: '12px', display: 'inline-block', fontWeight: '900' } 
+                                : { color: '#E2E6FA', padding: '6px 16px', display: 'inline-block', fontWeight: '500' }
+                              }
                             >
                               {row[dest] || 0}
                             </span>
@@ -547,11 +553,20 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-slate-900" style={{ backgroundColor: '#0f172a' }}>
-                    <tr>
-                      <td className="px-6 py-4 text-[11px] font-black text-white uppercase tracking-widest" style={{ color: '#ffffff' }}>TOTAL JORNADA</td>
+                  <tfoot>
+                    <tr style={{ backgroundColor: '#0f172a' }}>
+                      <td 
+                        className="px-6 py-4 text-[11px] font-black text-white uppercase tracking-widest" 
+                        style={{ backgroundColor: '#0f172a', color: '#ffffff', fontWeight: '950', borderTop: '2px solid #0f172a', padding: '16px' }}
+                      >
+                        TOTAL JORNADA
+                      </td>
                       {selectedDestinations.map(dest => (
-                        <td key={dest} className="px-6 py-4 text-xl font-black text-white text-center" style={{ color: '#ffffff' }}>
+                        <td 
+                          key={dest} 
+                          className="px-6 py-4 text-xl font-black text-white text-center" 
+                          style={{ backgroundColor: '#0f172a', color: '#ffffff', fontWeight: '950', textAlign: 'center', borderTop: '2px solid #0f172a', padding: '16px' }}
+                        >
                           {pivotTable.reduce((acc, curr) => acc + (curr[dest] || 0), 0)}
                         </td>
                       ))}

@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Truck, FileBarChart, History, ChevronRight, BarChart3, Image as ImageIcon, RefreshCw, ClipboardList } from 'lucide-react';
-
-const logoImg = '/novandino.png';
+import { NovandinoLogo } from './BrandLogo';
 
 interface MainMenuProps {
   onSelectView: (view: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce') => void;
@@ -12,7 +11,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-calido to-levanda p-6 gap-12 overflow-y-auto">
       <div className="text-center space-y-8 flex flex-col items-center">
-        <img src={logoImg} alt="Novandino Logo" className="h-40 w-auto object-contain" />
+        <NovandinoLogo className="h-40 w-[600px] max-w-full" variant="large" />
         <div className="space-y-2">
           <h1 className="text-4xl font-black text-tecnico tracking-tighter">SISTEMA DE GESTIÓN LOGÍSTICA</h1>
           <p className="text-violeta font-bold tracking-[0.3em] uppercase text-xs">Tablero M1</p>

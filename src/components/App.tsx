@@ -19,8 +19,7 @@ import { PasswordPrompt } from './PasswordPrompt';
 import CambioDeTurno from './CambioDeTurno';
 import LCEModule from './LCE/LCEModule';
 import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, normalizeHeader } from '../utils/dataProcessor';
-
-const logoImg = '/novandino.png';
+import { NovandinoLogo } from './BrandLogo';
 
 declare const html2canvas: any;
 declare const jspdf: any;
@@ -33,44 +32,6 @@ const App: React.FC = () => {
   const [exportingPDF, setExportingPDF] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
   const [passwordRequest, setPasswordRequest] = useState<{ view: 'memoria' | 'galeria' | 'cambioTurno' | 'lce', name: string } | null>(null);
-  const [logoBase64, setLogoBase64] = useState<string>('');
-
-  // Dynamically load main Novandino logo as inline Base64 data URL to keep exports safe and complete
-  useEffect(() => {
-    const toBase64 = (url: string): Promise<string> => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0);
-            try {
-              resolve(canvas.toDataURL('image/png'));
-            } catch (e) {
-              reject(e);
-            }
-          } else {
-            reject(new Error('Could not get 2d context'));
-          }
-        };
-        img.onerror = () => {
-          reject(new Error(`Failed to load image at ${url}`));
-        };
-        img.src = url;
-      });
-    };
-
-    toBase64(`/novandino.png?cb=${Date.now()}`)
-      .then(b64 => setLogoBase64(b64))
-      .catch(err => {
-        console.warn("Failed to convert Novandino logo to Base64:", err);
-        setLogoBase64('/novandino.png');
-      });
-  }, []);
 
   useEffect(() => {
     const savedData = localStorage.getItem('sqm_raw_data');
@@ -394,11 +355,7 @@ const App: React.FC = () => {
                   <div className="space-y-24 flex flex-col items-center w-full">
                     <div className="flex flex-col items-center justify-center text-center w-full">
                       <div className="flex flex-col items-center text-center">
-                        <img 
-                          src={logoBase64 || logoImg} 
-                          alt="Novandino Logo" 
-                          className="h-40 w-auto object-contain mb-10" 
-                        />
+                        <NovandinoLogo className="h-40 w-[600px] max-w-full mb-10" variant="large" />
                         <h1 className="text-[60px] font-[950] text-[#1e293b] tracking-[-0.04em] leading-none uppercase whitespace-nowrap">INFORME OPERATIVO</h1>
                         <p className="text-slate-400 font-bold text-sm tracking-[0.4em] uppercase mt-3 whitespace-nowrap">SUBGERENCIA LOGÍSTICA LITIO - DESPACHO LITIO</p>
                       </div>
@@ -413,11 +370,7 @@ const App: React.FC = () => {
                   <div className="bg-white p-8 space-y-10 flex-1">
                     <div className="flex justify-between items-start pb-8 border-b-2 border-calido">
                       <div className="flex flex-col items-start gap-4">
-                        <img 
-                          src={logoBase64 || logoImg} 
-                          alt="Novandino Logo" 
-                          className="h-32 w-auto object-contain" 
-                        />
+                        <NovandinoLogo className="h-32 w-[480px] max-w-full" variant="print" />
                         <div>
                           <h1 className="text-5xl font-[900] text-nucleo tracking-tighter leading-none mb-1 uppercase">INFORME OPERATIVO</h1>
                           <p className="text-violeta font-bold text-[10px] tracking-[0.4em] uppercase">Subgerencia Logística Litio - Despacho Litio</p>

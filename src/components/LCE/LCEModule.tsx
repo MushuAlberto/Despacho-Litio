@@ -12,8 +12,8 @@ import { DashboardCharts } from "./components/DashboardCharts";
 import { downloadExcelTemplate, parseUploadedExcel } from "./utils/excelGenerator";
 import { BarChart3, ListFilter, AlertCircle, Sparkles, Home, ArrowLeft } from "lucide-react";
 import { ExcelOverrides } from "./types";
+import { NovandinoLogo } from "../BrandLogo";
 
-const logoImg = "/novandino.png";
 declare const html2canvas: any;
 
 export default function LCEModule({ onBack }: { onBack: () => void }) {
@@ -357,13 +357,7 @@ export default function LCEModule({ onBack }: { onBack: () => void }) {
           <div className="flex flex-col gap-4 select-none items-center justify-center text-center">
             {/* High-Fidelity Professional Novandino Logo Image */}
             <div className="flex items-center justify-center w-full">
-              <img 
-                src={logoImg} 
-                className="h-32 sm:h-36 w-auto object-contain" 
-                alt="Novandino Somos Litio, Somos Futuro" 
-                crossOrigin="anonymous"
-                referrerPolicy="no-referrer"
-              />
+              <NovandinoLogo className="h-32 sm:h-36 w-[450px] max-w-full" variant="large" />
             </div>
 
             {/* Custom Brand Header Text block matching user upload */}
