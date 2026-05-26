@@ -361,6 +361,7 @@ export default function LCEModule({ onBack }: { onBack: () => void }) {
                 src={logoImg} 
                 className="h-32 sm:h-36 w-auto object-contain" 
                 alt="Novandino Somos Litio, Somos Futuro" 
+                crossOrigin="anonymous"
                 referrerPolicy="no-referrer"
               />
             </div>

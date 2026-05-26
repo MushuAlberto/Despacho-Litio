@@ -381,7 +381,13 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
             {/* SECCIÓN 1: GRÁFICO (HORIZONTAL) */}
             <div id="arrival-chart-section" className="bg-white rounded-[3rem] border border-calido shadow-xl overflow-hidden mb-8">
               <div className="relative h-64 overflow-hidden">
-                <img src={bannerImg} alt="Banner" className="w-full h-full object-cover" />
+                <img 
+                  src={bannerImg} 
+                  alt="Banner" 
+                  className="w-full h-full object-cover" 
+                  crossOrigin="anonymous" 
+                  referrerPolicy="no-referrer" 
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-10 flex items-end gap-6">
                   <div className="bg-white p-4 rounded-2xl shadow-2xl flex items-center justify-center w-32 h-32 border-4 border-white/20 backdrop-blur-sm">
@@ -390,6 +396,8 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
                         src={LOGOS[selectedCompany]} 
                         alt={selectedCompany} 
                         className="max-w-full max-h-full object-contain" 
+                        crossOrigin="anonymous" 
+                        referrerPolicy="no-referrer"
                         onError={() => setLogoErrors(prev => ({...prev, [selectedCompany]: true}))}
                       />
                     ) : (
