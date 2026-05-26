@@ -112,15 +112,19 @@ export function DashboardHeader({
         </div>
 
         {/* Corporate Titles */}
-        <div className="text-center lg:text-right flex-1 select-none">
-          <h1 className="text-lg lg:text-xl font-medium tracking-widest text-nucleo uppercase">
-            Despacho Diario <span className="text-[#8e8e8e]">| Cloruro de Litio</span>
+        <div className="text-center flex-1 select-none py-1">
+          <h1 className="text-xl lg:text-2xl font-bold tracking-[0.05em] uppercase flex items-center justify-center flex-wrap gap-x-2.5">
+            <span className="text-[#461D77] font-extrabold">DESPACHO DIARIO</span>
+            <span className="text-[#DFD5E7] font-light">|</span>
+            <span className="text-[#4E7A9F] font-light">CLORURO DE LITIO</span>
           </h1>
-          <p className="text-xs font-semibold tracking-widest text-[#461D77] mt-1 uppercase">
-            Subgerencia Logística Litio &bull; Despacho Litio
+          <p className="text-[11px] lg:text-xs font-bold tracking-[0.05em] text-[#461D77] mt-1.5 uppercase flex items-center justify-center gap-1.5">
+            <span>SUBGERENCIA LOGÍSTICA LITIO</span>
+            <span className="text-[#461D77]/80">&middot;</span>
+            <span>DESPACHO LITIO</span>
           </p>
-          <p className="text-[10px] font-medium tracking-widest text-[#8e8e8e] uppercase mt-0.5">
-            Salar de Atacama
+          <p className="text-[9px] lg:text-[10px] font-semibold tracking-[0.4em] text-[#8E9AA6] uppercase mt-1.5">
+            SALAR DE ATACAMA
           </p>
         </div>
       </div>
