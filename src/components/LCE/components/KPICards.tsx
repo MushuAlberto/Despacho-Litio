@@ -50,41 +50,41 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 select-none">
       
       {/* CARD 1: Programa Despacho (Toneladas) */}
-      <div className="bg-white rounded-xl p-4 border border-nucleo/10 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+      <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
         
         <div>
           <div className="flex justify-between items-start gap-2">
             <span className="text-[10px] font-bold tracking-widest text-[#461D77] uppercase">
               Prog. Despacho (Toneladas)
             </span>
-            <span className="text-[10px] font-mono text-nucleo px-2 py-0.5 bg-nucleo/5 rounded-lg border border-nucleo/10">
+            <span className="text-[10px] font-mono text-[#461D77] px-2 py-0.5 bg-[#F5F2F9] rounded-lg border border-[#D6CADF]">
               {formatShortDateSpanish(currentLog.fecha)}
             </span>
           </div>
 
           <div className="my-2.5 grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[10px] text-tecnico/50 font-medium">Programadas</p>
+              <p className="text-[10px] text-[#737373] font-medium">Programadas</p>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-xl font-bold font-mono text-tecnico">
+                <span className="text-xl font-bold font-mono text-[#171717]">
                   {numFmt(currentLog.toneladasProgramadas, 0)}
                 </span>
-                <span className="text-xs text-tecnico/40 font-medium">t</span>
+                <span className="text-xs text-[#8e8e8e] font-medium">t</span>
               </div>
             </div>
             <div>
-              <p className="text-[10px] text-tecnico/50 font-medium font-sans">Despachadas</p>
+              <p className="text-[10px] text-[#737373] font-medium font-sans">Despachadas</p>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-xl font-bold font-mono text-ionizado">
+                <span className="text-xl font-bold font-mono text-[#3FAA88]">
                   {numFmt(currentLog.toneladasDespachadas, 2)}
                 </span>
-                <span className="text-xs text-ionizado/80 font-medium">t</span>
+                <span className="text-xs text-[#328C6E] font-medium">t</span>
               </div>
             </div>
           </div>
 
           {/* TRUCK SVG WITH LIQUID brine level reflecting actual dispatch compliance */}
-          <div className="w-full h-24 my-2.5 bg-calido rounded-xl relative flex items-center justify-center p-1 overflow-hidden border border-nucleo/10">
+          <div className="w-full h-24 my-2.5 bg-[#FAF5E6] rounded-xl relative flex items-center justify-center p-1 overflow-hidden border border-[#D6CADF]">
             {/* Ambient chemical background glow */}
             <div className="absolute -inset-1 opacity-5 bg-gradient-to-r from-nucleo to-litio blur-xl animate-pulse" />
             
@@ -114,7 +114,7 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
                   y={`${50 - Math.min(27, Math.max(1, 27 * (tonCompliance / 100)))}`}
                   width="100"
                   height="30"
-                  className="fill-nucleo/30 fill-litio/20"
+                  fill="#C2B2D6"
                 />
                 {/* Flowing liquid wave line */}
                 <path
@@ -153,8 +153,8 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
         </div>
 
         {/* COMPLIANCE PERCENTAGE */}
-        <div className="mt-3 pt-2 border-t border-nucleo/5 flex items-center justify-between">
-          <span className="text-[10px] text-tecnico/50 font-semibold uppercase flex items-center gap-1">
+        <div className="mt-3 pt-2 border-t border-[#F0EBF5] flex items-center justify-between">
+          <span className="text-[10px] text-[#737373] font-semibold uppercase flex items-center gap-1">
             <Percent className="w-3.5 h-3.5 text-nucleo" /> Cumplimiento Diario
           </span>
           <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded-lg border ${getStatusColor(tonCompliance)}`}>
@@ -163,7 +163,7 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
         </div>
         
         {/* Progress horizontal Indicator bar */}
-        <div className="w-full bg-calido h-1.5 rounded-full mt-2 overflow-hidden border border-nucleo/5">
+        <div className="w-full bg-[#FAF5E6] h-1.5 rounded-full mt-2 overflow-hidden border border-[#F0EBF5]">
           <div
             className={`h-full rounded-full transition-all duration-500 ${getProgressBarColor(tonCompliance)}`}
             style={{ width: `${Math.min(100, tonCompliance)}%` }}
@@ -172,41 +172,41 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
       </div>
 
       {/* CARD 2: Programa Despacho (Viajes) */}
-      <div className="bg-white rounded-xl p-4 border border-nucleo/10 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+      <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
         
         <div>
           <div className="flex justify-between items-start gap-2">
             <span className="text-[10px] font-bold tracking-widest text-[#461D77] uppercase">
               Prog. Despacho (Viajes)
             </span>
-            <span className="text-[10px] font-mono text-nucleo px-2 py-0.5 bg-nucleo/5 rounded-lg border border-nucleo/10">
+            <span className="text-[10px] font-mono text-[#461D77] px-2 py-0.5 bg-[#F5F2F9] rounded-lg border border-[#D6CADF]">
               Diario
             </span>
           </div>
 
           <div className="my-2.5 grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[10px] text-tecnico/50 font-medium">Programados</p>
+              <p className="text-[10px] text-[#737373] font-medium">Programados</p>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-xl font-bold font-mono text-tecnico">
+                <span className="text-xl font-bold font-mono text-[#171717]">
                   {intFmt(currentLog.viajesProgramados)}
                 </span>
-                <span className="text-xs text-tecnico/40 font-medium">Viajes</span>
+                <span className="text-xs text-[#8e8e8e] font-medium">Viajes</span>
               </div>
             </div>
             <div>
-              <p className="text-[10px] text-tecnico/50 font-medium">Realizados</p>
+              <p className="text-[10px] text-[#737373] font-medium">Realizados</p>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-xl font-bold font-mono text-ionizado">
+                <span className="text-xl font-bold font-mono text-[#3FAA88]">
                   {intFmt(currentLog.viajesRealizados)}
                 </span>
-                <span className="text-xs text-ionizado/85 font-medium">Viajes</span>
+                <span className="text-xs text-[#328C6E] font-medium">Viajes</span>
               </div>
             </div>
           </div>
 
           {/* COMPACT COMPARATIVE BAR CHART */}
-          <div className="w-full h-20 my-2.5 bg-calido rounded-xl border border-nucleo/10 p-1 flex items-center justify-center">
+          <div className="w-full h-20 my-2.5 bg-[#FAF5E6] rounded-xl border border-[#D6CADF] p-1 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={[
@@ -249,8 +249,8 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
         </div>
 
         {/* COMPLIANCE PERCENTAGE */}
-        <div className="mt-3 pt-2 border-t border-nucleo/5 flex items-center justify-between">
-          <span className="text-[10px] text-tecnico/50 font-semibold uppercase flex items-center gap-1">
+        <div className="mt-3 pt-2 border-t border-[#F0EBF5] flex items-center justify-between">
+          <span className="text-[10px] text-[#737373] font-semibold uppercase flex items-center gap-1">
             <Route className="w-3.5 h-3.5 text-nucleo" /> Vueltas Diarias
           </span>
           <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded-lg border ${getStatusColor(tripsCompliance)}`}>
@@ -259,7 +259,7 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
         </div>
         
         {/* Progress horizontal Indicator bar */}
-        <div className="w-full bg-calido h-1.5 rounded-full mt-2 overflow-hidden border border-nucleo/5">
+        <div className="w-full bg-[#FAF5E6] h-1.5 rounded-full mt-2 overflow-hidden border border-[#F0EBF5]">
           <div
             className={`h-full rounded-full transition-all duration-500 ${getProgressBarColor(tripsCompliance)}`}
             style={{ width: `${Math.min(100, tripsCompliance)}%` }}
@@ -268,36 +268,36 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
       </div>
 
       {/* CARD 3: Cumplimiento Mes en Curso (MTD Accums) */}
-      <div className="bg-white rounded-xl p-4 border border-nucleo/10 shadow-sm flex flex-col justify-between relative overflow-hidden group xl:col-span-1">
+      <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group xl:col-span-1">
         
         <div>
           <div className="flex justify-between items-start gap-2">
             <span className="text-[10px] font-bold tracking-widest text-[#461D77] uppercase">
               Cumplimiento MTD ({summary.mes})
             </span>
-            <span className="text-[10px] font-semibold text-nucleo px-2 py-0.5 bg-nucleo/5 rounded-lg border border-nucleo/10 flex items-center gap-1 font-mono font-bold">
+            <span className="text-[10px] font-semibold text-[#461D77] px-2 py-0.5 bg-[#F5F2F9] rounded-lg border border-[#D6CADF] flex items-center gap-1 font-mono font-bold">
               <TrendingUp className="w-3" /> ACUM.
             </span>
           </div>
 
           <div className="my-2.5 space-y-2">
             {/* Tonelaje Row */}
-            <div className="bg-calido p-2 rounded-lg border border-nucleo/0">
-              <div className="flex justify-between text-[10px] text-tecnico/60 font-semibold">
+            <div className="bg-calido p-2 rounded-lg border border-transparent">
+              <div className="flex justify-between text-[10px] text-[#525252] font-semibold">
                 <span>Tonelaje Acumulado</span>
                 <span className="text-tecnico font-mono font-bold">
                   {numFmt(summary.cumplimientoTonelaje, 0)}%
                 </span>
               </div>
               <div className="flex justify-between items-baseline mt-0.5">
-                <span className="text-[10px] text-tecnico/40 font-mono">
+                <span className="text-[10px] text-[#8e8e8e] font-mono">
                   {numFmt(summary.tonelajeProgramadoAcumulado, 0)} t
                 </span>
                 <span className="text-xs font-bold font-mono text-nucleo">
                   {numFmt(summary.tonelajeDespachadoAcumulado, 2)} t
                 </span>
               </div>
-              <div className="w-full bg-white h-1 rounded-full mt-1 overflow-hidden border border-nucleo/5">
+              <div className="w-full bg-white h-1 rounded-full mt-1 overflow-hidden border border-[#F0EBF5]">
                 <div
                   className="h-full bg-nucleo rounded-full"
                   style={{ width: `${Math.min(100, summary.cumplimientoTonelaje)}%` }}
@@ -306,22 +306,22 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
             </div>
 
             {/* Viajes Row */}
-            <div className="bg-calido p-2 rounded-lg border border-nucleo/0">
-              <div className="flex justify-between text-[10px] text-tecnico/60 font-semibold">
+            <div className="bg-calido p-2 rounded-lg border border-transparent">
+              <div className="flex justify-between text-[10px] text-[#525252] font-semibold">
                 <span>Viajes Acumulados</span>
                 <span className="text-tecnico font-mono font-bold">
                   {numFmt(summary.cumplimientoViajes, 0)}%
                 </span>
               </div>
               <div className="flex justify-between items-baseline mt-0.5">
-                <span className="text-[10px] text-tecnico/45 font-mono">
+                <span className="text-[10px] text-[#7c7c7c] font-mono">
                   {intFmt(summary.viajesProgramadosAcumulados)} viajes
                 </span>
                 <span className="text-xs font-bold font-mono text-ionizado">
                   {intFmt(summary.viajesDespachadosAcumulados)} viajes
                 </span>
               </div>
-              <div className="w-full bg-white h-1 rounded-full mt-1 overflow-hidden border border-nucleo/5">
+              <div className="w-full bg-white h-1 rounded-full mt-1 overflow-hidden border border-[#F0EBF5]">
                 <div
                   className="h-full bg-ionizado rounded-full"
                   style={{ width: `${Math.min(100, summary.cumplimientoViajes)}%` }}
@@ -332,9 +332,9 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
         </div>
 
         {/* CUMPLIMIENTO GLOBAL DE VIAJES */}
-        <div className="mt-2 pt-2 border-t border-nucleo/5 flex items-center justify-between">
-          <span className="text-[10px] text-tecnico/50 font-semibold uppercase flex items-center gap-1">
-            <CalendarCheck className="w-3.5 h-3.5 text-nucleo" /> Estado Mensual
+        <div className="mt-2 pt-2 border-t border-[#F0EBF5] flex items-center justify-between">
+          <span className="text-[10px] text-[#737373] font-semibold uppercase flex items-center gap-1">
+            <CalendarCheck className="w-3.5 h-3.5 text-nucleo" /> Estado Meso-Mensual
           </span>
           <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded-lg border ${getStatusColor(summary.cumplimientoTonelaje)}`}>
             {numFmt(summary.cumplimientoTonelaje, 1)}% MTD
@@ -343,7 +343,7 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
       </div>
 
       {/* CARD 4: LCE - Salar de Atacama (Circular Progress donut representation) */}
-      <div className="bg-white rounded-xl p-4 border border-nucleo/10 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+      <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
         
         <div>
           {/* Card Header */}
@@ -354,7 +354,7 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
                 LCE - Salar de Atacama
               </span>
             </div>
-            <span className="text-[9px] font-bold font-mono text-nucleo px-2 py-0.5 bg-nucleo/5 rounded-full border border-nucleo/10 shadow-sm">
+            <span className="text-[9px] font-bold font-mono text-[#461D77] px-2 py-0.5 bg-[#F5F2F9] rounded-full border border-[#D6CADF] shadow-sm">
               Acum. Mes
             </span>
           </div>
@@ -394,7 +394,7 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
                 <span className="text-xl font-extrabold font-mono text-tecnico leading-none select-none tracking-tight">
                   {numFmt(summary.lceCumplimiento, 0)}%
                 </span>
-                <span className="text-[7px] text-tecnico/45 uppercase font-bold tracking-widest mt-0.5">
+                <span className="text-[7px] text-[#7c7c7c] uppercase font-bold tracking-widest mt-0.5">
                   Meta LCE
                 </span>
               </div>
@@ -403,38 +403,38 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
 
           {/* Premium Modular Bento Sub-Cards for detailed values */}
           <div className="grid grid-cols-2 gap-2 mt-2">
-            <div className="bg-gradient-to-br from-calido/30 to-white p-2 rounded-lg border border-nucleo/5 shadow-[0_1px_2px_rgba(70,29,119,0.02)] relative overflow-hidden">
-              <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-nucleo/30" />
-              <p className="text-[9px] text-tecnico/40 font-bold uppercase tracking-wider">Actual SdA</p>
+            <div className="bg-[#FCFBF9] p-2 rounded-lg border border-[#F0EBF5] shadow-[0_1px_2px_rgba(70,29,119,0.02)] relative overflow-hidden">
+              <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-[#C2B2D6]" />
+              <p className="text-[9px] text-[#8e8e8e] font-bold uppercase tracking-wider">Actual SdA</p>
               <div className="flex items-baseline gap-0.5 mt-0.5">
                 <span className="text-xs font-extrabold font-mono text-nucleo">
                   {numFmt(summary.lceActualTotal, 2)}
                 </span>
-                <span className="text-[9px] text-nucleo/60 font-semibold font-mono">t</span>
+                <span className="text-[9px] text-[#7C5FA6] font-semibold font-mono">t</span>
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-calido/30 to-white p-2 rounded-lg border border-nucleo/5 shadow-[0_1px_2px_rgba(70,29,119,0.02)] relative overflow-hidden">
-              <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-tecnico/20" />
-              <p className="text-[9px] text-tecnico/40 font-bold uppercase tracking-wider">Programado</p>
+            <div className="bg-[#FCFBF9] p-2 rounded-lg border border-[#F0EBF5] shadow-[0_1px_2px_rgba(70,29,119,0.02)] relative overflow-hidden">
+              <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-[#cccccc]" />
+              <p className="text-[9px] text-[#8e8e8e] font-bold uppercase tracking-wider">Programado</p>
               <div className="flex items-baseline gap-0.5 mt-0.5">
-                <span className="text-xs font-extrabold font-mono text-tecnico/70">
+                <span className="text-xs font-extrabold font-mono text-[#525252]">
                   {intFmt(summary.lceProgramadoTotal)}
                 </span>
-                <span className="text-[9px] text-tecnico/45 font-semibold font-mono">t</span>
+                <span className="text-[9px] text-[#7c7c7c] font-semibold font-mono">t</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* POZAS MONITOR & FOOTER STATUS */}
-        <div className="mt-3 pt-2 border-t border-nucleo/5 flex items-center justify-between">
-          <span className="text-[9px] text-tecnico/50 font-semibold uppercase flex items-center gap-1.5 font-sans">
+        <div className="mt-3 pt-2 border-t border-[#F0EBF5] flex items-center justify-between">
+          <span className="text-[9px] text-[#737373] font-semibold uppercase flex items-center gap-1.5 font-sans">
             <Layers className="w-3.5 h-3.5 text-nucleo" /> Nivel Pozas PQLC:
           </span>
           <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded border transition-colors ${
             currentLog.nivelPozasPqlc === "S/D" 
-              ? "bg-calido text-tecnico/40 border-nucleo/10" 
+              ? "bg-[#FAF5E6] text-[#8e8e8e] border-[#D6CADF]" 
               : "bg-ionizado/10 text-ionizado border-ionizado/15 shadow-sm"
           }`}>
             {currentLog.nivelPozasPqlc}

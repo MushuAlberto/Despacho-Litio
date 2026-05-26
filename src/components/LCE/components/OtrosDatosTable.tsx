@@ -22,10 +22,10 @@ export function OtrosDatosTable({ summary }: OtrosDatosTableProps) {
   const isMetaAchieved = prodDiff >= 0;
 
   return (
-    <div className="bg-white rounded-xl border border-nucleo/10 shadow-sm flex flex-col lg:flex-row overflow-hidden select-none">
+    <div className="bg-white rounded-xl border border-[#D6CADF] shadow-sm flex flex-col lg:flex-row overflow-hidden select-none">
       
       {/* Rotated Vertical Month Banner - Recreating the iconic widget sidebar from the image */}
-      <div className="bg-nucleo p-4 lg:p-6 lg:w-28 flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-4 border-b lg:border-b-0 lg:border-r border-nucleo/20 relative">
+      <div className="bg-nucleo p-4 lg:p-6 lg:w-28 flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-4 border-b lg:border-b-0 lg:border-r border-[#A38EB9] relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.05),transparent)] pointer-events-none" />
         
         {/* Mobile representation (not rotated) */}
@@ -58,29 +58,29 @@ export function OtrosDatosTable({ summary }: OtrosDatosTableProps) {
         
         {/* KPI Segment 1: Accumulated Volumes */}
         <div className="space-y-4">
-          <h3 className="text-xs font-bold text-nucleo tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-nucleo/10">
+          <h3 className="text-xs font-bold text-nucleo tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-[#D6CADF]">
             <Scale className="w-4 h-4 text-nucleo" />
             Volúmenes Acumulados
           </h3>
           
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-nucleo/5 hover:bg-nucleo/[0.02] transition-colors">
-              <span className="text-xs text-tecnico/70 font-semibold">Tonelaje Acumulado</span>
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-[#F0EBF5] hover:bg-slate-50 transition-colors">
+              <span className="text-xs text-[#525252] font-semibold">Tonelaje Acumulado</span>
               <div className="text-right">
                 <span className="text-sm font-bold font-mono text-tecnico">
                   {numFmt(summary.tonelajeDespachadoAcumulado, 2)}
                 </span>
-                <span className="text-[10px] text-tecnico/40 font-medium ml-1">t</span>
+                <span className="text-[10px] text-[#8e8e8e] font-medium ml-1">t</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-nucleo/5 hover:bg-nucleo/[0.02] transition-colors">
-              <span className="text-xs text-tecnico/70 font-semibold">m³ Acumulados</span>
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-[#F0EBF5] hover:bg-slate-50 transition-colors">
+              <span className="text-xs text-[#525252] font-semibold">m³ Acumulados</span>
               <div className="text-right">
                 <span className="text-sm font-bold font-mono text-tecnico">
                   {intFmt(summary.m3Acumulados)}
                 </span>
-                <span className="text-[10px] text-tecnico/40 font-medium ml-1">m³</span>
+                <span className="text-[10px] text-[#8e8e8e] font-medium ml-1">m³</span>
               </div>
             </div>
           </div>
@@ -88,34 +88,34 @@ export function OtrosDatosTable({ summary }: OtrosDatosTableProps) {
 
         {/* KPI Segment 2: Logistics & Fleets */}
         <div className="space-y-4">
-          <h3 className="text-xs font-bold text-nucleo tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-nucleo/10">
+          <h3 className="text-xs font-bold text-nucleo tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-[#D6CADF]">
             <Compass className="w-4 h-4 text-nucleo" />
             Rendimiento del Transporte
           </h3>
           
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-nucleo/5 hover:bg-nucleo/[0.02] transition-colors">
-              <span className="text-xs text-tecnico/70 font-semibold">Promedio por Camión (Ton)</span>
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-[#F0EBF5] hover:bg-slate-50 transition-colors">
+              <span className="text-xs text-[#525252] font-semibold">Promedio por Camión (Ton)</span>
               <div className="text-right">
                 <span className="text-sm font-bold font-mono text-tecnico">
                   {numFmt(summary.promedioCamionTon, 2)}
                 </span>
-                <span className="text-[10px] text-tecnico/40 font-medium ml-1">t</span>
+                <span className="text-[10px] text-[#8e8e8e] font-medium ml-1">t</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-nucleo/5 hover:bg-nucleo/[0.02] transition-colors">
-              <span className="text-xs text-tecnico/70 font-semibold">Promedio por Camión (Vol.)</span>
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-[#F0EBF5] hover:bg-slate-50 transition-colors">
+              <span className="text-xs text-[#525252] font-semibold">Promedio por Camión (Vol.)</span>
               <div className="text-right">
                 <span className="text-sm font-bold font-mono text-tecnico">
                   {numFmt(summary.promedioCamionM3, 2)}
                 </span>
-                <span className="text-[10px] text-tecnico/40 font-medium ml-1">m³</span>
+                <span className="text-[10px] text-[#8e8e8e] font-medium ml-1">m³</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-nucleo/5 hover:bg-nucleo/[0.02] transition-colors">
-              <span className="text-xs text-tecnico/70 font-semibold">Cantidad de Camiones (Viajes)</span>
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-calido border border-[#F0EBF5] hover:bg-slate-50 transition-colors">
+              <span className="text-xs text-[#525252] font-semibold">Cantidad de Camiones (Viajes)</span>
               <div className="text-right font-bold font-mono text-tecnico">
                 {intFmt(summary.cantidadCamiones)}
               </div>
@@ -125,35 +125,35 @@ export function OtrosDatosTable({ summary }: OtrosDatosTableProps) {
 
         {/* KPI Segment 3: Productivity metrics */}
         <div className="space-y-4 md:col-span-2 lg:col-span-1">
-          <h3 className="text-xs font-bold text-nucleo tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-nucleo/10">
+          <h3 className="text-xs font-bold text-nucleo tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-[#D6CADF]">
             <Award className="w-4 h-4 text-nucleo" />
             Productividad Mensual
           </h3>
           
-          <div className="bg-calido rounded-xl p-3 border border-nucleo/5 flex flex-col justify-between h-[92px] hover:bg-nucleo/[0.02] transition-colors">
+          <div className="bg-calido rounded-xl p-3 border border-[#F0EBF5] flex flex-col justify-between h-[92px] hover:bg-slate-50 transition-colors">
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-[10px] text-tecnico/50 uppercase font-semibold">Productividad Lograda</span>
+                <span className="text-[10px] text-[#737373] uppercase font-semibold">Productividad Lograda</span>
                 <div className="flex items-baseline gap-1.5 mt-0.5">
                   <span className={`text-xl font-extrabold font-mono ${isMetaAchieved ? "text-ionizado" : "text-mineral"}`}>
                     {numFmt(summary.productividadMes, 2)}
                   </span>
-                  <span className="text-xs text-tecnico/40">vs Meta {numFmt(summary.productividadMeta, 1)}</span>
+                  <span className="text-xs text-[#8e8e8e]">vs Meta {numFmt(summary.productividadMeta, 1)}</span>
                 </div>
               </div>
               <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
                 isMetaAchieved 
-                  ? "bg-ionizado/10 text-ionizado border border-ionizado/20" 
-                  : "bg-mineral/10 text-mineral border border-mineral/20"
+                  ? "bg-[#EBF7F3] text-[#3FAA88] border border-[#CBE9DE]" 
+                  : "bg-[#FAF5EC] text-[#C59E4D] border border-[#EFE1C5]"
               }`}>
                 {isMetaAchieved ? "Superada" : "Desviada"}
               </span>
             </div>
 
             {/* Micro visual progress gauge */}
-            <div className="w-full bg-white h-1.5 rounded-full overflow-hidden mt-1 relative border border-nucleo/5">
+            <div className="w-full bg-white h-1.5 rounded-full overflow-hidden mt-1 relative border border-[#F0EBF5]">
               <div
-                className={`absolute left-0 top-0 h-full bg-nucleo/5`}
+                className={`absolute left-0 top-0 h-full bg-[#F5F2F9]`}
                 style={{ width: "65%" }} // Meta ratio mark
               />
               <div
