@@ -19,6 +19,7 @@ import { PasswordPrompt } from './PasswordPrompt';
 import CambioDeTurno from './CambioDeTurno';
 import LCEModule from './LCE/LCEModule';
 import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, normalizeHeader } from '../utils/dataProcessor';
+import logoImg from '../assets/novandino.png';
 
 declare const html2canvas: any;
 declare const jspdf: any;
@@ -354,7 +355,7 @@ const App: React.FC = () => {
                   <div className="space-y-24 flex flex-col items-center w-full">
                     <div className="flex flex-col items-center justify-center text-center w-full">
                       <div className="flex flex-col items-center text-center">
-                        <img src="/novandino.png" alt="Novandino Logo" className="h-40 w-auto object-contain mb-10" />
+                        <img src={logoImg} alt="Novandino Logo" className="h-40 w-auto object-contain mb-10" />
                         <h1 className="text-[60px] font-[950] text-[#1e293b] tracking-[-0.04em] leading-none uppercase whitespace-nowrap">INFORME OPERATIVO</h1>
                         <p className="text-slate-400 font-bold text-sm tracking-[0.4em] uppercase mt-3 whitespace-nowrap">SUBGERENCIA LOGÍSTICA LITIO - DESPACHO LITIO</p>
                       </div>
@@ -369,7 +370,7 @@ const App: React.FC = () => {
                   <div className="bg-white p-8 space-y-10 flex-1">
                     <div className="flex justify-between items-start pb-8 border-b-2 border-calido">
                       <div className="flex flex-col items-start gap-4">
-                        <img src="/novandino.png" alt="Novandino Logo" className="h-32 w-auto object-contain" />
+                        <img src={logoImg} alt="Novandino Logo" className="h-32 w-auto object-contain" />
                         <div>
                           <h1 className="text-5xl font-[900] text-nucleo tracking-tighter leading-none mb-1 uppercase">INFORME OPERATIVO</h1>
                           <p className="text-violeta font-bold text-[10px] tracking-[0.4em] uppercase">Subgerencia Logística Litio - Despacho Litio</p>

@@ -10,6 +10,12 @@ import {
   Legend, ResponsiveContainer
 } from 'recharts';
 import { normalizeCompanyName, formatDateToCL } from '../utils/dataProcessor';
+import coseducamImg from '../assets/coseducam.png';
+import mqImg from '../assets/mq.png';
+import msdImg from '../assets/msd.png';
+import jorqueraImg from '../assets/jorquera.png';
+import agImg from '../assets/ag.png';
+import bannerImg from '../assets/image.png';
 
 // Declaraciones para librerías cargadas vía script en index.html
 declare const html2canvas: any;
@@ -27,11 +33,11 @@ interface LlegadaEquiposProps {
 }
 
 const LOGOS: Record<string, string> = {
-  "COSEDUCAM S A": "/coseducam.png",
-  "M&Q SPA": "/mq.png",
-  "M S & D SPA": "/msd.png",
-  "JORQUERA TRANSPORTE S. A.": "/jorquera.png",
-  "AG SERVICES SPA": "/ag.png"
+  "COSEDUCAM S A": coseducamImg,
+  "M&Q SPA": mqImg,
+  "M S & D SPA": msdImg,
+  "JORQUERA TRANSPORTE S. A.": jorqueraImg,
+  "AG SERVICES SPA": agImg
 };
 
 const CHART_COLORS = ['#461D77', '#3FAA88', '#C59E4D', '#7177EC', '#4FD1C5', '#171717'];
@@ -374,7 +380,7 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
             {/* SECCIÓN 1: GRÁFICO (HORIZONTAL) */}
             <div id="arrival-chart-section" className="bg-white rounded-[3rem] border border-calido shadow-xl overflow-hidden mb-8">
               <div className="relative h-64 overflow-hidden">
-                <img src="/image.png" alt="Banner" className="w-full h-full object-cover" />
+                <img src={bannerImg} alt="Banner" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-10 flex items-end gap-6">
                   <div className="bg-white p-4 rounded-2xl shadow-2xl flex items-center justify-center w-32 h-32 border-4 border-white/20 backdrop-blur-sm">

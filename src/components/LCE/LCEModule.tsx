@@ -12,8 +12,8 @@ import { DashboardCharts } from "./components/DashboardCharts";
 import { downloadExcelTemplate, parseUploadedExcel } from "./utils/excelGenerator";
 import { BarChart3, ListFilter, AlertCircle, Sparkles, Home, ArrowLeft } from "lucide-react";
 import { ExcelOverrides } from "./types";
+import logoImg from "../../assets/novandino.png";
 declare const html2canvas: any;
-const logoImg = "/novandino.png";
 
 export default function LCEModule({ onBack }: { onBack: () => void }) {
   // Application states
