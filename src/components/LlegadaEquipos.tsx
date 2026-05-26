@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import {
   Upload, Download, Calendar,
@@ -17,6 +17,34 @@ const msdImg = '/msd.png';
 const jorqueraImg = '/jorquera.png';
 const agImg = '/ag.png';
 const bannerImg = '/image.png';
+
+// Dynamic Base64 converter to bypass any CORS/cache issues in html2canvas
+const toBase64 = (url: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        try {
+          resolve(canvas.toDataURL('image/png'));
+        } catch (e) {
+          reject(e);
+        }
+      } else {
+        reject(new Error('Could not get 2d context'));
+      }
+    };
+    img.onerror = () => {
+      reject(new Error(`Failed to load image at ${url}`));
+    };
+    img.src = url;
+  });
+};
 
 // Declaraciones para librerías cargadas vía script en index.html
 declare const html2canvas: any;
@@ -53,6 +81,39 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
   const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
   const [hourRange, setHourRange] = useState<[number, number]>([0, 23]);
   const [logoErrors, setLogoErrors] = useState<Record<string, boolean>>({});
+  const [bannerBase64, setBannerBase64] = useState<string>('');
+  const [logoBase64, setLogoBase64] = useState<string>('');
+
+  // Dynamically load critical images as inline Base64 data URLs for seamless PDF generation
+  useEffect(() => {
+    let active = true;
+    const loadImages = async () => {
+      try {
+        const b64Banner = await toBase64(`/image.png?cb=${Date.now()}`);
+        if (active) setBannerBase64(b64Banner);
+      } catch (err) {
+        console.warn("Failed to convert banner to Base64:", err);
+        if (active) setBannerBase64('/image.png');
+      }
+
+      if (selectedCompany && LOGOS[selectedCompany]) {
+        try {
+          const b64Logo = await toBase64(`${LOGOS[selectedCompany]}?cb=${Date.now()}`);
+          if (active) setLogoBase64(b64Logo);
+        } catch (err) {
+          console.warn("Failed to convert company logo to Base64:", err);
+          if (active) setLogoBase64(LOGOS[selectedCompany]);
+        }
+      } else {
+        if (active) setLogoBase64('');
+      }
+    };
+
+    loadImages();
+    return () => {
+      active = false;
+    };
+  }, [selectedCompany]);
 
   const processFile = useCallback((file: File) => {
     setLoading(true);
@@ -379,25 +440,21 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
             </div>
 
             {/* SECCIÓN 1: GRÁFICO (HORIZONTAL) */}
-            <div id="arrival-chart-section" className="bg-white rounded-[3rem] border border-calido shadow-xl overflow-hidden mb-8">
+            <div id="arrival-chart-section" className="bg-white rounded-[3rem] border border-calido shadow-xl overflow-hidden mb-8" style={{ backgroundColor: '#ffffff' }}>
               <div className="relative h-64 overflow-hidden">
                 <img 
-                  src={bannerImg} 
+                  src={bannerBase64 || bannerImg} 
                   alt="Banner" 
                   className="w-full h-full object-cover" 
-                  crossOrigin="anonymous" 
-                  referrerPolicy="no-referrer" 
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-10 flex items-end gap-6">
                   <div className="bg-white p-4 rounded-2xl shadow-2xl flex items-center justify-center w-32 h-32 border-4 border-white/20 backdrop-blur-sm">
-                    {LOGOS[selectedCompany] && !logoErrors[selectedCompany] ? (
+                    {logoBase64 || (LOGOS[selectedCompany] && !logoErrors[selectedCompany]) ? (
                       <img 
-                        src={LOGOS[selectedCompany]} 
+                        src={logoBase64 || LOGOS[selectedCompany]} 
                         alt={selectedCompany} 
                         className="max-w-full max-h-full object-contain" 
-                        crossOrigin="anonymous" 
-                        referrerPolicy="no-referrer"
                         onError={() => setLogoErrors(prev => ({...prev, [selectedCompany]: true}))}
                       />
                     ) : (
@@ -450,36 +507,39 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
             </div>
 
             {/* SECCIÓN 2: TABLA (VERTICAL) - OPTIMIZADA PARA QUE QUEPAN TODOS LOS DATOS */}
-            <div id="arrival-table-section" className="bg-white rounded-[2.5rem] border border-calido shadow-xl p-8 space-y-6 overflow-hidden">
-              <div className="flex justify-between items-start border-b border-slate-100 pb-6">
+            <div id="arrival-table-section" className="bg-white rounded-[2.5rem] border border-calido shadow-xl p-8 space-y-6 overflow-hidden" style={{ backgroundColor: '#ffffff' }}>
+              <div className="flex justify-between items-start border-b border-slate-100 pb-6" style={{ borderBottomColor: '#f1f5f9' }}>
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-tecnico uppercase tracking-tight">TABLA DE CONTROL OPERATIVO</h3>
-                  <p className="text-[10px] font-black text-violeta/40 uppercase tracking-widest leading-none">CONSOLIDADO NUMÉRICO DE EQUIPOS • {selectedCompany}</p>
+                  <h3 className="text-2xl font-black text-tecnico uppercase tracking-tight" style={{ color: '#171717' }}>TABLA DE CONTROL OPERATIVO</h3>
+                  <p className="text-[10px] font-black text-violeta/40 uppercase tracking-widest leading-none" style={{ color: '#7177EC', opacity: 0.7 }}>CONSOLIDADO NUMÉRICO DE EQUIPOS • {selectedCompany}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] font-black text-violeta/20 uppercase tracking-widest leading-none">FECHA REPORTE: {formatDateToCL(selectedDate)}</span>
+                  <span className="text-[10px] font-black text-violeta/20 uppercase tracking-widest leading-none" style={{ color: '#7177EC', opacity: 0.4 }}>FECHA REPORTE: {formatDateToCL(selectedDate)}</span>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-                <table className="w-full text-left border-collapse">
+              <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm" style={{ borderColor: '#f1f5f9', backgroundColor: '#ffffff' }}>
+                <table className="w-full text-left border-collapse" style={{ backgroundColor: '#ffffff' }}>
                   <thead>
-                    <tr className="bg-calido border-b border-calido">
-                      <th className="px-6 py-4 text-[11px] font-black uppercase text-violeta/40 tracking-widest">Hora</th>
+                    <tr className="bg-calido border-b border-calido" style={{ backgroundColor: '#FAF5E6' }}>
+                      <th className="px-6 py-4 text-[11px] font-black uppercase text-violeta/40 tracking-widest" style={{ color: '#7177EC', opacity: 0.8, borderBottom: '2px solid #FAF5E6' }}>Hora</th>
                       {selectedDestinations.map(dest => (
-                        <th key={dest} className="px-6 py-4 text-[11px] font-black uppercase text-nucleo tracking-tighter text-center">{dest}</th>
+                        <th key={dest} className="px-6 py-4 text-[11px] font-black uppercase text-nucleo tracking-tighter text-center" style={{ color: '#461D77', borderBottom: '2px solid #FAF5E6' }}>{dest}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-slate-50" style={{ borderColor: '#f8fafc' }}>
                     {pivotTable.map((row, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-3 text-lg font-black text-tecnico bg-calido/30">
+                      <tr key={i} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td className="px-6 py-3 text-lg font-black text-tecnico bg-calido/30" style={{ backgroundColor: 'rgba(250, 245, 230, 0.4)', color: '#171717' }}>
                           {String(row.hora).padStart(2, '0')}:00
                         </td>
                         {selectedDestinations.map(dest => (
-                          <td key={dest} className="px-6 py-3 text-center">
-                            <span className={`inline-block px-4 py-1.5 rounded-xl text-lg font-black ${row[dest] > 0 ? 'bg-nucleo/10 text-nucleo' : 'text-violeta/10'}`}>
+                          <td key={dest} className="px-6 py-3 text-center" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <span 
+                              className={`inline-block px-4 py-1.5 rounded-xl text-lg font-black ${row[dest] > 0 ? 'bg-nucleo/10 text-nucleo' : 'text-violeta/10'}`}
+                              style={row[dest] > 0 ? { backgroundColor: 'rgba(70, 29, 119, 0.12)', color: '#461D77', padding: '6px 16px', borderRadius: '12px', display: 'inline-block' } : { color: 'rgba(113, 119, 236, 0.25)', padding: '6px 16px', borderRadius: '12px', display: 'inline-block' }}
+                            >
                               {row[dest] || 0}
                             </span>
                           </td>
@@ -487,11 +547,11 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-slate-900">
+                  <tfoot className="bg-slate-900" style={{ backgroundColor: '#0f172a' }}>
                     <tr>
-                      <td className="px-6 py-4 text-[11px] font-black text-white uppercase tracking-widest">TOTAL JORNADA</td>
+                      <td className="px-6 py-4 text-[11px] font-black text-white uppercase tracking-widest" style={{ color: '#ffffff' }}>TOTAL JORNADA</td>
                       {selectedDestinations.map(dest => (
-                        <td key={dest} className="px-6 py-4 text-xl font-black text-white text-center">
+                        <td key={dest} className="px-6 py-4 text-xl font-black text-white text-center" style={{ color: '#ffffff' }}>
                           {pivotTable.reduce((acc, curr) => acc + (curr[dest] || 0), 0)}
                         </td>
                       ))}
