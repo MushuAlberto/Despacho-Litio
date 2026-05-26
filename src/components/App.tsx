@@ -19,7 +19,8 @@ import { PasswordPrompt } from './PasswordPrompt';
 import CambioDeTurno from './CambioDeTurno';
 import LCEModule from './LCE/LCEModule';
 import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, normalizeHeader } from '../utils/dataProcessor';
-import logoImg from '../assets/novandino.png';
+
+const logoImg = '/novandino.png';
 
 declare const html2canvas: any;
 declare const jspdf: any;

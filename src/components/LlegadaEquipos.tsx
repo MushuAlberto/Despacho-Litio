@@ -10,12 +10,13 @@ import {
   Legend, ResponsiveContainer
 } from 'recharts';
 import { normalizeCompanyName, formatDateToCL } from '../utils/dataProcessor';
-import coseducamImg from '../assets/coseducam.png';
-import mqImg from '../assets/mq.png';
-import msdImg from '../assets/msd.png';
-import jorqueraImg from '../assets/jorquera.png';
-import agImg from '../assets/ag.png';
-import bannerImg from '../assets/image.png';
+
+const coseducamImg = '/coseducam.png';
+const mqImg = '/mq.png';
+const msdImg = '/msd.png';
+const jorqueraImg = '/jorquera.png';
+const agImg = '/ag.png';
+const bannerImg = '/image.png';
 
 // Declaraciones para librerías cargadas vía script en index.html
 declare const html2canvas: any;

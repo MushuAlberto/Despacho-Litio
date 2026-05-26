@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Truck, FileBarChart, History, ChevronRight, BarChart3, Image as ImageIcon, RefreshCw, ClipboardList } from 'lucide-react';
-import logoImg from '../assets/novandino.png';
+
+const logoImg = '/novandino.png';
 
 interface MainMenuProps {
   onSelectView: (view: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce') => void;
