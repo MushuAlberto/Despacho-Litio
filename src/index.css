@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-nucleo: #461D77;
+  --color-litio: #4FD1C5;
+  --color-ionizado: #3FAA88;
+  --color-violeta: #7177EC;
+  --color-calido: #FAF5E6;
+  --color-tecnico: #171717;
+  --color-mineral: #C59E4D;
+  --color-levanda: #DCDDEE;
+}
+
+.page-break-before {
+  page-break-before: always;
+  break-before: page;
+}
+
+.page-break-after {
+  page-break-after: always;
+  break-after: page;
+}
+
+.no-page-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Forzar diseño de bloque para evitar fallos de salto de página en Flexbox */
+  #dashboard-report, 
+  .flex-col, 
+  .grid {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  #dashboard-report {
+    width: 216mm !important; /* Ancho Legal */
+    margin: 0 auto !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+  
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .page-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .no-page-break,
+  .bg-white.p-5,
+  .bg-white.p-6,
+  .grid-cols-4 > div,
+  .grid-cols-3 > div {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Regla global para exportación PDF: fondo blanco limpio en cada sección capturada */
+.is-exporting #dashboard-report * {
+    outline: none !important;
+}
+
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-black, .font-\[900\], .font-\[950\] {
+    font-family: 'Helvetica', 'Inter', system-ui, sans-serif !important;
+  }
+
+  /* Aplica IBM Plex Sans para textos técnicos, etiquetas pequeñas y descripciones secundarias */
+  .text-xs, .text-\[10px\], .text-\[11px\], .font-medium, .tracking-widest {
+    font-family: 'IBM Plex Sans', sans-serif !important;
+  }
+
+  /* Asegura que el peso 300 se use para lecturas 'Light' */
+  .font-light, .text-slate-400, .text-violeta\/40 {
+    font-family: 'IBM Plex Sans', sans-serif !important;
+    font-weight: 300 !important;
+  }
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.carousel-container {
+  perspective: 1000px;
+}
+
+.carousel-slide {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+}
