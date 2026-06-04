@@ -537,13 +537,24 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
           if (blitSheetName) {
             const sh = workbook.Sheets[blitSheetName];
             const rows = XLSX.utils.sheet_to_json<any[]>(sh, { header: 1 });
-            let lastDateRowIdx = 35; // Default reference: May has 31 days -> index 35 (Row 36)
+            let lastDateRowIdx = 34; // Default reference: May has 31 days (rows 5 to 35 -> index 34 represents Row 35)
 
             if (rows && rows.length > 0) {
               // Find the last row containing a valid date in column A
               for (let r = 5; r < Math.min(60, rows.length); r++) {
                 const colA = rows[r]?.[0];
                 if (colA !== undefined && colA !== null) {
+                  const colAStr = String(colA).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                  if (
+                    colAStr.includes("total") ||
+                    colAStr.includes("acumulad") ||
+                    colAStr.includes("resumen") ||
+                    colAStr.includes("promedi") ||
+                    colAStr.includes("suma") ||
+                    colAStr.includes("cumplim")
+                  ) {
+                    continue;
+                  }
                   const dStr = parseCellAsDate(colA) || parseSpanishDateString(String(colA));
                   if (dStr) {
                     lastDateRowIdx = r;
@@ -552,8 +563,8 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               }
             }
 
-            // Convert row index to standard 1-indexed Excel row string
-            const rowStr = String(lastDateRowIdx + 1);
+            // Convert row index to standard 1-indexed Excel row string for the total row (usually the row after the last date)
+            const rowStr = String(lastDateRowIdx + 2);
             const prod = getCellValue(sh, `G${rowStr}`);
             if (prod !== undefined) overrides.productividadMes = prod;
             
@@ -618,6 +629,19 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               
               const cellA = row[0]; // Columna A: Fecha
               if (cellA === undefined || cellA === null) continue;
+              
+              // Skip total/summary rows from being treated as daily records in slitData
+              const cellAStr = String(cellA).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              if (
+                cellAStr.includes("total") ||
+                cellAStr.includes("acumulad") ||
+                cellAStr.includes("resumen") ||
+                cellAStr.includes("promedi") ||
+                cellAStr.includes("suma") ||
+                cellAStr.includes("cumplim")
+              ) {
+                continue;
+              }
               
               const dateStr = parseCellAsDate(cellA) || parseSpanishDateString(String(cellA));
               if (!dateStr) continue;
@@ -697,7 +721,23 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
         let logs: DailyLog[] = [];
 
         if (jsonRows.length > 0 && hasDateColumn) {
-          logs = jsonRows.map((row: any, index: number) => {
+          const mappedLogs = jsonRows.map((row: any, index: number) => {
+            // Check if first property of row contains a total keyword
+            const firstCellVal = row && Object.keys(row).length > 0 ? row[Object.keys(row)[0]] : null;
+            if (firstCellVal !== null && firstCellVal !== undefined) {
+              const strVal = String(firstCellVal).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              if (
+                strVal.includes("total") ||
+                strVal.includes("acumulad") ||
+                strVal.includes("resumen") ||
+                strVal.includes("promedi") ||
+                strVal.includes("suma") ||
+                strVal.includes("cumplim")
+              ) {
+                return null;
+              }
+            }
+
             // Identify keys using case-insensitive, whitespace-agnostic matching
             const findValue = (keywords: string[], fallbackVal: any = 0) => {
               const rowKeys = Object.keys(row);
@@ -719,6 +759,18 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
             let formattedFecha = "";
 
             if (rawFecha) {
+              const rawFechaStr = String(rawFecha).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              if (
+                rawFechaStr.includes("total") ||
+                rawFechaStr.includes("acumulad") ||
+                rawFechaStr.includes("resumen") ||
+                rawFechaStr.includes("promedi") ||
+                rawFechaStr.includes("suma") ||
+                rawFechaStr.includes("cumplim")
+              ) {
+                return null;
+              }
+
               if (typeof rawFecha === "number") {
                 // Convert Excel serial date to ISO
                 const dateObj = new Date((rawFecha - 25569) * 86400 * 1000);
@@ -793,6 +845,7 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               nivelPozasPqlc,
             };
           });
+          logs = mappedLogs.filter((l): l is DailyLog => l !== null);
         } else if (slitData.size > 0) {
           // Parse directly from slitData map!
           logs = Array.from(slitData.entries()).map(([dateStr, rowData]) => {
