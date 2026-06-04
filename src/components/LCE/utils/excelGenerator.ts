@@ -630,21 +630,40 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               const cellA = row[0]; // Columna A: Fecha
               if (cellA === undefined || cellA === null) continue;
               
-              // Skip total/summary rows from being treated as daily records in slitData
-              const cellAStr = String(cellA).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-              if (
-                cellAStr.includes("total") ||
-                cellAStr.includes("acumulad") ||
-                cellAStr.includes("resumen") ||
-                cellAStr.includes("promedi") ||
-                cellAStr.includes("suma") ||
-                cellAStr.includes("cumplim")
-              ) {
-                continue;
+              // Skip total/summary/accumulation rows across the first several columns
+              let isTotalRow = false;
+              for (let c = 0; c < Math.min(row.length, 6); c++) {
+                const cellVal = row[c];
+                if (cellVal !== undefined && cellVal !== null) {
+                  const s = String(cellVal).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                  if (
+                    s.includes("total") ||
+                    s.includes("acumulad") ||
+                    s.includes("resumen") ||
+                    s.includes("promedi") ||
+                    s.includes("suma") ||
+                    s.includes("cumplim") ||
+                    s.includes("mensual") ||
+                    s.includes("anual") ||
+                    s.includes("balance") ||
+                    s.includes("control") ||
+                    s.includes("m mtd") ||
+                    s.includes("mtd")
+                  ) {
+                    isTotalRow = true;
+                    break;
+                  }
+                }
               }
+              if (isTotalRow) continue;
               
               const dateStr = parseCellAsDate(cellA) || parseSpanishDateString(String(cellA));
               if (!dateStr) continue;
+              
+              // Prevent overwriting of an already set daily date with subsequent lines (which could be unlabelled summary rows)
+              if (slitData.has(dateStr)) {
+                continue;
+              }
               
               // Columna B: Tonelaje Programado (index 1)
               // Columna C: Viajes Programados (index 2)
@@ -665,18 +684,29 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               const viajesReal = rawE !== undefined && rawE !== null ? Math.round(cleanCellValueToNumber(rawE)) : 0;
               const lceSda = rawM !== undefined && rawM !== null ? cleanCellValueToNumber(rawM) : undefined;
               
+              // Extremely robust check: physical thresholds to reject monthly totals as daily records
+              if (
+                tonDesp > 15000 ||
+                tonProg > 15000 ||
+                viajesReal > 500 ||
+                viajesProg > 500 ||
+                (lceSda !== undefined && lceSda > 5000)
+              ) {
+                continue; // This row is a monthly accumulation or summary total, not a daily log
+              }
+              
               let nivelPozasVal = "S/D";
               if (rawJ !== undefined && rawJ !== null) {
                 const jStr = String(rawJ).trim();
                 if (jStr) {
                   if (typeof rawJ === "number") {
-                    if (rawJ > 0 && rawJ <= 1) {
-                      nivelPozasVal = `${Math.round(rawJ * 100)}%`;
-                    } else if (rawJ > 1 && rawJ <= 100) {
-                      nivelPozasVal = `${Math.round(rawJ)}%`;
-                    } else {
-                      nivelPozasVal = String(rawJ);
-                    }
+                     if (rawJ > 0 && rawJ <= 1) {
+                       nivelPozasVal = `${Math.round(rawJ * 100)}%`;
+                     } else if (rawJ > 1 && rawJ <= 100) {
+                       nivelPozasVal = `${Math.round(rawJ)}%`;
+                     } else {
+                       nivelPozasVal = String(rawJ);
+                     }
                   } else {
                     nivelPozasVal = jStr;
                   }
@@ -722,20 +752,36 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
 
         if (jsonRows.length > 0 && hasDateColumn) {
           const mappedLogs = jsonRows.map((row: any, index: number) => {
-            // Check if first property of row contains a total keyword
-            const firstCellVal = row && Object.keys(row).length > 0 ? row[Object.keys(row)[0]] : null;
-            if (firstCellVal !== null && firstCellVal !== undefined) {
-              const strVal = String(firstCellVal).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-              if (
-                strVal.includes("total") ||
-                strVal.includes("acumulad") ||
-                strVal.includes("resumen") ||
-                strVal.includes("promedi") ||
-                strVal.includes("suma") ||
-                strVal.includes("cumplim")
-              ) {
-                return null;
+            // Check if any property of row contains a total/summary keyword
+            let isTotalRow = false;
+            if (row && typeof row === "object") {
+              const keys = Object.keys(row);
+              for (const key of keys) {
+                const val = row[key];
+                if (val !== null && val !== undefined) {
+                  const strVal = String(val).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                  if (
+                    strVal.includes("total") ||
+                    strVal.includes("acumulad") ||
+                    strVal.includes("resumen") ||
+                    strVal.includes("promedi") ||
+                    strVal.includes("suma") ||
+                    strVal.includes("cumplim") ||
+                    strVal.includes("mensual") ||
+                    strVal.includes("anual") ||
+                    strVal.includes("balance") ||
+                    strVal.includes("control") ||
+                    strVal.includes("m mtd") ||
+                    strVal.includes("mtd")
+                  ) {
+                    isTotalRow = true;
+                    break;
+                  }
+                }
               }
+            }
+            if (isTotalRow) {
+              return null;
             }
 
             // Identify keys using case-insensitive, whitespace-agnostic matching
@@ -766,7 +812,13 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
                 rawFechaStr.includes("resumen") ||
                 rawFechaStr.includes("promedi") ||
                 rawFechaStr.includes("suma") ||
-                rawFechaStr.includes("cumplim")
+                rawFechaStr.includes("cumplim") ||
+                rawFechaStr.includes("mensual") ||
+                rawFechaStr.includes("anual") ||
+                rawFechaStr.includes("balance") ||
+                rawFechaStr.includes("control") ||
+                rawFechaStr.includes("m mtd") ||
+                rawFechaStr.includes("mtd")
               ) {
                 return null;
               }
@@ -830,6 +882,17 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               nivelPozasPqlc = slitOverride.nivelPozasPqlc;
             } else if (viajesRealizados === 0 && toneladasDespachadas > 0) {
               viajesRealizados = Math.round(toneladasDespachadas / 29.01);
+            }
+
+            // Extreme physical filters: reject monthly totals masquerading as daily records
+            if (
+              toneladasDespachadas > 15000 ||
+              toneladasProgramadas > 15000 ||
+              viajesRealizados > 500 ||
+              viajesProgramados > 500 ||
+              lceActual > 5000
+            ) {
+              return null;
             }
 
             return {
