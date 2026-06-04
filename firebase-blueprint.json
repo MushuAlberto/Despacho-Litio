@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account for PWA authentication and tracking",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Unique identifier of the user" },
+        "username": { "type": "string", "description": "Login username" },
+        "password": { "type": "string", "description": "Login password" },
+        "name": { "type": "string", "description": "Full display name of the user" },
+        "role": { "type": "string", "enum": ["admin", "jefe_turno", "supervision"], "description": "Determines access levels within the application" },
+        "lastLogin": { "type": "string", "format": "date-time", "description": "ISO timestamp of last authentication" }
+      },
+      "required": ["userId", "username", "password", "name", "role"]
+    },
+    "ActivityLog": {
+      "title": "Activity Log",
+      "description": "Record of user actions performed in the application",
+      "type": "object",
+      "properties": {
+        "logId": { "type": "string", "description": "Unique record identifier" },
+        "userId": { "type": "string", "description": "ID of user who performed critical action" },
+        "username": { "type": "string", "description": "Username details" },
+        "name": { "type": "string", "description": "Full display name of the actor" },
+        "role": { "type": "string", "description": "Role of the actor" },
+        "action": { "type": "string", "description": "Summary statement of the action" },
+        "details": { "type": "string", "description": "Comprehensive descriptive notes on action context" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Server authenticated timestamp" }
+      },
+      "required": ["userId", "username", "name", "role", "action", "timestamp"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profiles database"
+    },
+    "activity_logs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "Historical audit logs of user actions inside the application"
+    }
+  }
+}

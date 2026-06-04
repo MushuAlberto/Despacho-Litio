@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import {
@@ -21,11 +20,23 @@ import LCEModule from './LCE/LCEModule';
 import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, normalizeHeader } from '../utils/dataProcessor';
 import { NovandinoLogo } from './BrandLogo';
 
+// Firebase imports
+import { SystemUser, logActivity } from '../services/firebase';
+import { LoginScreen } from './LoginScreen';
+import { ActivityLogsView } from './ActivityLogsView';
+import { UserManagementView } from './UserManagementView';
+
 declare const html2canvas: any;
 declare const jspdf: any;
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'menu' | 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce'>('menu');
+  // Session details stored in state and localStorage
+  const [currentUser, setCurrentUser] = useState<SystemUser | null>(() => {
+    const saved = localStorage.getItem('sqm_current_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [view, setView] = useState<'menu' | 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs'>('menu');
   const [rawData, setRawData] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -33,6 +44,24 @@ const App: React.FC = () => {
   const [exportingImage, setExportingImage] = useState(false);
   const [passwordRequest, setPasswordRequest] = useState<{ view: 'memoria' | 'galeria' | 'cambioTurno' | 'lce', name: string } | null>(null);
   const [isJefeTurnoUnlocked, setIsJefeTurnoUnlocked] = useState(false);
+
+  // Sync access state with user roles on change
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === 'admin' || currentUser.role === 'jefe_turno') {
+        setIsJefeTurnoUnlocked(true);
+      } else {
+        setIsJefeTurnoUnlocked(false);
+      }
+    }
+  }, [currentUser]);
+
+  // Track interface transitions
+  useEffect(() => {
+    if (currentUser && view !== 'menu') {
+      logActivity(currentUser, 'Ingreso a Módulo', `Ingresó al módulo: ${view.toUpperCase()}`);
+    }
+  }, [view, currentUser]);
 
   useEffect(() => {
     const savedData = localStorage.getItem('sqm_raw_data');
@@ -57,6 +86,16 @@ const App: React.FC = () => {
   }, []);
 
   const isRunning = loading || exportingPDF || exportingImage;
+
+  const handleLogout = () => {
+    if (currentUser) {
+      logActivity(currentUser, 'Cierre de Sesión', 'El usuario cerró sesión voluntariamente.');
+    }
+    setCurrentUser(null);
+    setIsJefeTurnoUnlocked(false);
+    localStorage.removeItem('sqm_current_user');
+    setView('menu');
+  };
 
   const handleExportPDF = async () => {
     if (exportingPDF) return;
@@ -97,6 +136,11 @@ const App: React.FC = () => {
         }
       }
       pdf.save(`Informe_Operativo_${selectedDate}.pdf`);
+
+      // Record download audit log
+      if (currentUser) {
+        logActivity(currentUser, 'Exportó PDF', `Exportó el reporte operativo PDF de la jornada ${formatDateToCL(selectedDate)}.`);
+      }
     } catch (error) {
       console.error('Error en exportación PDF:', error);
       alert('Error al generar el PDF. Intente nuevamente.');
@@ -117,6 +161,11 @@ const App: React.FC = () => {
       link.download = `Resumen_Operativo_${selectedDate}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
+
+      // Record image generation audit log
+      if (currentUser) {
+        logActivity(currentUser, 'Exportó PNG', `Descargó placa gráfica de KPIs principales para la jornada ${formatDateToCL(selectedDate)}.`);
+      }
     } finally {
       setExportingImage(false);
     }
@@ -132,59 +181,44 @@ const App: React.FC = () => {
         const sheetName = workbook.SheetNames.find(n => n === "Base de Datos") || workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
-        if (jsonData.length < 2) throw new Error("Archivo vacío.");
-        const rawHeaders = jsonData[0].map(h => String(h || '').trim());
-        const normalizedHeaders = rawHeaders.map(h => normalizeHeader(h));
-        const getIdx = (fieldName: string, aliases: string[], fallback: number): number => {
-          if (fallback >= 0 && fallback < normalizedHeaders.length) {
-            const fbHeader = normalizedHeaders[fallback];
-            for (const alias of aliases) {
-              const normAlias = normalizeHeader(alias);
-              if (normAlias.length >= 3 && (fbHeader === normAlias || fbHeader.includes(normAlias))) return fallback;
+        if (jsonData.length < 2) throw new Error("Archivo vacío o no estructurado.");
+        
+        const headers = jsonData[0].map(h => normalizeHeader(String(h)));
+        const rows = jsonData.slice(1);
+        const idx = {
+          fecha: headers.indexOf('fecha'),
+          producto: headers.indexOf('producto'),
+          tonProg: headers.indexOf('ton_prog'),
+          tonReal: headers.indexOf('ton_real'),
+          eqProg: headers.indexOf('eq_prog'),
+          eqReal: headers.indexOf('eq_real'),
+          regReal: headers.indexOf('regulacion_real'),
+          sda: headers.indexOf('sda_hrs'),
+          pang: headers.indexOf('pang_hrs'),
+          faenaMeta: headers.indexOf('faena_meta_hrs'),
+          faenaReal: headers.indexOf('faena_real_hrs')
+        };
+        const missing = Object.entries(idx).filter(([_, v]) => v === -1).map(([k]) => k);
+        if (missing.length > 0) throw new Error(`Columnas sugeridas faltantes: ${missing.join(', ')}`);
+        
+        const processed = rows.map((row) => {
+          if (!row[idx.fecha] || !row[idx.producto]) return null;
+          let dateStr = '';
+          if (row[idx.fecha] instanceof Date) {
+            dateStr = (row[idx.fecha] as Date).toISOString().split('T')[0];
+          } else {
+            const rawVal = String(row[idx.fecha]).trim();
+            if (rawVal.includes('/')) {
+              const pts = rawVal.split('/');
+              if (pts[2]?.length === 4) dateStr = `${pts[2]}-${pts[1].padStart(2, '0')}-${pts[0].padStart(2, '0')}`;
+            } else if (rawVal.includes('-')) {
+              dateStr = rawVal;
             }
           }
-          for (const alias of aliases) {
-            const normAlias = normalizeHeader(alias);
-            if (normAlias.length < 2) continue;
-            const exactIdx = normalizedHeaders.findIndex(h => h === normAlias);
-            if (exactIdx !== -1) return exactIdx;
-          }
-          for (const alias of aliases) {
-            const normAlias = normalizeHeader(alias);
-            if (normAlias.length < 3) continue;
-            const partialIdx = normalizedHeaders.findIndex(h => h.includes(normAlias));
-            if (partialIdx !== -1) return partialIdx;
-          }
-          return fallback;
-        };
-        const idx = {
-          fecha: getIdx("fecha", ["FECHA", "JORNADA", "DIA"], 1),
-          producto: getIdx("producto", ["PRODUCTO", "NIVEL"], 5),
-          destino: getIdx("destino", ["DESTINO", "UBICACION"], 6),
-          tonProg: getIdx("tonProg", ["TON PROG", "PROGRAMADO", "TONELADAS PROGRAMADAS"], 7),
-          tonReal: getIdx("tonReal", ["TON REAL", "TONELADAS REALES"], 8),
-          eqProg: getIdx("eqProg", ["EQUIPOS PROG", "EQ PROG", "EQUIPOS PROGRAMADOS"], 9),
-          eqReal: getIdx("eqReal", ["EQUIPOS REAL", "EQ REAL", "EQUIPOS REALES"], 10),
-          regReal: getIdx("regReal", ["% REGULACION (REAL)", "TOTAL REGULACIONES", "REG REAL", "REGULACION REAL"], 46),
-          sda: getIdx("sda", ["TPO SDA", "SDA", "TIEMPO SDA"], 2),
-          pang: getIdx("pang", ["TPO N Y", "TPO PANG", "NY", "PANG"], 3),
-          faenaMeta: getIdx("faenaMeta", ["TIEMPO INTERIOR FAENA PRODUCTO META", "FAENA META", "META HRS"], 49),
-          faenaReal: getIdx("faenaReal", ["TIEMPO INTERIOR FAENA REAL", "FAENA REAL", "REAL HRS"], 50)
-        };
-        const processed = jsonData.slice(1).map((row) => {
-          if (!row || row.length < 2) return null;
-          let dateVal = null;
-          let rawDate = row[idx.fecha];
-          if (rawDate instanceof Date) dateVal = rawDate.toISOString().split('T')[0];
-          else if (typeof rawDate === 'number') {
-            const d = new Date((rawDate - 25569) * 86400 * 1000);
-            if (!isNaN(d.getTime())) dateVal = d.toISOString().split('T')[0];
-          }
-          if (!dateVal) return null;
+          if (!dateStr || dateStr === 'undefined') return null;
           return {
-            Fecha: dateVal,
-            Producto: String(row[idx.producto] || 'SIN PRODUCTO').toUpperCase().trim(),
-            Destino: String(row[idx.destino] || 'S/D').trim(),
+            Fecha: dateStr,
+            Producto: String(row[idx.producto]).trim().toUpperCase(),
             Ton_Prog: cleanNumeric(row[idx.tonProg]),
             Ton_Real: cleanNumeric(row[idx.tonReal]),
             Eq_Prog: cleanNumeric(row[idx.eqProg]),
@@ -201,11 +235,17 @@ const App: React.FC = () => {
             faenaRealHours: parseExcelTime(row[idx.faenaReal])
           };
         }).filter(r => r !== null);
+        
         localStorage.removeItem('sqm_raw_data');
         setRawData(processed);
         localStorage.setItem('sqm_raw_data', JSON.stringify(processed));
         const dates = [...new Set(processed.map(r => r.Fecha))].sort().reverse();
         if (dates.length > 0) setSelectedDate(dates[0]);
+        
+        // Log import action
+        if (currentUser) {
+          logActivity(currentUser, 'Carga de Datos', `Cargó archivo base Excel con ${processed.length} registros operativos.`);
+        }
       } catch (err: any) {
         alert(`Error al procesar el archivo: ${err.message || 'Error desconocido'}`);
       } finally {
@@ -213,7 +253,7 @@ const App: React.FC = () => {
       }
     };
     reader.readAsBinaryString(file);
-  }, []);
+  }, [currentUser]);
 
   const filteredData = useMemo(() => rawData.filter(r => r.Fecha === selectedDate), [rawData, selectedDate]);
 
@@ -254,7 +294,14 @@ const App: React.FC = () => {
     });
   }, [filteredData]);
 
-  const handleViewChange = (v: 'menu' | 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce') => {
+  const handleBackupDownload = (date: string) => {
+    downloadBackupJSON(date);
+    if (currentUser) {
+      logActivity(currentUser, 'Descargó Historial', `Descargó base JSON estructurada del día ${formatDateToCL(date)}.`);
+    }
+  };
+
+  const handleViewChange = (v: 'menu' | 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs') => {
     if (v === 'memoria') {
       if (isJefeTurnoUnlocked) {
         setView('memoria');
@@ -285,11 +332,19 @@ const App: React.FC = () => {
   };
 
   const renderCurrentView = () => {
+    if (view === 'logs' && currentUser?.role === 'admin') {
+      return <ActivityLogsView currentUser={currentUser} onBack={() => setView('menu')} />;
+    }
+    if (view === 'users' && currentUser?.role === 'admin') {
+      return <UserManagementView currentUser={currentUser} onBack={() => setView('menu')} />;
+    }
     if (view === 'menu') return (
       <MainMenu 
         onSelectView={handleViewChange} 
         isJefeTurnoUnlocked={isJefeTurnoUnlocked}
         onUnlockJefeTurno={() => setIsJefeTurnoUnlocked(true)}
+        currentUser={currentUser!}
+        onLogout={handleLogout}
       />
     );
     if (view === 'llegada') return <LlegadaEquipos onBack={() => setView('menu')} />;
@@ -311,6 +366,7 @@ const App: React.FC = () => {
     if (view === 'cambioTurno') return <CambioDeTurno onBack={() => setView('menu')} />;
     if (view === 'lce') return <LCEModule onBack={() => setView('menu')} />;
 
+    // fallback sidebar layout for standard dashboard view
     return (
       <div className="flex h-screen bg-calido font-sans text-tecnico overflow-hidden">
         <aside className="w-[300px] bg-levanda border-r border-violeta/20 flex flex-col no-print shrink-0">
@@ -350,7 +406,7 @@ const App: React.FC = () => {
                   <button onClick={() => handleViewChange('galeria')} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-calido transition-all">
                     <ImageIcon size={12} /> Galería Operativa
                   </button>
-                  <button onClick={() => downloadBackupJSON(selectedDate)} className="w-full bg-nucleo text-white py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-nucleo/90 transition-all shadow-lg shadow-nucleo/10">
+                  <button onClick={() => handleBackupDownload(selectedDate)} className="w-full bg-nucleo text-white py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-nucleo/90 transition-all shadow-lg shadow-nucleo/10">
                     <Download size={12} /> Descargar Historial
                   </button>
                 </div>
@@ -441,6 +497,11 @@ const App: React.FC = () => {
       </div>
     );
   };
+
+  // If no user is logged in, interrupt rendering and enforce Login Screen
+  if (!currentUser) {
+    return <LoginScreen onLoginSuccess={setCurrentUser} />;
+  }
 
   return (
     <>

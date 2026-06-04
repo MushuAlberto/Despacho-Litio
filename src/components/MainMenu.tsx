@@ -21,12 +21,14 @@ import { NovandinoLogo } from './BrandLogo';
 import { PasswordPrompt } from './PasswordPrompt';
 
 interface MainMenuProps {
-  onSelectView: (view: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce') => void;
+  onSelectView: (view: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs') => void;
   isJefeTurnoUnlocked: boolean;
   onUnlockJefeTurno: () => void;
+  currentUser: any;
+  onLogout: () => void;
 }
 
-export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnlocked, onUnlockJefeTurno }) => {
+export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnlocked, onUnlockJefeTurno, currentUser, onLogout }) => {
   const [time, setTime] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'supervision' | 'jefe_turno'>('supervision');
@@ -209,16 +211,50 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-4">
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-3.5">
+            {/* Admin actions (Users and logs) */}
+            {currentUser?.role === 'admin' && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onSelectView('users')}
+                  className="bg-[#461D77]/8 hover:bg-[#461D77]/15 border border-[#461D77]/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-[#461D77] uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                >
+                  <User size={13} strokeWidth={2.5} /> Usuarios
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectView('logs')}
+                  className="bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-indigo-600 uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                >
+                  <Activity size={13} strokeWidth={2.5} /> Bitácora
+                </button>
+              </div>
+            )}
+
             {/* Operator Live Profile */}
-            <div className="bg-white/80 border border-slate-200/50 rounded-2xl px-4 py-2.5 flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#461D77] rounded-xl flex items-center justify-center text-white font-extrabold text-xs shadow-inner">
-                CT
+            <div className="bg-white/80 border border-slate-200/50 rounded-2xl px-4 py-2 flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#461D77] rounded-xl flex items-center justify-center text-white font-extrabold text-xs shadow-inner uppercase">
+                {currentUser?.name ? currentUser.name.substring(0, 2) : 'CT'}
               </div>
               <div className="text-left">
-                <p className="text-xs font-black text-[#461D77] tracking-wider uppercase leading-none">ANALISTA ACTIVO</p>
+                <span className="text-[8px] font-black text-[#4e2283] tracking-widest uppercase block mb-0.5">
+                  {currentUser?.role === 'admin' ? 'ADMINISTRADOR' : currentUser?.role === 'jefe_turno' ? 'JEFE TURNO' : 'SUPERVISOR'}
+                </span>
+                <p className="text-[11px] font-extrabold text-slate-700 leading-none">
+                  {currentUser?.name || 'Analista Activo'}
+                </p>
               </div>
             </div>
+
+            {/* Sign Out Trigger button */}
+            <button
+              type="button"
+              onClick={onLogout}
+              className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-rose-600 uppercase tracking-widest transition-all cursor-pointer"
+            >
+              Salir
+            </button>
 
             {/* Real-time Clock Widget */}
             <div className="bg-white/80 border border-slate-200/50 rounded-2xl px-5 py-2 flex items-center gap-4">
