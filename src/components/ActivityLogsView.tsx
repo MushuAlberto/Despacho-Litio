@@ -26,6 +26,8 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedActionType, setSelectedActionType] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -78,8 +80,24 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
       });
     }
 
+    if (startDate) {
+      const startDateTime = new Date(startDate + 'T00:00:00').getTime();
+      result = result.filter(log => {
+        const logTime = new Date(log.timestamp).getTime();
+        return logTime >= startDateTime;
+      });
+    }
+
+    if (endDate) {
+      const endDateTime = new Date(endDate + 'T23:59:59').getTime();
+      result = result.filter(log => {
+        const logTime = new Date(log.timestamp).getTime();
+        return logTime <= endDateTime;
+      });
+    }
+
     setFilteredLogs(result);
-  }, [searchTerm, selectedRole, selectedActionType, logs]);
+  }, [searchTerm, selectedRole, selectedActionType, startDate, endDate, logs]);
 
   const formatDate = (isoString: string) => {
     try {
@@ -182,6 +200,52 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
                 <option value="file">Carga de Excel</option>
               </select>
             </div>
+          </div>
+
+          {/* Date range filter subpart */}
+          <div className="pt-4 border-t border-slate-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#4e2283] tracking-wider mr-1">
+                <Calendar size={13} /> Filtrar por Período:
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-black text-slate-400 uppercase">Desde</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="px-3 py-2 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-black text-slate-400 uppercase">Hasta</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="px-3 py-2 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all cursor-pointer"
+                />
+              </div>
+
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate('');
+                    setEndDate('');
+                  }}
+                  className="text-[9px] font-black uppercase tracking-wider text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 cursor-pointer bg-rose-50 hover:bg-rose-100 border border-rose-100 px-3 py-1.5 rounded-xl ml-1"
+                >
+                  Limpiar Fechas
+                </button>
+              )}
+            </div>
+
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-right">
+              Mostrando {filteredLogs.length} de {logs.length} registros
+            </span>
           </div>
         </div>
 

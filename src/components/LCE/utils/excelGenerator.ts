@@ -565,10 +565,19 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
 
             // Convert row index to standard 1-indexed Excel row string for the total row (usually the row after the last date)
             const rowStr = String(lastDateRowIdx + 2);
-            const prod = getCellValue(sh, `G${rowStr}`);
+            
+            // Prioritize cell G36 of Base SLIT tab for productivity, fallback to dynamic last row
+            let prod = getCellValue(sh, "G36");
+            if (prod === undefined || prod === null) {
+              prod = getCellValue(sh, `G${rowStr}`);
+            }
             if (prod !== undefined) overrides.productividadMes = prod;
             
-            const lceMVal = getCellValue(sh, `M${rowStr}`);
+            // Prioritize cell M36 of Base SLIT tab for LCE actual total, fallback to dynamic last row
+            let lceMVal = getCellValue(sh, "M36");
+            if (lceMVal === undefined || lceMVal === null) {
+              lceMVal = getCellValue(sh, `M${rowStr}`);
+            }
             if (lceMVal !== undefined) overrides.lceActualTotal = lceMVal;
 
             // Extract cumulative programmed targets (Tonelaje and Viajes)
