@@ -15,7 +15,12 @@ import {
   Activity, 
   ShieldAlert,
   Sliders,
-  ExternalLink
+  ExternalLink,
+  Key,
+  Lock,
+  X,
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { NovandinoLogo } from './BrandLogo';
 import { PasswordPrompt } from './PasswordPrompt';
@@ -33,6 +38,73 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
   const [dateStr, setDateStr] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'supervision' | 'jefe_turno'>('supervision');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+
+  // States for the custom Change Password modal
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordCurrent, setPasswordCurrent] = useState('');
+  const [passwordNew, setPasswordNew] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [passError, setPassError] = useState('');
+  const [passSuccess, setPassSuccess] = useState('');
+  const [passSaving, setPassSaving] = useState(false);
+
+  const handleChangePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassError('');
+    setPassSuccess('');
+
+    if (passwordCurrent !== currentUser?.password) {
+      setPassError('La contraseña actual es incorrecta.');
+      return;
+    }
+
+    if (passwordNew.trim().length < 4) {
+      setPassError('La nueva contraseña debe tener al menos 4 caracteres.');
+      return;
+    }
+
+    if (passwordNew !== passwordConfirm) {
+      setPassError('La nueva contraseña y su confirmación no coinciden.');
+      return;
+    }
+
+    setPassSaving(true);
+    try {
+      const { doc, setDoc } = await import('firebase/firestore');
+      const { db, logActivity } = await import('../services/firebase');
+      
+      const updatedUser = {
+        ...currentUser,
+        password: passwordNew
+      };
+
+      await setDoc(doc(db, 'users', currentUser.userId), updatedUser);
+      
+      // Sync change locally within persistent localStorage
+      localStorage.setItem('sqm_current_user', JSON.stringify(updatedUser));
+      
+      // Overwrite current reference
+      if (currentUser) {
+        currentUser.password = passwordNew;
+      }
+
+      await logActivity(currentUser, 'Cambió Contraseña', `El usuario ${currentUser.name} actualizó su contraseña de acceso exitosamente.`);
+      
+      setPassSuccess('¡Contraseña actualizada correctamente!');
+      setPasswordCurrent('');
+      setPasswordNew('');
+      setPasswordConfirm('');
+      setTimeout(() => {
+        setShowChangePassword(false);
+        setPassSuccess('');
+      }, 2000);
+    } catch (err) {
+      console.error('Error updating password:', err);
+      setPassError('Fallo al registrar nueva clave. Intente de nuevo.');
+    } finally {
+      setPassSaving(false);
+    }
+  };
 
   useEffect(() => {
     const updateTime = () => {
@@ -246,6 +318,19 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                 </p>
               </div>
             </div>
+
+            {/* Change Password modal trigger button */}
+            <button
+              type="button"
+              onClick={() => {
+                setPassError('');
+                setPassSuccess('');
+                setShowChangePassword(true);
+              }}
+              className="bg-[#461D77]/8 hover:bg-[#461D77]/15 border border-[#461D77]/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-[#461D77] uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Key size={13} strokeWidth={2.5} /> Clave
+            </button>
 
             {/* Sign Out Trigger button */}
             <button
@@ -495,6 +580,132 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
           }}
           onCancel={() => setShowPasswordPrompt(false)}
         />
+      )}
+
+      {/* CUSTOM CHANGE PASSWORD MODAL */}
+      {showChangePassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Blur backdrop overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 bg-[#1e1b4b]/60 backdrop-blur-sm"
+            onClick={() => !passSaving && setShowChangePassword(false)}
+          />
+
+          {/* Modal Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative bg-white w-full max-w-md rounded-[2.5rem] border border-slate-200 shadow-2xl p-8 overflow-hidden animate-in zoom-in-95 duration-200"
+          >
+            {/* Header branding lock top */}
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-[1.2rem] bg-[#461D77]/10 flex items-center justify-center text-[#461D77]">
+                  <Lock size={18} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <span className="text-[8px] font-black tracking-widest text-[#4e2283] uppercase bg-[#4e2283]/10 px-2 py-0.5 rounded-full">
+                    SEGURIDAD DE SESIÓN
+                  </span>
+                  <h3 className="text-base font-black text-slate-800 uppercase tracking-tight">Cambiar Contraseña</h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowChangePassword(false)}
+                disabled={passSaving}
+                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Error or Success banners */}
+            {passError && (
+              <div className="mb-5 bg-red-50 border border-red-100 text-red-700 rounded-2xl p-3.5 flex items-center gap-2 text-xs font-semibold">
+                <AlertTriangle size={15} />
+                <span>{passError}</span>
+              </div>
+            )}
+
+            {passSuccess && (
+              <div className="mb-5 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-2xl p-3.5 flex items-center gap-2 text-xs font-semibold">
+                <CheckCircle size={15} />
+                <span>{passSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
+              <div className="space-y-1.55">
+                <label className="text-[9px] font-black tracking-widest text-[#461D77] uppercase block">
+                  Contraseña Actual
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    value={passwordCurrent}
+                    onChange={(e) => setPasswordCurrent(e.target.value)}
+                    placeholder="Ingrese su clave actual de acceso"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.55">
+                <label className="text-[9px] font-black tracking-widest text-[#461D77] uppercase block">
+                  Nueva Contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    value={passwordNew}
+                    onChange={(e) => setPasswordNew(e.target.value)}
+                    placeholder="Mínimo 4 caracteres"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.55">
+                <label className="text-[9px] font-black tracking-widest text-[#461D77] uppercase block">
+                  Confirmar Nueva Contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    value={passwordConfirm}
+                    onChange={(e) => setPasswordConfirm(e.target.value)}
+                    placeholder="Re-ingrese la nueva clave"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowChangePassword(false)}
+                  disabled={passSaving}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 font-extrabold text-[10px] tracking-widest py-3 rounded-2xl uppercase transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={passSaving}
+                  className="flex-1 bg-[#461D77] hover:bg-[#321159] disabled:bg-[#461D77]/50 text-white font-extrabold text-[10px] tracking-widest py-3 rounded-2xl flex items-center justify-center gap-2 hover:shadow-lg transition-all uppercase cursor-pointer"
+                >
+                  {passSaving ? 'Guardando...' : 'Guardar Clave'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
       )}
     </div>
   );
