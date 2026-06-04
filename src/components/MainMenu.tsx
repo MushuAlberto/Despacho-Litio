@@ -18,14 +18,19 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { NovandinoLogo } from './BrandLogo';
+import { PasswordPrompt } from './PasswordPrompt';
 
 interface MainMenuProps {
   onSelectView: (view: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce') => void;
+  isJefeTurnoUnlocked: boolean;
+  onUnlockJefeTurno: () => void;
 }
 
-export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
+export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnlocked, onUnlockJefeTurno }) => {
   const [time, setTime] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'supervision' | 'jefe_turno'>('supervision');
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -45,6 +50,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleJefeTurnoClick = () => {
+    if (isJefeTurnoUnlocked) {
+      setActiveTab('jefe_turno');
+    } else {
+      setShowPasswordPrompt(true);
+    }
+  };
 
   // Stagger animations config
   const containerVariants = {
@@ -83,7 +96,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
       accentColor: '#461D77',
       isFeature: true, // Takes more grid columns on desktop for visual weight
       badge: 'MÓDULO DESPACHO',
-      status: 'ACTIVO'
+      status: 'ACTIVO',
+      group: 'supervision' as const
     },
     {
       id: 'llegada' as const,
@@ -96,7 +110,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
       accentColor: '#3FAA88',
       isFeature: true,
       badge: 'LOGÍSTICA IN SITU',
-      status: 'ACTIVO'
+      status: 'ACTIVO',
+      group: 'supervision' as const
     },
     {
       id: 'lce' as const,
@@ -108,7 +123,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
       iconBg: 'bg-[#4FD1C5]/15 text-[#2cbba5]',
       accentColor: '#4FD1C5',
       badge: 'SALAR DE ATACAMA',
-      status: 'ESTADÍSTICAS'
+      status: 'ESTADÍSTICAS',
+      group: 'jefe_turno' as const
     },
     {
       id: 'ddd' as const,
@@ -120,7 +136,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
       iconBg: 'bg-[#C59E4D]/15 text-[#b28b3b]',
       accentColor: '#C59E4D',
       badge: 'SALA REUNIÓN M1',
-      status: 'ESTRATÉGICO'
+      status: 'ESTRATÉGICO',
+      group: 'supervision' as const
     },
     {
       id: 'cambioTurno' as const,
@@ -132,7 +149,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
       iconBg: 'bg-[#7177EC]/10 text-[#7177EC]',
       accentColor: '#7177EC',
       badge: 'ENTREGA DE SECCIÓN',
-      status: 'SINCRONIZADO'
+      status: 'SINCRONIZADO',
+      group: 'jefe_turno' as const
     },
     {
       id: 'galeria' as const,
@@ -144,7 +162,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
       iconBg: 'bg-violeta/10 text-violeta',
       accentColor: '#7177EC',
       badge: 'SOPORTE EN TERRENO',
-      status: 'REGISTRO'
+      status: 'REGISTRO',
+      group: 'jefe_turno' as const
     },
     {
       id: 'memoria' as const,
@@ -156,7 +175,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
       iconBg: 'bg-slate-500/10 text-slate-700',
       accentColor: '#171717',
       badge: 'ARCHIVO SEGURADO',
-      status: 'SISTEMA LOCAL'
+      status: 'SISTEMA LOCAL',
+      group: 'jefe_turno' as const
     }
   ];
 
@@ -236,71 +256,183 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
           </div>
         </section>
 
+        {/* MODULE FILTER TABS */}
+        <div className="flex items-center justify-center gap-3 bg-white/50 border border-white p-2 md:p-2.5 rounded-3xl max-w-sm mx-auto backdrop-blur-md shadow-sm z-10 relative">
+          <button 
+            type="button"
+            onClick={() => setActiveTab('supervision')}
+            className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
+              activeTab === 'supervision' 
+                ? 'bg-[#461D77] text-white shadow-sm' 
+                : 'text-slate-600 hover:text-[#461D77] hover:bg-white/50'
+            }`}
+          >
+            Supervisión
+          </button>
+          <button 
+            type="button"
+            onClick={handleJefeTurnoClick}
+            className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
+              activeTab === 'jefe_turno' 
+                ? 'bg-[#7177EC] text-white shadow-sm' 
+                : 'text-slate-600 hover:text-[#7177EC] hover:bg-white/50'
+            }`}
+          >
+            Jefe Turno
+          </button>
+        </div>
+
         {/* BENTO GRID MODULE SELECTOR */}
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full"
+          className="space-y-12 w-full z-10 relative"
         >
-          {cardsData.map((card) => {
-            const IconComponent = card.icon;
-            const isFeature = card.isFeature;
-            return (
-              <motion.button
-                key={card.id}
-                variants={itemVariants}
-                onClick={() => onSelectView(card.id)}
-                className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[21rem] ${
-                  isFeature ? 'lg:col-span-2' : ''
-                } ${card.color}`}
-              >
-                {/* Background light gradient spot reflecting on hover */}
-                <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
-                
-                {/* Top Badge and Indicator line */}
-                <div className="flex items-center justify-between w-full relative z-10">
-                  <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-tecnico transition-colors uppercase">
-                    {card.badge}
-                  </span>
-                  
-                  {/* Status bubble */}
-                  <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
-                    card.id === 'informe' || card.id === 'llegada'
-                      ? 'bg-emerald-500/10 text-emerald-600'
-                      : 'bg-slate-400/10 text-slate-600'
-                  }`}>
-                    &bull; {card.status}
-                  </span>
+          {/* SECTION I: SUPERVISIÓN */}
+          {activeTab === 'supervision' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-300/40">
+                <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
+                <div>
+                  <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">Módulo Supervisión</h3>
+                  <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest mt-1">Planificación y Análisis Operativo de Alto Nivel</p>
                 </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                {cardsData.filter(c => c.group === 'supervision').map((card) => {
+                  const IconComponent = card.icon;
+                  const isFeature = card.isFeature && activeTab === 'todos';
+                  return (
+                    <motion.button
+                      key={card.id}
+                      variants={itemVariants}
+                      onClick={() => onSelectView(card.id)}
+                      className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[21rem] ${
+                        isFeature ? 'lg:col-span-2' : ''
+                      } ${card.color}`}
+                    >
+                      {/* Background light gradient spot reflecting on hover */}
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      
+                      {/* Top Badge and Indicator line */}
+                      <div className="flex items-center justify-between w-full relative z-10">
+                        <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-tecnico transition-colors uppercase">
+                          {card.badge}
+                        </span>
+                        
+                        {/* Status bubble */}
+                        <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
+                          card.id === 'informe' || card.id === 'llegada'
+                            ? 'bg-emerald-500/10 text-emerald-600'
+                            : 'bg-slate-400/10 text-slate-600'
+                        }`}>
+                          &bull; {card.status}
+                        </span>
+                      </div>
 
-                {/* Center Content: Large Icon and Title */}
-                <div className="space-y-4 my-auto relative z-10">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
-                    <IconComponent size={28} strokeWidth={1.5} />
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-widest">{card.subtitle}</p>
-                    <h2 className="text-2xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
-                      {card.title}
-                    </h2>
-                    <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-3 font-medium">
-                      {card.description}
-                    </p>
-                  </div>
-                </div>
+                      {/* Center Content: Large Icon and Title */}
+                      <div className="space-y-4 my-auto relative z-10">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                          <IconComponent size={28} strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-widest">{card.subtitle}</p>
+                          <h2 className="text-2xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
+                            {card.title}
+                          </h2>
+                          <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-3 font-medium">
+                            {card.description}
+                          </p>
+                        </div>
+                      </div>
 
-                {/* Bottom Access Arrow Line */}
-                <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
-                  <span className="text-slate-400 group-hover:text-tecnico transition-colors">ACCEDER AL COMPONENTE</span>
-                  <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-nucleo group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300">
-                    <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                  </div>
+                      {/* Bottom Access Arrow Line */}
+                      <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className="text-slate-400 group-hover:text-tecnico transition-colors">ACCEDER AL COMPONENTE</span>
+                        <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-nucleo group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300">
+                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* SECTION II: JEFE TURNO */}
+          {activeTab === 'jefe_turno' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-300/40">
+                <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#7177EC] to-sky-400 shadow-sm" />
+                <div>
+                  <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">Módulo Jefe Turno</h3>
+                  <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest mt-1">Control diario de faena, relevos de turno y registro operativo</p>
                 </div>
-              </motion.button>
-            );
-          })}
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                {cardsData.filter(c => c.group === 'jefe_turno').map((card) => {
+                  const IconComponent = card.icon;
+                  return (
+                    <motion.button
+                      key={card.id}
+                      variants={itemVariants}
+                      onClick={() => onSelectView(card.id)}
+                      className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[21rem] ${card.color}`}
+                    >
+                      {/* Background light gradient spot reflecting on hover */}
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      
+                      {/* Top Badge and Indicator line */}
+                      <div className="flex items-center justify-between w-full relative z-10">
+                        <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-tecnico transition-colors uppercase">
+                          {card.badge}
+                        </span>
+                        
+                        {/* Status bubble */}
+                        <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
+                          card.id === 'lce'
+                            ? 'bg-cyan-500/10 text-cyan-600'
+                            : 'bg-slate-400/10 text-slate-600'
+                        }`}>
+                          &bull; {card.status}
+                        </span>
+                      </div>
+
+                      {/* Center Content: Large Icon and Title */}
+                      <div className="space-y-4 my-auto relative z-10">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                          <IconComponent size={28} strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-widest">{card.subtitle}</p>
+                          <h2 className="text-2xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
+                            {card.title}
+                          </h2>
+                          <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-3 font-medium">
+                            {card.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Bottom Access Arrow Line */}
+                      <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className="text-slate-400 group-hover:text-tecnico transition-colors">ACCEDER AL COMPONENTE</span>
+                        <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-nucleo group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300">
+                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
 
@@ -315,8 +447,22 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView }) => {
           </p>
         </div>
       </footer>
+      {/* PASSWORD PROTECTION FOR JEFE TURNO TAB */}
+      {showPasswordPrompt && (
+        <PasswordPrompt
+          correctPassword="MIRAME"
+          moduleName="Módulo Jefe Turno"
+          onSuccess={() => {
+            onUnlockJefeTurno();
+            setShowPasswordPrompt(false);
+            setActiveTab('jefe_turno');
+          }}
+          onCancel={() => setShowPasswordPrompt(false)}
+        />
+      )}
     </div>
   );
 };
 
 export default MainMenu;
+

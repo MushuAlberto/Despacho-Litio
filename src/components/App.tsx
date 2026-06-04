@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [exportingPDF, setExportingPDF] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
   const [passwordRequest, setPasswordRequest] = useState<{ view: 'memoria' | 'galeria' | 'cambioTurno' | 'lce', name: string } | null>(null);
+  const [isJefeTurnoUnlocked, setIsJefeTurnoUnlocked] = useState(false);
 
   useEffect(() => {
     const savedData = localStorage.getItem('sqm_raw_data');
@@ -255,20 +256,42 @@ const App: React.FC = () => {
 
   const handleViewChange = (v: 'menu' | 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce') => {
     if (v === 'memoria') {
-      setPasswordRequest({ view: 'memoria', name: 'Memoria' });
+      if (isJefeTurnoUnlocked) {
+        setView('memoria');
+      } else {
+        setPasswordRequest({ view: 'memoria', name: 'Memoria' });
+      }
     } else if (v === 'galeria') {
-      setPasswordRequest({ view: 'galeria', name: 'Galería Operativa' });
+      if (isJefeTurnoUnlocked) {
+        setView('galeria');
+      } else {
+        setPasswordRequest({ view: 'galeria', name: 'Galería Operativa' });
+      }
     } else if (v === 'cambioTurno') {
-      setPasswordRequest({ view: 'cambioTurno', name: 'Cambio de Turno' });
+      if (isJefeTurnoUnlocked) {
+        setView('cambioTurno');
+      } else {
+        setPasswordRequest({ view: 'cambioTurno', name: 'Cambio de Turno' });
+      }
     } else if (v === 'lce') {
-      setPasswordRequest({ view: 'lce', name: 'Control LCE' });
+      if (isJefeTurnoUnlocked) {
+        setView('lce');
+      } else {
+        setPasswordRequest({ view: 'lce', name: 'Control LCE' });
+      }
     } else {
       setView(v);
     }
   };
 
   const renderCurrentView = () => {
-    if (view === 'menu') return <MainMenu onSelectView={handleViewChange} />;
+    if (view === 'menu') return (
+      <MainMenu 
+        onSelectView={handleViewChange} 
+        isJefeTurnoUnlocked={isJefeTurnoUnlocked}
+        onUnlockJefeTurno={() => setIsJefeTurnoUnlocked(true)}
+      />
+    );
     if (view === 'llegada') return <LlegadaEquipos onBack={() => setView('menu')} />;
     if (view === 'memoria') return (
       <MemoryModule
@@ -426,7 +449,11 @@ const App: React.FC = () => {
         <PasswordPrompt 
           correctPassword="MIRAME"
           moduleName={passwordRequest.name}
-          onSuccess={() => { setView(passwordRequest.view); setPasswordRequest(null); }}
+          onSuccess={() => { 
+            setIsJefeTurnoUnlocked(true);
+            setView(passwordRequest.view); 
+            setPasswordRequest(null); 
+          }}
           onCancel={() => setPasswordRequest(null)}
         />
       )}
