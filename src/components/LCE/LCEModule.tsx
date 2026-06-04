@@ -45,14 +45,31 @@ export default function LCEModule({ onBack }: { onBack: () => void }) {
       const overridenLceActualTotal = excelOverrides.lceActualTotal !== undefined ? excelOverrides.lceActualTotal : baseSummary.lceActualTotal;
       const overridenLceProgramadoTotal = excelOverrides.lceProgramadoTotal !== undefined ? excelOverrides.lceProgramadoTotal : baseSummary.lceProgramadoTotal;
       const overridenLceCumplimiento = overridenLceProgramadoTotal > 0 ? (overridenLceActualTotal / overridenLceProgramadoTotal) * 100 : 0;
+
+      const overridenTonelajeDespachadoAcumulado = excelOverrides.tonelajeAcumulado !== undefined ? excelOverrides.tonelajeAcumulado : baseSummary.tonelajeDespachadoAcumulado;
+      const overridenTonelajeProgramadoAcumulado = excelOverrides.tonelajeProgramadoAcumulado !== undefined ? excelOverrides.tonelajeProgramadoAcumulado : baseSummary.tonelajeProgramadoAcumulado;
+      const overridenCumplimientoTonelaje = overridenTonelajeProgramadoAcumulado > 0 
+        ? (overridenTonelajeDespachadoAcumulado / overridenTonelajeProgramadoAcumulado) * 100 
+        : 0;
+
+      const overridenViajesDespachadosAcumulados = excelOverrides.cantidadCamiones !== undefined ? excelOverrides.cantidadCamiones : baseSummary.viajesDespachadosAcumulados;
+      const overridenViajesProgramadosAcumulados = excelOverrides.viajesProgramadosAcumulados !== undefined ? excelOverrides.viajesProgramadosAcumulados : baseSummary.viajesProgramadosAcumulados;
+      const overridenCumplimientoViajes = overridenViajesProgramadosAcumulados > 0 
+        ? (overridenViajesDespachadosAcumulados / overridenViajesProgramadosAcumulados) * 100 
+        : 0;
+
       return {
         ...baseSummary,
-        tonelajeDespachadoAcumulado: excelOverrides.tonelajeAcumulado !== undefined ? excelOverrides.tonelajeAcumulado : baseSummary.tonelajeDespachadoAcumulado,
+        tonelajeDespachadoAcumulado: overridenTonelajeDespachadoAcumulado,
+        tonelajeProgramadoAcumulado: overridenTonelajeProgramadoAcumulado,
+        cumplimientoTonelaje: overridenCumplimientoTonelaje,
         m3Acumulados: excelOverrides.m3Acumulados !== undefined ? excelOverrides.m3Acumulados : baseSummary.m3Acumulados,
         promedioCamionTon: excelOverrides.promedioCamionTon !== undefined ? excelOverrides.promedioCamionTon : baseSummary.promedioCamionTon,
         promedioCamionM3: excelOverrides.promedioCamionM3 !== undefined ? excelOverrides.promedioCamionM3 : baseSummary.promedioCamionM3,
-        cantidadCamiones: excelOverrides.cantidadCamiones !== undefined ? excelOverrides.cantidadCamiones : baseSummary.cantidadCamiones,
-        viajesDespachadosAcumulados: excelOverrides.cantidadCamiones !== undefined ? excelOverrides.cantidadCamiones : baseSummary.viajesDespachadosAcumulados,
+        cantidadCamiones: overridenViajesDespachadosAcumulados,
+        viajesDespachadosAcumulados: overridenViajesDespachadosAcumulados,
+        viajesProgramadosAcumulados: overridenViajesProgramadosAcumulados,
+        cumplimientoViajes: overridenCumplimientoViajes,
         productividadMes: excelOverrides.productividadMes !== undefined ? excelOverrides.productividadMes : baseSummary.productividadMes,
         lceProgramadoTotal: overridenLceProgramadoTotal,
         lceActualTotal: overridenLceActualTotal,

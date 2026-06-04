@@ -45,6 +45,8 @@ export interface ExcelOverrides {
   productividadMes?: number;
   lceActualTotal?: number;
   lceProgramadoTotal?: number;
+  tonelajeProgramadoAcumulado?: number;
+  viajesProgramadosAcumulados?: number;
 }
 
 export interface ParseResult {

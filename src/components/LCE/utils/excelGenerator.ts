@@ -166,6 +166,63 @@ function parseSpanishDateString(str: string): string | null {
   return null;
 }
 
+const SPANISH_MONTHS = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre"
+];
+
+/**
+ * Detects the primary month represented by dates in the uploaded workbook.
+ */
+function detectWorkbookMonth(workbook: XLSX.WorkBook, logsSheetName: string, blitSheetName?: string): { month: number; year: number } {
+  const sheetsToScan: XLSX.WorkSheet[] = [];
+  if (blitSheetName && workbook.Sheets[blitSheetName]) {
+    sheetsToScan.push(workbook.Sheets[blitSheetName]);
+  }
+  if (logsSheetName && workbook.Sheets[logsSheetName]) {
+    sheetsToScan.push(workbook.Sheets[logsSheetName]);
+  }
+
+  for (const sh of sheetsToScan) {
+    const rows = XLSX.utils.sheet_to_json<any[]>(sh, { header: 1 });
+    if (!rows) continue;
+    // Scan first 100 rows
+    for (let r = 0; r < Math.min(100, rows.length); r++) {
+      const row = rows[r];
+      if (!row) continue;
+      // Scan first 10 columns for date values
+      for (let c = 0; c < Math.min(10, row.length); c++) {
+        const val = row[c];
+        if (val === undefined || val === null) continue;
+        const dateStr = parseCellAsDate(val) || parseSpanishDateString(String(val));
+        if (dateStr) {
+          const parts = dateStr.split("-");
+          if (parts.length === 3) {
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10); // 1-indexed (1 to 12)
+            if (!isNaN(year) && !isNaN(month) && month >= 1 && month <= 12) {
+              return { month, year };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Fallback to active month of standard default date (May 2026)
+  return { month: 5, year: 2026 };
+}
+
 /**
  * Cleans formatting of cells to output a number
  */
@@ -368,58 +425,6 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
 
         const workbook = XLSX.read(data, { type: "array" });
         
-        // -------------------------------------------------------------
-        // Custom Sheets Parsing: Químicas and BLIT/Base SLIT as requested by user
-        // -------------------------------------------------------------
-        let overrides: ParseResult["overrides"] = undefined;
-        const quimicasSheetName = findSheetName(workbook, "Químicas");
-        const resumenSheetName = findSheetName(workbook, "Resumen");
-        
-        // Try combinations of "Base SLIT", "BLIT", and substring "slit"/"blit"
-        let blitSheetName = findSheetName(workbook, "Base SLIT") || findSheetName(workbook, "BLIT");
-        if (!blitSheetName) {
-          blitSheetName = workbook.SheetNames.find(name => {
-            const lower = name.toLowerCase();
-            return lower.includes("baseslit") || lower.includes("base slit") || lower.includes("blit") || lower.includes("slit");
-          });
-        }
-
-        if (quimicasSheetName || blitSheetName || resumenSheetName) {
-          overrides = {};
-          if (quimicasSheetName) {
-            const sh = workbook.Sheets[quimicasSheetName];
-            const ton = getCellValue(sh, "C7");
-            const m3 = getCellValue(sh, "B7");
-            const avgTon = getCellValue(sh, "D7");
-            const avgM3 = getCellValue(sh, "E7");
-            const viajes = getCellValue(sh, "F7");
-
-            if (ton !== undefined) overrides.tonelajeAcumulado = ton;
-            if (m3 !== undefined) overrides.m3Acumulados = m3;
-            if (avgTon !== undefined) overrides.promedioCamionTon = avgTon;
-            if (avgM3 !== undefined) overrides.promedioCamionM3 = avgM3;
-            if (viajes !== undefined) overrides.cantidadCamiones = viajes;
-          }
-          if (blitSheetName) {
-            const sh = workbook.Sheets[blitSheetName];
-            const prod = getCellValue(sh, "G36");
-            if (prod !== undefined) overrides.productividadMes = prod;
-            
-            const lceM36 = getCellValue(sh, "M36");
-            if (lceM36 !== undefined) overrides.lceActualTotal = lceM36;
-          }
-          if (resumenSheetName) {
-            const sh = workbook.Sheets[resumenSheetName];
-            const lceProgVal = getCellValue(sh, "F4") !== undefined ? getCellValue(sh, "F4") : 
-                              (getCellValue(sh, "G4") !== undefined ? getCellValue(sh, "G4") : 
-                              (getCellValue(sh, "H4") !== undefined ? getCellValue(sh, "H4") : 
-                              getCellValue(sh, "I4")));
-            if (lceProgVal !== undefined) {
-              overrides.lceProgramadoTotal = lceProgVal;
-            }
-          }
-        }
-
         // Determine which sheet to use for daily records
         let logsSheetName = "";
         
@@ -440,6 +445,158 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
             return !exclusionNames.some(ex => normalized.includes(ex));
           });
           logsSheetName = foundAlternative || workbook.SheetNames[0];
+        }
+
+        // -------------------------------------------------------------
+        // Custom Sheets Parsing: Químicas and BLIT/Base SLIT as requested by user
+        // -------------------------------------------------------------
+        let overrides: ParseResult["overrides"] = undefined;
+        const quimicasSheetName = findSheetName(workbook, "Químicas");
+        const resumenSheetName = findSheetName(workbook, "Resumen");
+        
+        // Try combinations of "Base SLIT", "BLIT", and substring "slit"/"blit"
+        let blitSheetName = findSheetName(workbook, "Base SLIT") || findSheetName(workbook, "BLIT");
+        if (!blitSheetName) {
+          blitSheetName = workbook.SheetNames.find(name => {
+            const lower = name.toLowerCase();
+            return lower.includes("baseslit") || lower.includes("base slit") || lower.includes("blit") || lower.includes("slit");
+          });
+        }
+
+        if (quimicasSheetName || blitSheetName || resumenSheetName) {
+          overrides = {};
+          
+          if (quimicasSheetName) {
+            const sh = workbook.Sheets[quimicasSheetName];
+            const rows = XLSX.utils.sheet_to_json<any[]>(sh, { header: 1 });
+            
+            // Detect the workbook month to know which row of Químicas sheet to target
+            const detected = detectWorkbookMonth(workbook, logsSheetName, blitSheetName);
+            const targetMonthIdx = detected.month - 1; // 0-based index
+            const targetMonthName = SPANISH_MONTHS[targetMonthIdx];
+
+            let targetRowIdx = -1;
+
+            if (rows && rows.length > 0) {
+              for (let r = 0; r < rows.length; r++) {
+                const row = rows[r];
+                if (!row || row.length === 0) continue;
+                const colA = row[0];
+                if (colA === undefined || colA === null) continue;
+
+                // Case 1: Check if Column A is a Date belonging to the target month
+                const dStr = parseCellAsDate(colA) || parseSpanishDateString(String(colA));
+                if (dStr) {
+                  const parts = dStr.split("-");
+                  if (parts.length === 3) {
+                    const m = parseInt(parts[1], 10);
+                    if (m === detected.month) {
+                      targetRowIdx = r;
+                      break;
+                    }
+                  }
+                }
+
+                // Case 2: Check if Column A is a string representing the target month
+                const strA = String(colA).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const normMonthName = targetMonthName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (strA.includes(normMonthName)) {
+                  targetRowIdx = r;
+                  break;
+                }
+              }
+            }
+
+            // Fallback: Default mapped row index (January = row 3, which is 0-based index 2. May = row 7, index 6)
+            if (targetRowIdx === -1) {
+              targetRowIdx = targetMonthIdx + 2; 
+            }
+
+            const targetRow = (rows && targetRowIdx >= 0 && targetRowIdx < rows.length) ? rows[targetRowIdx] : null;
+
+            // Extract values safely: A=Month, B=m3, C=Tonelaje, D=AvgCamionTon, E=AvgCamionM3, F=Viajes/Camiones
+            const ton = targetRow && targetRow.length > 2 ? targetRow[2] : undefined;
+            const m3 = targetRow && targetRow.length > 1 ? targetRow[1] : undefined;
+            const avgTon = targetRow && targetRow.length > 3 ? targetRow[3] : undefined;
+            const avgM3 = targetRow && targetRow.length > 4 ? targetRow[4] : undefined;
+            const viajes = targetRow && targetRow.length > 5 ? targetRow[5] : undefined;
+
+            const cleanTon = ton !== undefined ? cleanCellValueToNumber(ton) : undefined;
+            const cleanM3 = m3 !== undefined ? cleanCellValueToNumber(m3) : undefined;
+            const cleanAvgTon = avgTon !== undefined ? cleanCellValueToNumber(avgTon) : undefined;
+            const cleanAvgM3 = avgM3 !== undefined ? cleanCellValueToNumber(avgM3) : undefined;
+            const cleanViajes = viajes !== undefined ? Math.round(cleanCellValueToNumber(viajes)) : undefined;
+
+            if (cleanTon !== undefined && cleanTon > 0) overrides.tonelajeAcumulado = cleanTon;
+            if (cleanM3 !== undefined && cleanM3 > 0) overrides.m3Acumulados = cleanM3;
+            if (cleanAvgTon !== undefined && cleanAvgTon > 0) overrides.promedioCamionTon = cleanAvgTon;
+            if (cleanAvgM3 !== undefined && cleanAvgM3 > 0) overrides.promedioCamionM3 = cleanAvgM3;
+            if (cleanViajes !== undefined && cleanViajes > 0) overrides.cantidadCamiones = cleanViajes;
+          }
+
+          if (blitSheetName) {
+            const sh = workbook.Sheets[blitSheetName];
+            const rows = XLSX.utils.sheet_to_json<any[]>(sh, { header: 1 });
+            let lastDateRowIdx = 35; // Default reference: May has 31 days -> index 35 (Row 36)
+
+            if (rows && rows.length > 0) {
+              // Find the last row containing a valid date in column A
+              for (let r = 5; r < Math.min(60, rows.length); r++) {
+                const colA = rows[r]?.[0];
+                if (colA !== undefined && colA !== null) {
+                  const dStr = parseCellAsDate(colA) || parseSpanishDateString(String(colA));
+                  if (dStr) {
+                    lastDateRowIdx = r;
+                  }
+                }
+              }
+            }
+
+            // Convert row index to standard 1-indexed Excel row string
+            const rowStr = String(lastDateRowIdx + 1);
+            const prod = getCellValue(sh, `G${rowStr}`);
+            if (prod !== undefined) overrides.productividadMes = prod;
+            
+            const lceMVal = getCellValue(sh, `M${rowStr}`);
+            if (lceMVal !== undefined) overrides.lceActualTotal = lceMVal;
+
+            // Extract cumulative programmed targets (Tonelaje and Viajes)
+            let tonProgCum = getCellValue(sh, `B${rowStr}`);
+            let viajesProgCum = getCellValue(sh, `C${rowStr}`);
+
+            // Direct cell check fallback for row 36 (B36 & C36) exactly as requested
+            if (tonProgCum === undefined || tonProgCum === null) {
+              tonProgCum = getCellValue(sh, "B36");
+            }
+            if (viajesProgCum === undefined || viajesProgCum === null) {
+              viajesProgCum = getCellValue(sh, "C36");
+            }
+
+            if (tonProgCum !== undefined && tonProgCum !== null) {
+              const cleanTonProgCum = cleanCellValueToNumber(tonProgCum);
+              if (cleanTonProgCum > 0) {
+                overrides.tonelajeProgramadoAcumulado = cleanTonProgCum;
+              }
+            }
+
+            if (viajesProgCum !== undefined && viajesProgCum !== null) {
+              const cleanViajesProgCum = Math.round(cleanCellValueToNumber(viajesProgCum));
+              if (cleanViajesProgCum > 0) {
+                overrides.viajesProgramadosAcumulados = cleanViajesProgCum;
+              }
+            }
+          }
+
+          if (resumenSheetName) {
+            const sh = workbook.Sheets[resumenSheetName];
+            const lceProgVal = getCellValue(sh, "F4") !== undefined ? getCellValue(sh, "F4") : 
+                              (getCellValue(sh, "G4") !== undefined ? getCellValue(sh, "G4") : 
+                              (getCellValue(sh, "H4") !== undefined ? getCellValue(sh, "H4") : 
+                              getCellValue(sh, "I4")));
+            if (lceProgVal !== undefined) {
+              overrides.lceProgramadoTotal = lceProgVal;
+            }
+          }
         }
 
         // Parse special "Base SLIT" travel and tonnage data if present
