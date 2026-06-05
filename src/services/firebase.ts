@@ -84,38 +84,45 @@ export async function bootstrapPredefinedUsers() {
     const q = query(collection(db, 'users'));
     const snap = await getDocs(q);
     
-    // Check if we need to clean up legacy temporary users (e.g. admin, jefe1, super1) and bootstrap our official roster
-    let hasLegacyUsers = false;
+    // Store existing user IDs currently in Firestore
+    const existingUserIds = new Set<string>();
     snap.forEach((docSnap) => {
-      const uId = docSnap.id;
-      if (['admin', 'jefe1', 'jefe2', 'super1', 'super2', 'super3'].includes(uId)) {
-        hasLegacyUsers = true;
-      }
+      existingUserIds.add(docSnap.id);
     });
 
-    if (snap.empty || hasLegacyUsers) {
-      console.log('Bootstrapping official SQM team roster into Firestore...');
-      
-      // Delete legacy database test users to keep the team roster absolutely clean
-      const { deleteDoc } = await import('firebase/firestore');
-      const legacyIds = ['admin', 'jefe1', 'jefe2', 'super1', 'super2', 'super3'];
-      for (const legacyId of legacyIds) {
+    // We clean up legacy temporary test users (jefe1, super1, etc.) to keep the roster clean
+    const { deleteDoc } = await import('firebase/firestore');
+    const legacyIds = ['jefe1', 'jefe2', 'super1', 'super2', 'super3'];
+    for (const legacyId of legacyIds) {
+      if (existingUserIds.has(legacyId)) {
         try {
           await deleteDoc(doc(db, 'users', legacyId));
+          existingUserIds.delete(legacyId);
         } catch (e) {
-          // Ignore if already deleted
+          // Ignore
         }
       }
+    }
 
-      // Load official list
-      for (const user of INITIAL_PREDEFINED_USERS) {
+    // Now, we bootstrap only predefined SQM users that DO NOT exist in the database yet.
+    // If a user document already exists in Firestore, we DO NOT write to it at all.
+    // This perfectly preserves user-changed passwords and prevents them from ever being overwritten
+    // when new software modules, updates, or code versions are introduced.
+    let countBootstrapped = 0;
+    for (const user of INITIAL_PREDEFINED_USERS) {
+      if (!existingUserIds.has(user.userId)) {
+        console.log(`Bootstrapping missing official SQM user: ${user.userId}`);
         const userDocRef = doc(db, 'users', user.userId);
         await setDoc(userDocRef, {
           ...user,
           lastLogin: new Date().toISOString()
         });
+        countBootstrapped++;
       }
-      console.log('Official team bootstrap completed successfully.');
+    }
+    
+    if (countBootstrapped > 0) {
+      console.log(`Successfully bootstrapped ${countBootstrapped} missing official roster accounts.`);
     }
   } catch (error) {
     console.error('Error auto-bootstrapping predefined users:', error);
