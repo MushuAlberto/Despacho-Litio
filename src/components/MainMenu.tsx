@@ -39,6 +39,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
   const [activeTab, setActiveTab] = useState<'supervision' | 'jefe_turno'>('supervision');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
 
+  // Force active tab to supervision on load if supervisor
+  useEffect(() => {
+    if (currentUser?.role === 'supervision') {
+      setActiveTab('supervision');
+    }
+  }, [currentUser]);
+
   // States for the custom Change Password modal
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordCurrent, setPasswordCurrent] = useState('');
@@ -378,30 +385,32 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
         </section>
 
         {/* MODULE FILTER TABS */}
-        <div className="flex items-center justify-center gap-3 bg-white/50 border border-white p-2 md:p-2.5 rounded-3xl max-w-sm mx-auto backdrop-blur-md shadow-sm z-10 relative">
-          <button 
-            type="button"
-            onClick={() => setActiveTab('supervision')}
-            className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
-              activeTab === 'supervision' 
-                ? 'bg-[#461D77] text-white shadow-sm' 
-                : 'text-slate-600 hover:text-[#461D77] hover:bg-white/50'
-            }`}
-          >
-            Supervisión
-          </button>
-          <button 
-            type="button"
-            onClick={handleJefeTurnoClick}
-            className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
-              activeTab === 'jefe_turno' 
-                ? 'bg-[#7177EC] text-white shadow-sm' 
-                : 'text-slate-600 hover:text-[#7177EC] hover:bg-white/50'
-            }`}
-          >
-            Jefe Turno
-          </button>
-        </div>
+        {currentUser?.role !== 'supervision' && (
+          <div className="flex items-center justify-center gap-3 bg-white/50 border border-white p-2 md:p-2.5 rounded-3xl max-w-sm mx-auto backdrop-blur-md shadow-sm z-10 relative">
+            <button 
+              type="button"
+              onClick={() => setActiveTab('supervision')}
+              className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
+                activeTab === 'supervision' 
+                  ? 'bg-[#461D77] text-white shadow-sm' 
+                  : 'text-slate-600 hover:text-[#461D77] hover:bg-white/50'
+              }`}
+            >
+              Supervisión
+            </button>
+            <button 
+              type="button"
+              onClick={handleJefeTurnoClick}
+              className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
+                activeTab === 'jefe_turno' 
+                  ? 'bg-[#7177EC] text-white shadow-sm' 
+                  : 'text-slate-600 hover:text-[#7177EC] hover:bg-white/50'
+              }`}
+            >
+              Jefe Turno
+            </button>
+          </div>
+        )}
 
         {/* BENTO GRID MODULE SELECTOR */}
         <motion.div 
@@ -417,7 +426,6 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                 <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
                 <div>
                   <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">Módulo Supervisión</h3>
-                  <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest mt-1">Planificación y Análisis Operativo de Alto Nivel</p>
                 </div>
               </div>
               
@@ -485,13 +493,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
           )}
 
           {/* SECTION II: JEFE TURNO */}
-          {activeTab === 'jefe_turno' && (
+          {activeTab === 'jefe_turno' && currentUser?.role !== 'supervision' && (
             <div className="space-y-6">
               <div className="flex items-center gap-3 pb-2 border-b border-slate-300/40">
                 <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#7177EC] to-sky-400 shadow-sm" />
                 <div>
                   <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">Módulo Jefe Turno</h3>
-                  <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest mt-1">Control diario de faena, relevos de turno y registro operativo</p>
                 </div>
               </div>
               
