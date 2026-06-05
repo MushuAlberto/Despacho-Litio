@@ -44,6 +44,11 @@ const App: React.FC = () => {
   const [exportingImage, setExportingImage] = useState(false);
   const [passwordRequest, setPasswordRequest] = useState<{ view: 'memoria' | 'galeria' | 'cambioTurno' | 'lce', name: string } | null>(null);
   const [isJefeTurnoUnlocked, setIsJefeTurnoUnlocked] = useState(false);
+  const [uploadError, setUploadError] = useState<{
+    message: string;
+    missingColumns?: string[];
+    foundHeaders?: string[];
+  } | null>(null);
 
   // Sync access state with user roles on change
   useEffect(() => {
@@ -173,6 +178,7 @@ const App: React.FC = () => {
 
   const processFile = useCallback(async (file: File) => {
     setLoading(true);
+    setUploadError(null);
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
@@ -183,59 +189,124 @@ const App: React.FC = () => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
         if (jsonData.length < 2) throw new Error("Archivo vacío o no estructurado.");
         
-        const headers = jsonData[0].map(h => normalizeHeader(String(h)));
-        const rows = jsonData.slice(1);
-        const idx = {
-          fecha: headers.indexOf('fecha'),
-          producto: headers.indexOf('producto'),
-          tonProg: headers.indexOf('ton_prog'),
-          tonReal: headers.indexOf('ton_real'),
-          eqProg: headers.indexOf('eq_prog'),
-          eqReal: headers.indexOf('eq_real'),
-          regReal: headers.indexOf('regulacion_real'),
-          sda: headers.indexOf('sda_hrs'),
-          pang: headers.indexOf('pang_hrs'),
-          faenaMeta: headers.indexOf('faena_meta_hrs'),
-          faenaReal: headers.indexOf('faena_real_hrs')
-        };
-        const missing = Object.entries(idx).filter(([_, v]) => v === -1).map(([k]) => k);
-        if (missing.length > 0) throw new Error(`Columnas sugeridas faltantes: ${missing.join(', ')}`);
+        // Find the best header row within first 15 rows
+        let bestHeaderRowIdx = 0;
+        let bestMatchCount = -1;
+        let bestIdxs: Record<string, number> = {};
+        let bestHeadersList: string[] = [];
+
+        const scanLimit = Math.min(jsonData.length, 15);
+        for (let rIdx = 0; rIdx < scanLimit; rIdx++) {
+          const rowHeaders = Array.from(jsonData[rIdx] || []).map(h => {
+            if (h === undefined || h === null) return '';
+            return normalizeHeader(String(h));
+          });
+          
+          const getIdxForHeaders = (aliases: string[]): number => {
+            for (const alias of aliases) {
+              const normAlias = normalizeHeader(alias);
+              if (normAlias.length < 2) continue;
+              const exactIdx = rowHeaders.findIndex(h => h === normAlias);
+              if (exactIdx !== -1) return exactIdx;
+            }
+            for (const alias of aliases) {
+              const normAlias = normalizeHeader(alias);
+              if (normAlias.length < 3) continue;
+              const partialIdx = rowHeaders.findIndex(h => h && h.includes(normAlias));
+              if (partialIdx !== -1) return partialIdx;
+            }
+            return -1;
+          };
+
+          const currentIdxs = {
+            fecha: getIdxForHeaders(["FECHA", "JORNADA", "DIA"]),
+            producto: getIdxForHeaders(["PRODUCTO", "NIVEL", "PRODUCTO META", "PROD"]),
+            tonProg: getIdxForHeaders(["TON PROG", "PROGRAMADO", "TONELADAS PROGRAMADAS", "TONELADAS PROG", "TONELADA PROGRAMADA"]),
+            tonReal: getIdxForHeaders(["TON REAL", "REAL", "TONELADAS REALES", "TONELADA REAL"]),
+            eqProg: getIdxForHeaders(["EQ PROG", "EQUIPOS PROGRAMADOS", "EQUIPOS PROG"]),
+            eqReal: getIdxForHeaders(["EQ REAL", "EQUIPOS REALES", "EQ REALES"]),
+            regReal: getIdxForHeaders(["REGULACION REAL", "REGULACION", "PORCENTAJE DE REGULACION", "REGULACION REAL %", "% REGULALION", "% REGULACION", "REGULACION %"]),
+            sda: getIdxForHeaders(["SDA HRS", "SDA", "SDA HOURS", "SDA H", "SDA (Hrs)"]),
+            pang: getIdxForHeaders(["PANG HRS", "PANG", "PANG HOURS", "NY HRS", "NY", "TIEMPO GRAL FAENA NY", "NY (Hrs)"]),
+            faenaMeta: getIdxForHeaders(["FAENA META HRS", "FAENA META", "TIEMPO INTERIOR FAENA PRODUCTO META", "FAENA META HORAS", "FAENA META (Hrs)"]),
+            faenaReal: getIdxForHeaders(["FAENA REAL HRS", "FAENA REAL", "TIEMPO INTERIOR FAENA REAL", "FAENA REAL HORAS", "FAENA REAL (Hrs)"])
+          };
+
+          const matchCount = Object.values(currentIdxs).filter(v => v !== -1).length;
+          if (matchCount > bestMatchCount) {
+            bestMatchCount = matchCount;
+            bestHeaderRowIdx = rIdx;
+            bestIdxs = currentIdxs;
+            bestHeadersList = rowHeaders;
+          }
+        }
+
+        const idx = bestIdxs;
+        const headers = bestHeadersList;
+        const rows = jsonData.slice(bestHeaderRowIdx + 1);
+
+        // Check only critical columns
+        const criticalMissing: string[] = [];
+        if (idx.fecha === -1) criticalMissing.push("Fecha (ej. FECHA, JORNADA, DIA)");
+        if (idx.producto === -1) criticalMissing.push("Producto (ej. PRODUCTO, NIVEL, PRODUCTO META)");
+
+        if (criticalMissing.length > 0) {
+          setUploadError({
+            message: `Columnas obligatorias faltantes en el Excel. No se encontró el encabezado para: ${criticalMissing.join(', ')}.`,
+            missingColumns: criticalMissing,
+            foundHeaders: headers.filter(h => h.trim() !== '')
+          });
+          throw new Error("No se pudo mapear la estructura obligatoria de columnas.");
+        }
         
         const processed = rows.map((row) => {
-          if (!row[idx.fecha] || !row[idx.producto]) return null;
+          if (!row || row[idx.fecha] === undefined || row[idx.fecha] === null) return null;
+          if (idx.producto !== -1 && (row[idx.producto] === undefined || row[idx.producto] === null)) return null;
+          
           let dateStr = '';
-          if (row[idx.fecha] instanceof Date) {
-            dateStr = (row[idx.fecha] as Date).toISOString().split('T')[0];
+          const rawDate = row[idx.fecha];
+          if (rawDate instanceof Date) {
+            dateStr = rawDate.toISOString().split('T')[0];
           } else {
-            const rawVal = String(row[idx.fecha]).trim();
+            const rawVal = String(rawDate).trim();
             if (rawVal.includes('/')) {
               const pts = rawVal.split('/');
               if (pts[2]?.length === 4) dateStr = `${pts[2]}-${pts[1].padStart(2, '0')}-${pts[0].padStart(2, '0')}`;
             } else if (rawVal.includes('-')) {
-              dateStr = rawVal;
+              const pts = rawVal.split('-');
+              if (pts[0]?.length === 4) {
+                dateStr = rawVal;
+              } else if (pts[2]?.length === 4) {
+                dateStr = `${pts[2]}-${pts[1].padStart(2, '0')}-${pts[0].padStart(2, '0')}`;
+              }
             }
           }
           if (!dateStr || dateStr === 'undefined') return null;
+          
           return {
             Fecha: dateStr,
-            Producto: String(row[idx.producto]).trim().toUpperCase(),
-            Ton_Prog: cleanNumeric(row[idx.tonProg]),
-            Ton_Real: cleanNumeric(row[idx.tonReal]),
-            Eq_Prog: cleanNumeric(row[idx.eqProg]),
-            Eq_Real: cleanNumeric(row[idx.eqReal]),
-            Regulacion_Real: (() => {
+            Producto: idx.producto !== -1 ? String(row[idx.producto]).trim().toUpperCase() : 'DESCONOCIDO',
+            Ton_Prog: idx.tonProg !== -1 ? cleanNumeric(row[idx.tonProg]) : 0,
+            Ton_Real: idx.tonReal !== -1 ? cleanNumeric(row[idx.tonReal]) : 0,
+            Eq_Prog: idx.eqProg !== -1 ? cleanNumeric(row[idx.eqProg]) : 0,
+            Eq_Real: idx.eqReal !== -1 ? cleanNumeric(row[idx.eqReal]) : 0,
+            Regulacion_Real: idx.regReal !== -1 ? (() => {
               const raw = row[idx.regReal];
               const val = cleanNumeric(raw);
               if (typeof raw === 'number' && raw > 0 && raw <= 1.0) return raw * 100;
               return val;
-            })(),
-            sdaHours: parseExcelTime(row[idx.sda]),
-            pangHours: parseExcelTime(row[idx.pang]),
-            faenaMetaHours: parseExcelTime(row[idx.faenaMeta]),
-            faenaRealHours: parseExcelTime(row[idx.faenaReal])
+            })() : 0,
+            sdaHours: idx.sda !== -1 ? parseExcelTime(row[idx.sda]) : 0,
+            pangHours: idx.pang !== -1 ? parseExcelTime(row[idx.pang]) : 0,
+            faenaMetaHours: idx.faenaMeta !== -1 ? parseExcelTime(row[idx.faenaMeta]) : 0,
+            faenaRealHours: idx.faenaReal !== -1 ? parseExcelTime(row[idx.faenaReal]) : 0
           };
         }).filter(r => r !== null);
         
+        if (processed.length === 0) {
+          throw new Error("No se encontraron registros de datos operativos válidos después del encabezado.");
+        }
+
         localStorage.removeItem('sqm_raw_data');
         setRawData(processed);
         localStorage.setItem('sqm_raw_data', JSON.stringify(processed));
@@ -247,7 +318,10 @@ const App: React.FC = () => {
           logActivity(currentUser, 'Carga de Datos', `Cargó archivo base Excel con ${processed.length} registros operativos.`);
         }
       } catch (err: any) {
-        alert(`Error al procesar el archivo: ${err.message || 'Error desconocido'}`);
+        console.error("Error processing file:", err);
+        setUploadError({
+          message: err.message || 'Error desconocido al procesar el archivo Excel.'
+        });
       } finally {
         setLoading(false);
       }
@@ -395,20 +469,20 @@ const App: React.FC = () => {
                     {[...new Set(rawData.map(r => r.Fecha))].sort().reverse().map(d => <option key={d as string} value={d as string}>{formatDateToCL(d as string)}</option>)}
                   </select>
                 </div>
-                <div className="space-y-3 pt-4 border-t border-slate-100">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-violeta">Herramientas</p>
-                  <button onClick={handleExportPDF} disabled={exportingPDF} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-calido transition-all">
+                <div className="space-y-3 pt-4 border-t border-slate-200/50">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#461D77] mb-1">Herramientas</p>
+                  <button onClick={handleExportPDF} disabled={exportingPDF} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:border-violeta/40 transition-all duration-200 premium-btn-transition cursor-pointer shadow-sm hover:shadow-md">
                     {exportingPDF ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />} Exportar PDF
                   </button>
-                  <button onClick={handleExportImage} disabled={exportingImage} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-calido transition-all">
+                  <button onClick={handleExportImage} disabled={exportingImage} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:border-violeta/40 transition-all duration-200 premium-btn-transition cursor-pointer shadow-sm hover:shadow-md">
                     {exportingImage ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />} Descargar PNG
                   </button>
                   {currentUser?.role !== 'supervision' && (
-                    <button onClick={() => handleViewChange('galeria')} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-calido transition-all">
+                    <button onClick={() => handleViewChange('galeria')} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:border-violeta/40 transition-all duration-200 premium-btn-transition cursor-pointer shadow-sm hover:shadow-md">
                       <ImageIcon size={12} /> Galería Operativa
                     </button>
                   )}
-                  <button onClick={() => handleBackupDownload(selectedDate)} className="w-full bg-nucleo text-white py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-nucleo/90 transition-all shadow-lg shadow-nucleo/10">
+                  <button onClick={() => handleBackupDownload(selectedDate)} className="w-full bg-[#461D77] text-white py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#321159] transition-all duration-200 premium-btn-transition cursor-pointer shadow-lg shadow-nucleo/10 hover:shadow-nucleo/20">
                     <Download size={12} /> Descargar Historial
                   </button>
                 </div>
@@ -425,10 +499,47 @@ const App: React.FC = () => {
           )}
           <div className="max-w-5xl mx-auto p-8 space-y-0" id="dashboard-report">
             {rawData.length === 0 ? (
-              <div className="py-20 flex flex-col items-center text-center space-y-8">
+              <div className="py-20 flex flex-col items-center text-center space-y-8 max-w-2xl mx-auto">
                 <div className="w-24 h-24 bg-calido rounded-[2.5rem] flex items-center justify-center text-violeta/20"><BarChart3 size={48} /></div>
-                <h2 className="text-3xl font-[900] text-nucleo tracking-tighter uppercase">Gestión de Despacho Litio</h2>
-                <p className="text-violeta/60 font-medium">Cargue un archivo base para iniciar el análisis operativo.</p>
+                <div>
+                  <h2 className="text-3xl font-[900] text-nucleo tracking-tighter uppercase mb-2">Gestión de Despacho Litio</h2>
+                  <p className="text-violeta/60 font-medium">Cargue un archivo base para iniciar el análisis operativo.</p>
+                </div>
+
+                {uploadError && (
+                  <div className="w-full bg-rose-50 border border-rose-200 rounded-3xl p-6 text-left space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-600 font-extrabold shrink-0">!</div>
+                      <div>
+                        <h4 className="font-extrabold text-rose-950 text-sm">Error al Interpretar la Base de Datos</h4>
+                        <p className="text-xs text-rose-800/80 mt-1">{uploadError.message}</p>
+                      </div>
+                    </div>
+
+                    {uploadError.missingColumns && uploadError.missingColumns.length > 0 && (
+                      <div className="bg-white/80 border border-rose-100 rounded-2xl p-4 text-xs space-y-2">
+                        <span className="font-black text-[10px] text-rose-900 uppercase tracking-widest block">Columnas críticas faltantes:</span>
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {uploadError.missingColumns.map((col, cIdx) => (
+                            <span key={cIdx} className="bg-rose-100 text-rose-800 px-2 py-1 rounded-lg font-bold text-[10px]">{col}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {uploadError.foundHeaders && uploadError.foundHeaders.length > 0 && (
+                      <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4 text-xs space-y-2 max-h-40 overflow-y-auto">
+                        <span className="font-black text-[10px] text-slate-700 uppercase tracking-widest block">Cabeceras leídas en el Excel:</span>
+                        <p className="text-[10px] text-slate-500 mb-2">Asegúrese de renombrar las columnas relevantes para coincidir con el formato requerido:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {uploadError.foundHeaders.map((hdr, hIdx) => (
+                            <span key={hIdx} className="bg-slate-200/75 text-slate-700 px-1.5 py-0.5 rounded text-[9px] font-mono">{hdr}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <>

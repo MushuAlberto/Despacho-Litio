@@ -297,14 +297,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                 <button
                   type="button"
                   onClick={() => onSelectView('users')}
-                  className="bg-[#461D77]/8 hover:bg-[#461D77]/15 border border-[#461D77]/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-[#461D77] uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                  className="bg-[#461D77]/8 hover:bg-[#461D77]/15 border border-[#461D77]/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-[#461D77] uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
                 >
                   <User size={13} strokeWidth={2.5} /> Usuarios
                 </button>
                 <button
                   type="button"
                   onClick={() => onSelectView('logs')}
-                  className="bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-indigo-600 uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                  className="bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-indigo-600 uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
                 >
                   <Activity size={13} strokeWidth={2.5} /> Bitácora
                 </button>
@@ -312,9 +312,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
             )}
 
             {/* Operator Live Profile */}
-            <div className="bg-white/80 border border-slate-200/50 rounded-2xl px-4 py-2 flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#461D77] rounded-xl flex items-center justify-center text-white font-extrabold text-xs shadow-inner uppercase">
-                {currentUser?.name ? currentUser.name.substring(0, 2) : 'CT'}
+            <div className="bg-white/90 border border-slate-200/60 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-sm hover:border-slate-300 transition-all duration-200">
+              <div className="relative">
+                <div className="w-8 h-8 bg-gradient-to-br from-[#461D77] to-indigo-600 rounded-xl flex items-center justify-center text-white font-extrabold text-xs shadow-inner uppercase">
+                  {currentUser?.name ? currentUser.name.substring(0, 2) : 'CT'}
+                </div>
+                {/* Live green dot to show high professional real-time synchronization */}
+                <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full live-sync-indicator" title="Sincronizado en tiempo real con Firestore" />
               </div>
               <div className="text-left">
                 <span className="text-[8px] font-black text-[#4e2283] tracking-widest uppercase block mb-0.5">
@@ -334,7 +338,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                 setPassSuccess('');
                 setShowChangePassword(true);
               }}
-              className="bg-[#461D77]/8 hover:bg-[#461D77]/15 border border-[#461D77]/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-[#461D77] uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              className="bg-[#461D77]/8 hover:bg-[#461D77]/15 border border-[#461D77]/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-[#461D77] uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
             >
               <Key size={13} strokeWidth={2.5} /> Clave
             </button>
@@ -343,7 +347,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
             <button
               type="button"
               onClick={onLogout}
-              className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-rose-600 uppercase tracking-widest transition-all cursor-pointer"
+              className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-rose-600 uppercase tracking-widest transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
             >
               Salir
             </button>
@@ -434,14 +438,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                   const IconComponent = card.icon;
                   const isFeature = card.isFeature && activeTab === 'todos';
                   return (
-                    <motion.button
-                      key={card.id}
-                      variants={itemVariants}
-                      onClick={() => onSelectView(card.id)}
-                      className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[21rem] ${
-                        isFeature ? 'lg:col-span-2' : ''
-                      } ${card.color}`}
-                    >
+                     <motion.button
+                       key={card.id}
+                       variants={itemVariants}
+                       onClick={() => onSelectView(card.id)}
+                       className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${
+                         isFeature ? 'lg:col-span-2' : ''
+                       } ${card.color}`}
+                     >
                       {/* Background light gradient spot reflecting on hover */}
                       <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
                       
@@ -506,12 +510,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                 {cardsData.filter(c => c.group === 'jefe_turno').map((card) => {
                   const IconComponent = card.icon;
                   return (
-                    <motion.button
-                      key={card.id}
-                      variants={itemVariants}
-                      onClick={() => onSelectView(card.id)}
-                      className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[21rem] ${card.color}`}
-                    >
+                     <motion.button
+                       key={card.id}
+                       variants={itemVariants}
+                       onClick={() => onSelectView(card.id)}
+                       className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${card.color}`}
+                     >
                       {/* Background light gradient spot reflecting on hover */}
                       <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
                       
