@@ -381,9 +381,9 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
               CENTRO DE CONTROL LITIO <span className="text-[#4FD1C5]">NOVANDINO</span>
             </h1>
             <p className="text-slate-300 font-medium text-sm md:text-base leading-relaxed">
-              Plataforma y repositorio integral de control técnico para la Subgerencia de Logística de Litio. 
+              Plataforma y integral de control técnico para la Subgerencia de Logística de Litio. 
               Por favor, seleccione un módulo operativo para registrar despachos, verificar la llegada de equipos, 
-              ejecutar diálogos de desempeño o exportar los informes oficiales de la jornada.
+              ejecutar diálogos de desempeño y exportar los informes oficiales de la jornada.
             </p>
           </div>
         </section>
