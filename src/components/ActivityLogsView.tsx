@@ -213,9 +213,30 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
 
     if (selectedActionType !== 'all') {
       result = result.filter(log => {
-        if (selectedActionType === 'login') return log.action.includes('Inicio') || log.action.includes('Sesión');
-        if (selectedActionType === 'export') return log.action.includes('Exportar') || log.action.includes('Descargar');
-        if (selectedActionType === 'file') return log.action.includes('Excel') || log.action.includes('Archivo');
+        const actionLower = log.action.toLowerCase();
+        if (selectedActionType === 'login') {
+          return actionLower.includes('inicio') || 
+                 actionLower.includes('sesión') || 
+                 actionLower.includes('sesion') || 
+                 actionLower.includes('cerró') || 
+                 actionLower.includes('cerro') || 
+                 actionLower.includes('ingres');
+        }
+        if (selectedActionType === 'export') {
+          return actionLower.includes('export') || 
+                 actionLower.includes('descarg') || 
+                 actionLower.includes('pdf') || 
+                 actionLower.includes('png') || 
+                 actionLower.includes('imagen') || 
+                 actionLower.includes('placa');
+        }
+        if (selectedActionType === 'file') {
+          return actionLower.includes('excel') || 
+                 actionLower.includes('archivo') || 
+                 actionLower.includes('carga') || 
+                 actionLower.includes('plantilla') || 
+                 actionLower.includes('historial');
+        }
         return true;
       });
     }

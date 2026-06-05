@@ -202,34 +202,113 @@ const App: React.FC = () => {
             return normalizeHeader(String(h));
           });
           
-          const getIdxForHeaders = (aliases: string[]): number => {
+          const getIdxForHeaders = (
+            aliases: string[], 
+            fuzzyKeywords?: { mustContain: string[], orContain?: string[] }[]
+          ): number => {
+            // 1. Exact values
             for (const alias of aliases) {
               const normAlias = normalizeHeader(alias);
               if (normAlias.length < 2) continue;
               const exactIdx = rowHeaders.findIndex(h => h === normAlias);
               if (exactIdx !== -1) return exactIdx;
             }
+            // 2. Partial string matches (bidirectional includes checks)
             for (const alias of aliases) {
               const normAlias = normalizeHeader(alias);
               if (normAlias.length < 3) continue;
-              const partialIdx = rowHeaders.findIndex(h => h && h.includes(normAlias));
+              const partialIdx = rowHeaders.findIndex(h => h && (h.includes(normAlias) || normAlias.includes(h)));
               if (partialIdx !== -1) return partialIdx;
+            }
+            // 3. Fallback to fuzzy keyword heuristics (very powerful)
+            if (fuzzyKeywords) {
+              for (const fk of fuzzyKeywords) {
+                const foundIdx = rowHeaders.findIndex(h => {
+                  if (!h) return false;
+                  const hasAllMust = fk.mustContain.every(term => h.includes(term));
+                  if (!hasAllMust) return false;
+                  if (fk.orContain && fk.orContain.length > 0) {
+                    return fk.orContain.some(term => h.includes(term));
+                  }
+                  return true;
+                });
+                if (foundIdx !== -1) return foundIdx;
+              }
             }
             return -1;
           };
 
           const currentIdxs = {
-            fecha: getIdxForHeaders(["FECHA", "JORNADA", "DIA"]),
-            producto: getIdxForHeaders(["PRODUCTO", "NIVEL", "PRODUCTO META", "PROD"]),
-            tonProg: getIdxForHeaders(["TON PROG", "PROGRAMADO", "TONELADAS PROGRAMADAS", "TONELADAS PROG", "TONELADA PROGRAMADA"]),
-            tonReal: getIdxForHeaders(["TON REAL", "REAL", "TONELADAS REALES", "TONELADA REAL"]),
-            eqProg: getIdxForHeaders(["EQ PROG", "EQUIPOS PROGRAMADOS", "EQUIPOS PROG"]),
-            eqReal: getIdxForHeaders(["EQ REAL", "EQUIPOS REALES", "EQ REALES"]),
-            regReal: getIdxForHeaders(["REGULACION REAL", "REGULACION", "PORCENTAJE DE REGULACION", "REGULACION REAL %", "% REGULALION", "% REGULACION", "REGULACION %"]),
-            sda: getIdxForHeaders(["SDA HRS", "SDA", "SDA HOURS", "SDA H", "SDA (Hrs)"]),
-            pang: getIdxForHeaders(["PANG HRS", "PANG", "PANG HOURS", "NY HRS", "NY", "TIEMPO GRAL FAENA NY", "NY (Hrs)"]),
-            faenaMeta: getIdxForHeaders(["FAENA META HRS", "FAENA META", "TIEMPO INTERIOR FAENA PRODUCTO META", "FAENA META HORAS", "FAENA META (Hrs)"]),
-            faenaReal: getIdxForHeaders(["FAENA REAL HRS", "FAENA REAL", "TIEMPO INTERIOR FAENA REAL", "FAENA REAL HORAS", "FAENA REAL (Hrs)"])
+            fecha: getIdxForHeaders(
+              ["FECHA", "JORNADA", "DIA"],
+              [{ mustContain: ["FECHA"] }, { mustContain: ["JORNADA"] }]
+            ),
+            producto: getIdxForHeaders(
+              ["PRODUCTO", "NIVEL", "PRODUCTO META", "PROD"],
+              [{ mustContain: ["PRODUCTO"] }, { mustContain: ["PROD", "META"] }, { mustContain: ["NIVEL"] }]
+            ),
+            destino: getIdxForHeaders(
+              ["DESTINO", "UBICACION", "UBICACIÓN", "ENTREGA", "PUNTO ENTREGA", "DES"],
+              [{ mustContain: ["DESTIN"] }, { mustContain: ["UBICAC"] }, { mustContain: ["ENTREG"] }]
+            ),
+            tonProg: getIdxForHeaders(
+              ["TON PROG", "PROGRAMADO", "TONELADAS PROGRAMADAS", "TONELADAS PROG", "TONELADA PROGRAMADA"],
+              [{ mustContain: ["TON", "PROG"] }, { mustContain: ["TONELADA", "PROG"] }]
+            ),
+            tonReal: getIdxForHeaders(
+              ["TON REAL", "REAL", "TONELADAS REALES", "TONELADA REAL"],
+              [{ mustContain: ["TON", "REAL"] }, { mustContain: ["TONELADA", "REAL"] }]
+            ),
+            eqProg: getIdxForHeaders(
+              ["EQ PROG", "EQUIPOS PROGRAMADOS", "EQUIPOS PROG", "FLOTA PROGRAMADA", "FLOTA PROG"],
+              [
+                { mustContain: ["FLOTA", "PROG"] },
+                { mustContain: ["EQUIP", "PROG"] },
+                { mustContain: ["EQ", "PROG"] },
+                { mustContain: ["FLOTA", "PROGRAMA"] },
+                { mustContain: ["EQUIP", "PROGRAMA"] },
+                { mustContain: ["EQ", "PROGRAMA"] }
+              ]
+            ),
+            eqReal: getIdxForHeaders(
+              ["EQ REAL", "EQUIPOS REALES", "EQ REALES", "FLOTA REAL", "FLOTA REALES", "INTENSIDAD FLOTA", "INTENSIDAD DE FLOTA"],
+              [
+                { mustContain: ["FLOTA", "REAL"] },
+                { mustContain: ["EQUIP", "REAL"] },
+                { mustContain: ["EQ", "REAL"] },
+                { mustContain: ["CAMION", "REAL"] },
+                { mustContain: ["FLOTA", "EFECTIV"] },
+                { mustContain: ["EQUIP", "EFECTIV"] },
+                { mustContain: ["EQ", "EFECTIV"] },
+                { mustContain: ["FLOTA", "ACTIV"] },
+                { mustContain: ["INTENSIDAD"] }
+              ]
+            ),
+            regReal: getIdxForHeaders(
+              ["REGULACION REAL", "REGULACION", "PORCENTAJE DE REGULACION", "REGULACION REAL %", "% REGULALION", "% REGULACION", "REGULACION %", "REG REAL"],
+              [
+                { mustContain: ["REGULAC"] },
+                { mustContain: ["REGULAL"] },
+                { mustContain: ["REGULA"] },
+                { mustContain: ["%"], orContain: ["REG", "COMPL"] }
+              ]
+            ),
+            sda: getIdxForHeaders(
+              ["SDA HRS", "SDA", "SDA HOURS", "SDA H", "SDA (Hrs)", "FAENA SDA"],
+              [{ mustContain: ["SDA"] }, { mustContain: ["SANTIAGO"] }]
+            ),
+            pang: getIdxForHeaders(
+              ["PANG HRS", "PANG", "PANG HOURS", "NY HRS", "NY", "TIEMPO GRAL FAENA NY", "NY (Hrs)", "FAENA NY"],
+              [{ mustContain: ["NY"] }, { mustContain: ["NEWYORK"] }, { mustContain: ["NEW", "YORK"] }, { mustContain: ["PANG"] }]
+            ),
+            faenaMeta: getIdxForHeaders(
+              ["FAENA META HRS", "FAENA META", "TIEMPO INTERIOR FAENA PRODUCTO META", "FAENA META HORAS", "FAENA META (Hrs)"],
+              [{ mustContain: ["FAENA", "META"] }, { mustContain: ["META", "HRS"] }, { mustContain: ["META", "HOUR"] }]
+            ),
+            faenaReal: getIdxForHeaders(
+              ["FAENA REAL HRS", "FAENA REAL", "TIEMPO INTERIOR FAENA REAL", "FAENA REAL HORAS", "FAENA REAL (Hrs)"],
+              [{ mustContain: ["FAENA", "REAL"] }, { mustContain: ["REAL", "HRS"] }, { mustContain: ["REAL", "HOUR"] }]
+            )
           };
 
           const matchCount = Object.values(currentIdxs).filter(v => v !== -1).length;
@@ -286,6 +365,7 @@ const App: React.FC = () => {
           return {
             Fecha: dateStr,
             Producto: idx.producto !== -1 ? String(row[idx.producto]).trim().toUpperCase() : 'DESCONOCIDO',
+            Destino: idx.destino !== -1 ? String(row[idx.destino]).trim().toUpperCase() : 'S/D',
             Ton_Prog: idx.tonProg !== -1 ? cleanNumeric(row[idx.tonProg]) : 0,
             Ton_Real: idx.tonReal !== -1 ? cleanNumeric(row[idx.tonReal]) : 0,
             Eq_Prog: idx.eqProg !== -1 ? cleanNumeric(row[idx.eqProg]) : 0,
@@ -293,7 +373,7 @@ const App: React.FC = () => {
             Regulacion_Real: idx.regReal !== -1 ? (() => {
               const raw = row[idx.regReal];
               const val = cleanNumeric(raw);
-              if (typeof raw === 'number' && raw > 0 && raw <= 1.0) return raw * 100;
+              if (val > 0 && val <= 1.0) return val * 100;
               return val;
             })() : 0,
             sdaHours: idx.sda !== -1 ? parseExcelTime(row[idx.sda]) : 0,
