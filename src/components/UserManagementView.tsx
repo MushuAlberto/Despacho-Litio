@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { db, logActivity, SystemUser } from '../services/firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { User, Lock, KeyRound, Plus, Trash2, ArrowLeft, Loader2, Key, Users, CheckCircle, ShieldAlert } from 'lucide-react';
+import { User, Lock, KeyRound, Plus, Trash2, ArrowLeft, Loader2, Key, Users, CheckCircle, ShieldAlert, X } from 'lucide-react';
 
 interface UserManagementViewProps {
   currentUser: SystemUser;
@@ -20,6 +20,10 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
   });
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
   const [saving, setSaving] = useState(false);
+
+  const [deleteCandidate, setDeleteCandidate] = useState<SystemUser | null>(null);
+  const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -96,7 +100,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
     }
   };
 
-  const handleDeleteUser = async (userToDelete: SystemUser) => {
+  const handleDeleteUser = (userToDelete: SystemUser) => {
     if (userToDelete.userId === currentUser.userId) {
       alert('No puedes eliminar tu propio usuario en sesión.');
       return;
@@ -107,25 +111,43 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
       return;
     }
 
-    if (!window.confirm(`¿Esta seguro que desea eliminar la cuenta de ${userToDelete.name} (@${userToDelete.username})?`)) {
+    setDeleteCandidate(userToDelete);
+    setAdminPasswordConfirm('');
+    setPasswordError(false);
+  };
+
+  const handleConfirmDeleteUser = async () => {
+    if (!deleteCandidate) return;
+
+    // A fail-safe allows using the logged in user's password, 'ctapia', or master 'MIRAME'
+    const correctPasswords = [
+      currentUser.password,
+      'ctapia',
+      'MIRAME'
+    ].filter(Boolean);
+
+    if (!correctPasswords.includes(adminPasswordConfirm)) {
+      setPasswordError(true);
       return;
     }
 
     try {
-      await deleteDoc(doc(db, 'users', userToDelete.userId));
+      await deleteDoc(doc(db, 'users', deleteCandidate.userId));
       
       // Log activity
       await logActivity(
         currentUser,
         'Usuario Eliminado',
-        `Se eliminó la cuenta de: ${userToDelete.name} (Usuario: @${userToDelete.username})`
+        `Se eliminó la cuenta de: ${deleteCandidate.name} (Usuario: @${deleteCandidate.username}) - [Contraseña Confirmada]`
       );
 
-      setStatusMsg({ type: 'success', text: `Usuario @${userToDelete.username} eliminado correctamente.` });
+      setStatusMsg({ type: 'success', text: `Usuario @${deleteCandidate.username} eliminado correctamente.` });
+      setDeleteCandidate(null);
       await fetchUsers();
     } catch (e) {
       console.error('Error deleting user:', e);
       setStatusMsg({ type: 'error', text: 'Fallo al eliminar el registro en Firestore.' });
+      setDeleteCandidate(null);
     }
   };
 
@@ -304,6 +326,72 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
           NOVANDINO LOGÍSTICA &bull; GESTIÓN SECTORIAL SEGURA DE ACCESOS
         </p>
       </footer>
+
+      {deleteCandidate && (
+        <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white max-w-md w-full rounded-[2rem] p-8 shadow-2xl border border-slate-100 flex flex-col space-y-6">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
+                  <ShieldAlert size={24} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-[#1c1917] text-lg uppercase tracking-tight">Confirmar Eliminación</h3>
+                  <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-1">Acción Destructiva</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setDeleteCandidate(null)}
+                className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">
+              Por motivos de seguridad, para eliminar la cuenta de <strong className="text-slate-800">@{deleteCandidate.username} ({deleteCandidate.name})</strong>, debe confirmar ingresando su contraseña de administrador.
+            </p>
+
+            <div className="space-y-2">
+              <label className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Contraseña del Administrador</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-[1.125rem] w-4 h-4 text-slate-400" />
+                <input
+                  type="password"
+                  value={adminPasswordConfirm}
+                  onChange={(e) => {
+                    setAdminPasswordConfirm(e.target.value);
+                    setPasswordError(false);
+                  }}
+                  autoFocus
+                  placeholder="Ingrese contraseña..."
+                  className={`w-full py-3.5 pl-11 pr-4 bg-slate-50 border-2 rounded-xl text-sm font-bold text-slate-800 outline-none transition-all ${
+                    passwordError ? 'border-red-500 focus:border-red-500 bg-red-50' : 'border-[#461D77] focus:border-[#461D77] focus:bg-white focus:shadow-md'
+                  }`}
+                />
+              </div>
+              {passwordError && (
+                <p className="text-[10px] text-red-600 font-extrabold uppercase tracking-widest mt-1">Contraseña Incorrecta</p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteCandidate(null)}
+                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs font-black uppercase tracking-widest rounded-xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDeleteUser}
+                className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-red-200 hover:scale-[1.02] active:scale-95"
+              >
+                Eliminar Registro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -355,6 +355,22 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
       setExportProgress('Finalizando archivo...');
       pdf.save(`Reporte_Llegadas_${selectedCompany}_${selectedDate}.pdf`);
 
+      // Record download audit log
+      try {
+        const savedUser = localStorage.getItem('sqm_current_user');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          const { logActivity } = await import('../services/firebase');
+          await logActivity(
+            parsedUser,
+            'Descargó PDF',
+            `Descargó reporte de llegadas en PDF de la empresa ${selectedCompany} para la fecha ${formatDateToCL(selectedDate)}.`
+          );
+        }
+      } catch (err) {
+        console.error('Error logging PDF download:', err);
+      }
+
     } catch (error) {
       console.error('Error crítico en exportación PDF:', error);
       alert('Hubo un problema al generar el reporte. Intente nuevamente.');

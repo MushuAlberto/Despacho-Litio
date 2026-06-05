@@ -110,4 +110,21 @@ export const downloadBackupJSON = (selectedDate?: string) => {
   link.download = `Memoria_SQM_Respaldo_${dateStr}.json`;
   link.click();
   URL.revokeObjectURL(url);
+
+  // Auto audit log download activity
+  try {
+    const savedUser = localStorage.getItem('sqm_current_user');
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      import('../services/firebase').then(({ logActivity }) => {
+        logActivity(
+          parsedUser, 
+          'Descargó Respaldo JSON', 
+          `Descargó archivo de respaldo local (${link.download}) para resguardar observaciones registradas.`
+        );
+      }).catch(e => console.error('Error importing logActivity:', e));
+    }
+  } catch (error) {
+    console.error('Error auto-logging download activity:', error);
+  }
 };

@@ -295,6 +295,24 @@ export default function LCEModule({ onBack }: { onBack: () => void }) {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
+        // Record download audit log
+        try {
+          const savedUser = localStorage.getItem('sqm_current_user');
+          if (savedUser) {
+            const parsedUser = JSON.parse(savedUser);
+            const { logActivity } = await import('../../services/firebase');
+            const [y, m, d] = selectedDate.split('-');
+            const formattedDate = `${d}/${m}/${y}`;
+            await logActivity(
+              parsedUser,
+              'Descargó Imagen',
+              `Descargó reporte gráfico LCE (Cloruro de Litio) para la fecha ${formattedDate}.`
+            );
+          }
+        } catch (err) {
+          console.error('Error logging LCE image download:', err);
+        }
       } catch (err: any) {
         console.error("Error al generar la imagen del tablero:", err);
         setErrorNotice(`No se pudo descargar la imagen: ${err?.message || err}`);

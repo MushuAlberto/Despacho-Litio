@@ -261,17 +261,35 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   const aggregatedData1 = React.useMemo(() => getAggregatedData(range1.start, range1.end, PRODUCTS_A), [allData, range1]);
   const aggregatedData2 = React.useMemo(() => getAggregatedData(range2.start, range2.end, PRODUCTS_B), [allData, range2]);
 
-  const downloadTemplate = () => {
-    const wsData = [
-      { B: 'Fecha', AF: 'Producto', AH: 'Ton (Prog)', AI: 'Ton (Real)', AX: 'Meta Hrs', AY: 'Real Hrs' },
-      { B: '2026-05-10', AF: 'SLIT', AH: 500, AI: 480, AX: '08:00', AY: '08:30' }
-    ];
-    const ws = XLSX.utils.json_to_sheet(wsData, { header: ["B", "AF", "AH", "AI", "AX", "AY"], skipHeader: true });
-    ws['!cols'] = [{ wch: 12 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Base de Datos");
-    XLSX.writeFile(wb, "plantilla_comparativa.xlsx");
-  };
+  const downloadTemplate = {
+    _fn: async () => {
+      const wsData = [
+        { B: 'Fecha', AF: 'Producto', AH: 'Ton (Prog)', AI: 'Ton (Real)', AX: 'Meta Hrs', AY: 'Real Hrs' },
+        { B: '2026-05-10', AF: 'SLIT', AH: 500, AI: 480, AX: '08:00', AY: '08:30' }
+      ];
+      const ws = XLSX.utils.json_to_sheet(wsData, { header: ["B", "AF", "AH", "AI", "AX", "AY"], skipHeader: true });
+      ws['!cols'] = [{ wch: 12 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Base de Datos");
+      XLSX.writeFile(wb, "plantilla_comparativa.xlsx");
+
+      // Record download audit log
+      try {
+        const savedUser = localStorage.getItem('sqm_current_user');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          const { logActivity } = await import('../services/firebase');
+          await logActivity(
+            parsedUser,
+            'Descargó Plantilla',
+            'Descargó la plantilla Excel para análisis comparativo de cambios de turno (plantilla_comparativa.xlsx).'
+          );
+        }
+      } catch (err) {
+        console.error('Error logging template download:', err);
+      }
+    }
+  }._fn;
 
   const AnalysisPanel = ({ title, data, range, setRange, colorIdx }: { 
     title: string, 

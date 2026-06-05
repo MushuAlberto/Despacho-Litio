@@ -8,7 +8,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, LineChart, Line, Legend, ReferenceLine, ComposedChart, Area, Cell, AreaChart, LabelList
 } from 'recharts';
-import { formatHoursToTime } from '../utils/dataProcessor';
+import { formatHoursToTime, formatDateToCL } from '../utils/dataProcessor';
 
 declare const html2canvas: any;
 
@@ -249,6 +249,22 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
             link.download = `Captura_DdD_${selectedDate}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
+
+            // Record download audit log
+            try {
+                const savedUser = localStorage.getItem('sqm_current_user');
+                if (savedUser) {
+                    const parsedUser = JSON.parse(savedUser);
+                    const { logActivity } = await import('../services/firebase');
+                    await logActivity(
+                        parsedUser,
+                        'Descargó Imagen',
+                        `Descargó captura gráfica del tablero DdD de la fecha ${formatDateToCL(selectedDate)}.`
+                    );
+                }
+            } catch (err) {
+                console.error('Error logging DdD image download:', err);
+            }
         } finally {
             setIsExportingImage(false);
         }
