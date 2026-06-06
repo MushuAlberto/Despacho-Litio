@@ -34,14 +34,6 @@ export const parseExcelTime = (val: any): number => {
       const s = parts.length > 2 ? parseInt(parts[2]) || 0 : 0;
       return h + (m / 60) + (s / 3600);
     }
-    const cleanStr = val.replace(',', '.').replace(/[^-0-9.]/g, '');
-    const asNum = parseFloat(cleanStr);
-    if (!isNaN(asNum) && asNum > 0) {
-      // If it's a number stored as string < 1, it might be an Excel fraction of a day.
-      // But typically strings like "1.5" are meant as 1.5 hours. 
-      // If it's less than 1 (e.g., "0.0625"), it's likely an excel time fraction exported to string.
-      return asNum < 1 ? asNum * 24 : asNum;
-    }
   }
   return 0;
 };
