@@ -295,11 +295,11 @@ const App: React.FC = () => {
             ),
             sda: getIdxForHeaders(
               ["SDA HRS", "SDA", "SDA HOURS", "SDA H", "SDA (Hrs)", "FAENA SDA"],
-              [{ mustContain: ["SDA"] }, { mustContain: ["SANTIAGO"] }]
+              [{ mustContain: ["SDA"] }, { mustContain: ["S D A"] }, { mustContain: ["SANTIAGO"] }]
             ),
             pang: getIdxForHeaders(
-              ["PANG HRS", "PANG", "PANG HOURS", "NY HRS", "NY", "TIEMPO GRAL FAENA NY", "NY (Hrs)", "FAENA NY"],
-              [{ mustContain: ["NY"] }, { mustContain: ["NEWYORK"] }, { mustContain: ["NEW", "YORK"] }, { mustContain: ["PANG"] }]
+              ["PANG HRS", "PANG", "PANG HOURS", "NY HRS", "NY", "TIEMPO GRAL FAENA NY", "NY (Hrs)", "FAENA NY", "N Y"],
+              [{ mustContain: ["NY"] }, { mustContain: ["N Y"] }, { mustContain: ["NEWYORK"] }, { mustContain: ["NEW", "YORK"] }, { mustContain: ["PANG"] }]
             ),
             faenaMeta: getIdxForHeaders(
               ["FAENA META HRS", "FAENA META", "TIEMPO INTERIOR FAENA PRODUCTO META", "FAENA META HORAS", "FAENA META (Hrs)"],
