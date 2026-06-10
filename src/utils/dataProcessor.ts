@@ -59,7 +59,7 @@ export const normalizeCompanyName = (name: any): string => {
   cleanName = cleanName.replace(/\s+/g, ' '); 
 
   const equivalencias: Record<string, string> = {
-    "JORQUERA TRANSPORTE S A": "JORQUERA TRANSPORTE S. A.",
+    "JORQUERA TRANSPORTE S A": "JORQUERA TRANSPORTE S.A.",
     "MINING SERVICES AND DERIVATES": "M S & D SPA",
     "MINING SERVICES AND DERIVATES SPA": "M S & D SPA",
     "M S AND D": "M S & D SPA",

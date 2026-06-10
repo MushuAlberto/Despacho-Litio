@@ -213,7 +213,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         <div className="flex justify-between items-center text-[9px] text-slate-400 font-[900] tracking-widest uppercase border-t border-slate-200/50 pt-5">
           <span>NOVANDINO LOGÍSTICA</span>
           <span>&bull;</span>
-          <span>PWA RESPALDADA EN FIREBASE</span>
+          <span>PWA creada y diseñada por Cristian Tapia Espinoza</span>
         </div>
       </motion.div>
     </div>

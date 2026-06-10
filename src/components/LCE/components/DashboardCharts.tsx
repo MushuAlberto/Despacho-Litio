@@ -300,6 +300,12 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
         </div>
       </div>
 
+      <div className="text-center -mt-2 pb-2">
+        <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase">
+          PWA creada y diseñada por Cristian Tapia Espinoza
+        </p>
+      </div>
+
     </div>
   );
 }

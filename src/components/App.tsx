@@ -11,6 +11,7 @@ import MainMenu from './MainMenu';
 import { LlegadaEquipos } from './LlegadaEquipos';
 import { MemoryModule } from './MemoryModule';
 import DdDTablero from './DdDTablero';
+import { SlitDashboard } from './SlitDashboard';
 import ReportFooter from './ReportFooter';
 import InstructionModal from './InstructionModal';
 import { ImageGallery } from './ImageGallery';
@@ -36,7 +37,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [view, setView] = useState<'menu' | 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs'>('menu');
+  const [view, setView] = useState<'menu' | 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit'>('menu');
   const [rawData, setRawData] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -251,6 +252,10 @@ const App: React.FC = () => {
               ["DESTINO", "UBICACION", "UBICACIÓN", "ENTREGA", "PUNTO ENTREGA", "DES"],
               [{ mustContain: ["DESTIN"] }, { mustContain: ["UBICAC"] }, { mustContain: ["ENTREG"] }]
             ),
+            empresa: getIdxForHeaders(
+              ["EMPRESA", "TRANSPORTISTA", "EMPRESA TRANSPORTE", "FLETERO", "COMPAÑÍA", "CÍA", "COMPAÑIA", "CIA"],
+              [{ mustContain: ["EMPRES"] }, { mustContain: ["FLETER"] }, { mustContain: ["TRANSP"] }]
+            ),
             tonProg: getIdxForHeaders(
               ["TON PROG", "PROGRAMADO", "TONELADAS PROGRAMADAS", "TONELADAS PROG", "TONELADA PROGRAMADA"],
               [{ mustContain: ["TON", "PROG"] }, { mustContain: ["TONELADA", "PROG"] }]
@@ -361,25 +366,54 @@ const App: React.FC = () => {
             }
           }
           if (!dateStr || dateStr === 'undefined') return null;
-          
+
+          // Check column AF (index 31) explicitly for SLIT
+          const valAF = row[31] !== undefined && row[31] !== null ? String(row[31]).trim().toUpperCase() : '';
+          const isSlit = valAF === 'SLIT' || valAF.includes('SLIT');
+
+          const finalProduct = isSlit ? valAF : (idx.producto !== -1 ? String(row[idx.producto]).trim().toUpperCase() : 'DESCONOCIDO');
+
           return {
             Fecha: dateStr,
-            Producto: idx.producto !== -1 ? String(row[idx.producto]).trim().toUpperCase() : 'DESCONOCIDO',
+            Producto: finalProduct,
             Destino: idx.destino !== -1 ? String(row[idx.destino]).trim().toUpperCase() : 'S/D',
-            Ton_Prog: idx.tonProg !== -1 ? cleanNumeric(row[idx.tonProg]) : 0,
-            Ton_Real: idx.tonReal !== -1 ? cleanNumeric(row[idx.tonReal]) : 0,
-            Eq_Prog: idx.eqProg !== -1 ? cleanNumeric(row[idx.eqProg]) : 0,
-            Eq_Real: idx.eqReal !== -1 ? cleanNumeric(row[idx.eqReal]) : 0,
-            Regulacion_Real: idx.regReal !== -1 ? (() => {
+            EmpresaMapped: idx.empresa !== -1 ? String(row[idx.empresa] || '').trim().toUpperCase() : '',
+            Ton_Prog: isSlit ? cleanNumeric(row[33]) : (idx.tonProg !== -1 ? cleanNumeric(row[idx.tonProg]) : 0), // AH
+            Ton_Real: isSlit ? cleanNumeric(row[34]) : (idx.tonReal !== -1 ? cleanNumeric(row[idx.tonReal]) : 0), // AI
+            Eq_Prog: isSlit ? cleanNumeric(row[35]) : (idx.eqProg !== -1 ? cleanNumeric(row[idx.eqProg]) : 0),   // AJ
+            Eq_Real: isSlit ? cleanNumeric(row[36]) : (idx.eqReal !== -1 ? cleanNumeric(row[idx.eqReal]) : 0),   // AK
+            Regulacion_Real: isSlit ? (() => {
+              const val = cleanNumeric(row[37]); // col AL: % Cumplimiento
+              return val > 0 && val <= 1.0 ? val * 100 : val;
+            })() : (idx.regReal !== -1 ? (() => {
               const raw = row[idx.regReal];
               const val = cleanNumeric(raw);
               if (val > 0 && val <= 1.0) return val * 100;
               return val;
-            })() : 0,
+            })() : 0),
             sdaHours: idx.sda !== -1 ? parseExcelTime(row[idx.sda]) : 0,
             pangHours: idx.pang !== -1 ? parseExcelTime(row[idx.pang]) : 0,
-            faenaMetaHours: idx.faenaMeta !== -1 ? parseExcelTime(row[idx.faenaMeta]) : 0,
-            faenaRealHours: idx.faenaReal !== -1 ? parseExcelTime(row[idx.faenaReal]) : 0
+            faenaMetaHours: isSlit ? parseExcelTime(row[49]) : (idx.faenaMeta !== -1 ? parseExcelTime(row[idx.faenaMeta]) : 0), // AX
+            faenaRealHours: isSlit ? parseExcelTime(row[50]) : (idx.faenaReal !== -1 ? parseExcelTime(row[idx.faenaReal]) : 0), // AY
+
+            // Custom fields mapped exactly from corresponding columns:
+            col_TiempoInteriorFaenaProdMeta: parseExcelTime(row[49]), // AX (index 49)
+            col_TiempoInteriorFaenaReal: parseExcelTime(row[50]), // AY (index 50)
+            col_PromedioCargaMeta: cleanNumeric(row[47]), // AV (index 47)
+            col_PromedioCargaReal: cleanNumeric(row[48]), // AW (index 48)
+            col_TonProg: cleanNumeric(row[33]), // AH (index 33)
+            col_TonReal: cleanNumeric(row[34]), // AI (index 34)
+            col_EqProg: cleanNumeric(row[35]), // AJ (index 35)
+            col_EqReal: cleanNumeric(row[36]), // AK (index 36)
+            col_PercentCumplimiento: (() => {
+              const val = cleanNumeric(row[37]); // AL (index 37)
+              return val > 0 && val <= 1.0 ? val * 100 : val;
+            })(),
+            col_CantidadRegulaciones: cleanNumeric(row[44]), // AS (index 44)
+            col_MqAljibesProg: cleanNumeric(row[12]), // M (index 12)
+            col_MqAljibesReal: cleanNumeric(row[13]), // N (index 13)
+            col_JorqueraAljibesProg: cleanNumeric(row[20]), // U (index 20)
+            col_JorqueraAljibesReal: cleanNumeric(row[21])  // V (index 21)
           };
         }).filter(r => r !== null);
         
@@ -502,6 +536,9 @@ const App: React.FC = () => {
       />
     );
     if (view === 'llegada') return <LlegadaEquipos onBack={() => setView('menu')} />;
+    if (view === 'slit' && currentUser?.role === 'admin') {
+      return <SlitDashboard data={rawData} onBack={() => setView('menu')} />;
+    }
     if (view === 'memoria') return (
       <MemoryModule
         data={rawData}

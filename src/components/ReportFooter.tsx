@@ -15,6 +15,9 @@ const ReportFooter: React.FC = () => {
           <div className="h-full bg-ionizado w-1/2"></div>
           <div className="h-full bg-nucleo w-1/2"></div>
         </div>
+        <p className="text-[9px] text-slate-400 font-bold tracking-tight uppercase mt-0.5 whitespace-nowrap">
+          PWA creada y diseñada por Cristian Tapia Espinoza
+        </p>
       </div>
     </div>
   );

@@ -180,7 +180,14 @@ const CompanyLogo: React.FC<{ company: string; className?: string }> = ({ compan
 };
 
 export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
-  const [data, setData] = useState<ArrivalData[]>([]);
+  const [data, setData] = useState<ArrivalData[]>(() => {
+    try {
+      const saved = localStorage.getItem('sqm_llegadas_data');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
   const [exportProgress, setExportProgress] = useState('');
@@ -188,6 +195,19 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
   const [hourRange, setHourRange] = useState<[number, number]>([0, 23]);
+
+  // Handle setting initial date and company on mount if data already exists
+  useEffect(() => {
+    if (data.length > 0 && !selectedDate) {
+      const dates = [...new Set(data.map(r => r.fecha))].sort().reverse();
+      if (dates.length > 0) {
+        setSelectedDate(dates[0]);
+        const dayData = data.filter(r => r.fecha === dates[0]);
+        const cos = [...new Set(dayData.map(r => r.empresa))].sort();
+        if (cos.length > 0) setSelectedCompany(cos[0]);
+      }
+    }
+  }, [data, selectedDate]);
 
   const processFile = useCallback((file: File) => {
     setLoading(true);
@@ -273,6 +293,7 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
         if (processed.length === 0) throw new Error("No se procesaron datos.");
 
         setData(processed);
+        localStorage.setItem('sqm_llegadas_data', JSON.stringify(processed));
         const dates = [...new Set(processed.map(r => r.fecha))].sort().reverse();
         if (dates.length > 0) {
           setSelectedDate(dates[0]);

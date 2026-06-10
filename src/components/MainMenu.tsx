@@ -26,7 +26,7 @@ import { NovandinoLogo } from './BrandLogo';
 import { PasswordPrompt } from './PasswordPrompt';
 
 interface MainMenuProps {
-  onSelectView: (view: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs') => void;
+  onSelectView: (view: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit') => void;
   isJefeTurnoUnlocked: boolean;
   onUnlockJefeTurno: () => void;
   currentUser: any;
@@ -165,9 +165,22 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
     }
   };
 
-  const cardsData = [
+  const cardsData: Array<{
+    id: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit';
+    title: string;
+    subtitle: string;
+    description: string;
+    icon: any;
+    color: string;
+    iconBg: string;
+    accentColor: string;
+    isFeature?: boolean;
+    badge: string;
+    status: string;
+    group: 'supervision' | 'jefe_turno';
+  }> = [
     {
-      id: 'informe' as const,
+      id: 'informe',
       title: 'Informe Operativo',
       subtitle: 'Dashboard Principal',
       description: 'Informe diario consolidado de turnos, estadísticas de despachos de litio en tiempo real y exportación profesional automatizada a reportes PDF o formato de imagen de alta resolución.',
@@ -261,6 +274,22 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
     }
   ];
 
+  if (currentUser?.role === 'admin') {
+    cardsData.push({
+      id: 'slit' as const,
+      title: 'Módulo SLIT',
+      subtitle: 'Analítica Admin',
+      description: 'Análisis minucioso del producto SLIT, toneladas programadas vs reales y control de flotas de equipos detalladas por empresas transportistas.',
+      icon: BarChart3,
+      color: 'from-amber-500/10 via-amber-655/5 to-amber-600/10 border-amber-600/20',
+      iconBg: 'bg-amber-600/10 text-amber-600',
+      accentColor: '#d97706',
+      badge: 'ADMIN EXCLUSIVO',
+      status: 'SLIT CONTROL',
+      group: 'supervision' as const
+    });
+  }
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] relative overflow-x-hidden overflow-y-auto flex flex-col justify-between">
       
@@ -294,6 +323,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
             {/* Admin actions (Users and logs) */}
             {currentUser?.role === 'admin' && (
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onSelectView('slit')}
+                  className="bg-amber-500/8 hover:bg-amber-500/15 border border-amber-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
+                >
+                  <BarChart3 size={13} strokeWidth={2.5} /> Control SLIT
+                </button>
                 <button
                   type="button"
                   onClick={() => onSelectView('users')}
@@ -575,7 +611,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
             NOVANDINO &bull; SUBGERENCIA LOGÍSTICA LITIO &bull; DESPACHO LITIO
           </p>
           <p className="text-[10px] text-slate-400 font-bold tracking-widest">
-            SISTEMA DIGITAL INTEGRADO &bull; VERSIÓN 2026.2
+            PWA creada y diseñada por Cristian Tapia Espinoza
           </p>
         </div>
       </footer>
