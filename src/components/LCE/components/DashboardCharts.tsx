@@ -300,8 +300,8 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
         </div>
       </div>
 
-      <div className="text-center -mt-2 pb-2">
-        <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase">
+      <div className="text-center" style={{ marginTop: "-8px", paddingBottom: "8px" }}>
+        <p className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "#94a3b8" }}>
           PWA creada y diseñada por Cristian Tapia Espinoza
         </p>
       </div>
