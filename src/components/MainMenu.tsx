@@ -320,23 +320,27 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
           </div>
 
           <div className="flex flex-wrap items-center justify-center md:justify-end gap-3.5">
-            {/* Admin actions (Users and logs) */}
-            {currentUser?.role === 'admin' && (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onSelectView('slit')}
-                  className="bg-amber-500/8 hover:bg-amber-500/15 border border-amber-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
-                >
-                  <BarChart3 size={13} strokeWidth={2.5} /> Control SLIT
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectView('users')}
-                  className="bg-[#461D77]/8 hover:bg-[#461D77]/15 border border-[#461D77]/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-[#461D77] uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
-                >
-                  <User size={13} strokeWidth={2.5} /> Usuarios
-                </button>
+            {/* Admin and Jefe Turno actions */}
+            <div className="flex items-center gap-2">
+              {currentUser?.role === 'admin' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onSelectView('slit')}
+                    className="bg-amber-500/8 hover:bg-amber-500/15 border border-amber-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
+                  >
+                    <BarChart3 size={13} strokeWidth={2.5} /> Control SLIT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectView('users')}
+                    className="bg-[#461D77]/8 hover:bg-[#461D77]/15 border border-[#461D77]/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-[#461D77] uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
+                  >
+                    <User size={13} strokeWidth={2.5} /> Usuarios
+                  </button>
+                </>
+              )}
+              {(currentUser?.role === 'admin' || currentUser?.role === 'jefe_turno') && (
                 <button
                   type="button"
                   onClick={() => onSelectView('logs')}
@@ -344,8 +348,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                 >
                   <Activity size={13} strokeWidth={2.5} /> Bitácora
                 </button>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Operator Live Profile */}
             <div className="bg-white/90 border border-slate-200/60 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-sm hover:border-slate-300 transition-all duration-200">

@@ -520,7 +520,7 @@ const App: React.FC = () => {
   };
 
   const renderCurrentView = () => {
-    if (view === 'logs' && currentUser?.role === 'admin') {
+    if (view === 'logs' && (currentUser?.role === 'admin' || currentUser?.role === 'jefe_turno')) {
       return <ActivityLogsView currentUser={currentUser} onBack={() => setView('menu')} />;
     }
     if (view === 'users' && currentUser?.role === 'admin') {
