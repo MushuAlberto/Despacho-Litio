@@ -13,10 +13,11 @@ import { downloadExcelTemplate, parseUploadedExcel } from "./utils/excelGenerato
 import { BarChart3, ListFilter, AlertCircle, Sparkles, Home, ArrowLeft } from "lucide-react";
 import { ExcelOverrides } from "./types";
 import { NovandinoLogo } from "../BrandLogo";
+import { logActivity, SystemUser } from "../../services/firebase";
 
 declare const html2canvas: any;
 
-export default function LCEModule({ onBack }: { onBack: () => void }) {
+export default function LCEModule({ currentUser, onBack }: { currentUser: SystemUser | null; onBack: () => void }) {
   // Application states
   const [logs, setLogs] = useState(defaultDailyLogs);
   const [selectedDate, setSelectedDate] = useState("2026-05-20");
@@ -106,6 +107,15 @@ export default function LCEModule({ onBack }: { onBack: () => void }) {
       // Auto-select the last parsed date so the dashboard isn't blank
       const lastDate = uniqueLogs[uniqueLogs.length - 1]?.fecha || "2026-05-20";
       setSelectedDate(lastDate);
+
+      // Record LCE file upload activity log in Firestore
+      if (currentUser) {
+        logActivity(
+          currentUser,
+          'Carga de Datos',
+          `Cargó archivo base Excel de control LCE (${file.name}) con ${uniqueLogs.length} jornadas operativas.`
+        ).catch(err => console.error('Error logging LCE excel upload:', err));
+      }
     } catch (err: any) {
       console.error(err);
       setErrorNotice(err?.message || err || "Error al procesar el archivo de Excel.");
@@ -297,21 +307,15 @@ export default function LCEModule({ onBack }: { onBack: () => void }) {
         document.body.removeChild(link);
 
         // Record download audit log
-        try {
-          const savedUser = localStorage.getItem('sqm_current_user');
-          if (savedUser) {
-            const parsedUser = JSON.parse(savedUser);
-            const { logActivity } = await import('../../services/firebase');
-            const [y, m, d] = selectedDate.split('-');
-            const formattedDate = `${d}/${m}/${y}`;
-            await logActivity(
-              parsedUser,
-              'Descargó Imagen',
-              `Descargó reporte gráfico LCE (Cloruro de Litio) para la fecha ${formattedDate}.`
-            );
-          }
-        } catch (err) {
-          console.error('Error logging LCE image download:', err);
+        // Record download audit log (before trigger to avoid frame blockages)
+        if (currentUser) {
+          const [y, m, d] = selectedDate.split('-');
+          const formattedDate = `${d}/${m}/${y}`;
+          logActivity(
+            currentUser,
+            'Descargó Imagen',
+            `Descargó reporte gráfico LCE (Cloruro de Litio) para la fecha ${formattedDate}.`
+          ).catch(err => console.error('Error logging LCE image download:', err));
         }
       } catch (err: any) {
         console.error("Error al generar la imagen del tablero:", err);
@@ -330,6 +334,15 @@ export default function LCEModule({ onBack }: { onBack: () => void }) {
     setIsCustomFileLoaded(false);
     setFileName(null);
     setSelectedDate("2026-05-20");
+
+    // Record LCE reset activity log in Firestore
+    if (currentUser) {
+      logActivity(
+        currentUser,
+        'Restableció Datos LCE',
+        'Restableció los datos del módulo LCE a los registros predeterminados del sistema.'
+      ).catch(err => console.error('Error logging LCE reset:', err));
+    }
   };
 
   return (

@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
   Legend, LabelList
@@ -8,6 +8,7 @@ import {
   Package, Truck, Target, MapPin, TrendingDown, TrendingUp,
   ClipboardEdit, AlertCircle, Save, Loader2
 } from 'lucide-react';
+import { formatDateToCL } from '../utils/dataProcessor';
 
 interface ProductDetailSectionProps {
   product: string;
@@ -54,12 +55,34 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
   const storageKey = `sqm_justification_${date}_${product}`;
   const [justification, setJustification] = useState(() => localStorage.getItem(storageKey) || "");
 
+  const initialJustificationRef = useRef(justification);
+
   useEffect(() => {
     localStorage.setItem(storageKey, justification);
   }, [justification, storageKey]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setJustification(e.target.value);
+  };
+
+  const handleBlur = async () => {
+    if (justification !== initialJustificationRef.current) {
+      initialJustificationRef.current = justification;
+      try {
+        const savedUser = localStorage.getItem('sqm_current_user');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          const { logActivity } = await import('../services/firebase');
+          await logActivity(
+            parsedUser,
+            'Editó Justificación',
+            `Modificó la justificación de desempeño del producto ${product} para la jornada ${formatDateToCL(date)}.`
+          );
+        }
+      } catch (err) {
+        console.error('Error logging justification edit:', err);
+      }
+    }
   };
 
   const stats = useMemo(() => {
@@ -200,6 +223,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           <textarea
             value={justification}
             onChange={handleTextChange}
+            onBlur={handleBlur}
             placeholder="Escriba aquí la justificación técnica manual..."
             className="w-full h-32 bg-white border-2 border-slate-100 rounded-2xl p-5 text-sm font-medium transition-all shadow-inner resize-none no-pdf mb-2 text-slate-700 placeholder:text-slate-300 focus:ring-0"
           />

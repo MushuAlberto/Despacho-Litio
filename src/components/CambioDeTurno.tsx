@@ -104,7 +104,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
     setStatus('idle');
     setError(null);
 
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const dataBuffer = evt.target?.result;
         const wb = XLSX.read(dataBuffer, { type: 'array', cellDates: true });
@@ -186,6 +186,22 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
         }
 
         setAllData(mappedData);
+        
+        // Record Cambio De Turno excel upload activity log in Firestore
+        try {
+          const savedUser = localStorage.getItem('sqm_current_user');
+          if (savedUser) {
+            const parsedUser = JSON.parse(savedUser);
+            const { logActivity } = await import('../services/firebase');
+            await logActivity(
+              parsedUser,
+              'Carga de Datos',
+              `Cargó de archivo base Excel (${file.name}) con ${mappedData.length} registros para Cambio de Turno.`
+            );
+          }
+        } catch (err) {
+          console.error('Error logging Cambio de Turno excel upload:', err);
+        }
         
         const dates = mappedData.map(d => d.dateKey).sort();
         if (dates.length > 0) {

@@ -535,7 +535,7 @@ const App: React.FC = () => {
         onLogout={handleLogout}
       />
     );
-    if (view === 'llegada') return <LlegadaEquipos onBack={() => setView('menu')} />;
+    if (view === 'llegada') return <LlegadaEquipos currentUser={currentUser} onBack={() => setView('menu')} />;
     if (view === 'slit' && currentUser?.role === 'admin') {
       return <SlitDashboard data={rawData} onBack={() => setView('menu')} />;
     }
@@ -555,7 +555,7 @@ const App: React.FC = () => {
     );
     if (view === 'galeria') return <ImageGallery onBack={() => setView('menu')} />;
     if (view === 'cambioTurno') return <CambioDeTurno onBack={() => setView('menu')} />;
-    if (view === 'lce') return <LCEModule onBack={() => setView('menu')} />;
+    if (view === 'lce') return <LCEModule currentUser={currentUser} onBack={() => setView('menu')} />;
 
     // fallback sidebar layout for standard dashboard view
     return (

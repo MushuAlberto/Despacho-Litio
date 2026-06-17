@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { normalizeCompanyName, formatDateToCL } from '../utils/dataProcessor';
 import { NovandinoLogo } from './BrandLogo';
+import { logActivity, SystemUser } from '../services/firebase';
 
 // Declaraciones para librerías cargadas vía script en index.html
 declare const html2canvas: any;
@@ -24,6 +25,7 @@ interface ArrivalData {
 }
 
 interface LlegadaEquiposProps {
+  currentUser: SystemUser | null;
   onBack: () => void;
 }
 
@@ -179,7 +181,7 @@ const CompanyLogo: React.FC<{ company: string; className?: string }> = ({ compan
   );
 };
 
-export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
+export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ currentUser, onBack }) => {
   const [data, setData] = useState<ArrivalData[]>(() => {
     try {
       const saved = localStorage.getItem('sqm_llegadas_data');
@@ -212,7 +214,7 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
   const processFile = useCallback((file: File) => {
     setLoading(true);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const bstr = e.target?.result;
         const workbook = XLSX.read(bstr, { type: 'binary', cellDates: true });
@@ -294,6 +296,15 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
 
         setData(processed);
         localStorage.setItem('sqm_llegadas_data', JSON.stringify(processed));
+
+        // Record Arrivals excel upload audit log in Firestore
+        if (currentUser) {
+          logActivity(
+            currentUser,
+            'Carga de Datos',
+            `Cargó archivo base Excel (${file.name}) con ${processed.length} registros de tránsito y llegadas de equipos.`
+          ).catch(err => console.error('Error logging arrivals excel upload:', err));
+        }
         const dates = [...new Set(processed.map(r => r.fecha))].sort().reverse();
         if (dates.length > 0) {
           setSelectedDate(dates[0]);
@@ -374,23 +385,17 @@ export const LlegadaEquipos: React.FC<LlegadaEquiposProps> = ({ onBack }) => {
       pdf.addImage(tableImg, 'JPEG', 10, yOffset, finalTableWidth, finalTableHeight);
 
       setExportProgress('Finalizando archivo...');
-      pdf.save(`Reporte_Llegadas_${selectedCompany}_${selectedDate}.pdf`);
 
-      // Record download audit log
-      try {
-        const savedUser = localStorage.getItem('sqm_current_user');
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          const { logActivity } = await import('../services/firebase');
-          await logActivity(
-            parsedUser,
-            'Descargó PDF',
-            `Descargó reporte de llegadas en PDF de la empresa ${selectedCompany} para la fecha ${formatDateToCL(selectedDate)}.`
-          );
-        }
-      } catch (err) {
-        console.error('Error logging PDF download:', err);
+      // Record download audit log (before pdf.save to guarantee standard execution flow)
+      if (currentUser) {
+        logActivity(
+          currentUser,
+          'Descargó PDF',
+          `Descargó reporte de llegadas en PDF de la empresa ${selectedCompany} para la fecha ${formatDateToCL(selectedDate)}.`
+        ).catch(err => console.error('Error logging PDF download:', err));
       }
+
+      pdf.save(`Reporte_Llegadas_${selectedCompany}_${selectedDate}.pdf`);
 
     } catch (error) {
       console.error('Error crítico en exportación PDF:', error);

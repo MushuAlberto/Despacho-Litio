@@ -67,16 +67,51 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack }) => {
           date: new Date().toLocaleDateString()
         };
         setImages(prev => [newImage, ...prev]);
+
+        // Record Image upload activity log in Firestore
+        try {
+          const savedUser = localStorage.getItem('sqm_current_user');
+          if (savedUser) {
+            const parsedUser = JSON.parse(savedUser);
+            import('../services/firebase').then(async ({ logActivity }) => {
+              await logActivity(
+                parsedUser,
+                'Subió Evidencia',
+                `Cargó una nueva imagen de terreno (${file.name}) a la Galería Operativa.`
+              );
+            }).catch(err => console.error(err));
+          }
+        } catch (err) {
+          console.error('Error logging image upload:', err);
+        }
       };
       reader.readAsDataURL(file);
     });
   };
 
   const deleteImage = (id: string) => {
+    const imgToDelete = images.find(img => img.id === id);
     const newImages = images.filter(img => img.id !== id);
     setImages(newImages);
     if (currentIndex >= newImages.length) {
       setCurrentIndex(Math.max(0, newImages.length - 1));
+    }
+
+    // Record Image deletion activity log in Firestore
+    try {
+      const savedUser = localStorage.getItem('sqm_current_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        import('../services/firebase').then(async ({ logActivity }) => {
+          await logActivity(
+            parsedUser,
+            'Eliminó Evidencia',
+            `Eliminó la imagen (${imgToDelete?.name || 'sin_nombre'}) de la Galería Operativa.`
+          );
+        }).catch(err => console.error(err));
+      }
+    } catch (err) {
+      console.error('Error logging image delete:', err);
     }
   };
 
