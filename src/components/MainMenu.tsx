@@ -274,21 +274,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
     }
   ];
 
-  if (currentUser?.role === 'admin') {
-    cardsData.push({
-      id: 'slit' as const,
-      title: 'Módulo SLIT',
-      subtitle: 'Analítica Admin',
-      description: 'Análisis minucioso del producto SLIT, toneladas programadas vs reales y control de flotas de equipos detalladas por empresas transportistas.',
-      icon: BarChart3,
-      color: 'from-amber-500/10 via-amber-655/5 to-amber-600/10 border-amber-600/20',
-      iconBg: 'bg-amber-600/10 text-amber-600',
-      accentColor: '#d97706',
-      badge: 'ADMIN EXCLUSIVO',
-      status: 'SLIT CONTROL',
-      group: 'supervision' as const
-    });
-  }
+  // Módulo SLIT has been removed as requested
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] relative overflow-x-hidden overflow-y-auto flex flex-col justify-between">
@@ -324,13 +310,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
             <div className="flex items-center gap-2">
               {currentUser?.role === 'admin' && (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => onSelectView('slit')}
-                    className="bg-amber-500/8 hover:bg-amber-500/15 border border-amber-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
-                  >
-                    <BarChart3 size={13} strokeWidth={2.5} /> Control SLIT
-                  </button>
+                  {/* Control SLIT button removed as requested */}
                   <button
                     type="button"
                     onClick={() => onSelectView('users')}

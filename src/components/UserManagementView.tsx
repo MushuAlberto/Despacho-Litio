@@ -301,7 +301,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                             {getRoleLabel(user.role)}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5 font-mono">@{user.username} &bull; Contraseña: <span className="font-bold text-slate-700">{user.password}</span></p>
+                        <p className="text-[11px] text-slate-400 mt-0.5 font-mono">@{user.username} &bull; Contraseña: <span className="font-bold text-slate-700">{user.userId === currentUser.userId ? user.password : '••••••••'}</span></p>
                       </div>
                     </div>
 

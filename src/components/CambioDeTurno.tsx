@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, Sparkles, BrainCircuit, ArrowLeft } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, FileText, TrendingUp, ArrowLeft } from 'lucide-react';
 import CambioAnalisisComparativoChart, { formatDecimalToHHMM } from './CambioAnalisisComparativoChart';
 import CambioAnalisisProductoChart from './CambioAnalisisProductoChart';
 import { SimpleMarkdown } from './SimpleMarkdown';
-import { analyzeProductData } from '../services/geminiAnalysisService';
+import { analyzeProductData } from '../services/localAnalysisService';
 import { cleanNumeric, parseExcelTime, normalizeHeader } from '../utils/dataProcessor';
 
 interface ChartData {
@@ -425,21 +425,21 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           />
         )}
 
-        {/* Panel de Análisis de IA */}
+        {/* Panel de Análisis Operativo Local */}
         <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-            <BrainCircuit className="w-24 h-24 text-white" />
+            <FileText className="w-24 h-24 text-white" />
           </div>
           
           <div className="relative z-10 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="bg-violeta p-2 rounded-xl">
-                  <Sparkles className="w-5 h-5 text-white" />
+                  <TrendingUp className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h4 className="text-white text-sm font-black uppercase tracking-widest">Análisis Inteligente</h4>
-                  <p className="text-slate-400 text-[10px] font-bold">Insights automáticos basados en datos semanales</p>
+                  <h4 className="text-white text-sm font-black uppercase tracking-widest">Resumen y Análisis Operativo</h4>
+                  <p className="text-slate-400 text-[10px] font-bold">Cálculos analíticos automáticos basados en datos de faena</p>
                 </div>
               </div>
               
@@ -460,12 +460,12 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
                   {isAnalyzing ? (
                     <>
                       <div className="w-3 h-3 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                      Analizando...
+                      Procesando...
                     </>
                   ) : (
                     <>
-                      <BrainCircuit className="w-4 h-4" />
-                      Generar Análisis
+                      <FileText className="w-4 h-4" />
+                      Generar Reporte
                     </>
                   )}
                 </button>
@@ -488,7 +488,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
                 )
               ) : (
                 <div className="flex flex-col items-center justify-center h-full py-8 text-slate-500 italic space-y-2">
-                  <p className="text-xs font-medium">Haz clic en "Generar Análisis" para obtener una lectura inteligente de los datos.</p>
+                  <p className="text-xs font-medium">Haz clic en "Generar Reporte" para compilar el resumen operativo automático.</p>
                 </div>
               )}
             </div>

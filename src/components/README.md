@@ -13,11 +13,8 @@ Este proyecto está diseñado para funcionar como una aplicación web moderna (P
    - Entra en [Vercel](https://vercel.com).
    - Haz clic en **Import Project** y selecciona tu repositorio.
 
-3. **Variables de Entorno (Obligatorio)**:
-   - En el panel de configuración de Vercel, ve a **Environment Variables**.
-   - Agrega una nueva variable:
-     - **Nombre (Key):** `API_KEY`
-     - **Valor (Value):** `TU_CLAVE_DE_GEMINI` (Consíguela en [Google AI Studio](https://aistudio.google.com/)).
+3. **Configuración de la Operación**:
+   - Este sistema ejecuta la totalidad del procesamiento, resúmenes operativos y visualización de gráficos de forma de forma 100% local y segura directamente en el cliente. No se requieren claves API externas para su funcionamiento normal.
 
 4. **Configuración de Build**:
    - Como usamos **ES6 Modules e Import Maps**, no necesitas comandos de compilación. Vercel servirá los archivos estáticos directamente.
