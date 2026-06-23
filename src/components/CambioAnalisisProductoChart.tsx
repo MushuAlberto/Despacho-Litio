@@ -79,13 +79,13 @@ interface ProductCardProps {
 
 const ProductIndividualCard: React.FC<ProductCardProps> = ({ productName, data }) => {
   const tableRows = useMemo(() => {
-    return data.map(item => {
+    return data.map((item, idx) => {
       const compliance = item.Ton_Prog > 0 ? (item.Ton_Real / item.Ton_Prog) * 100 : 0;
       const hourDeviation = item.faenaRealHours - item.faenaMetaHours;
       const deviationObj = formatDeviationHours(hourDeviation);
 
       return {
-        id: `${productName}-${item.dateKey}`,
+        id: `${productName}-${item.dateKey}-${idx}`,
         dateKey: item.dateKey,
         formattedDate: item.formattedDate,
         tonProg: item.Ton_Prog,

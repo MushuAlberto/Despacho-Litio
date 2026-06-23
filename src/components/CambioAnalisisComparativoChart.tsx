@@ -3,6 +3,8 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, ResponsiveContainer, LabelList
 } from 'recharts';
+import { toPng } from 'html-to-image';
+import { Download } from 'lucide-react';
 
 // Colores corporativos definidos en el sistema
 const COLORS = {
@@ -30,14 +32,59 @@ interface ChartData {
 
 interface Props {
   data: ChartData[];
+  title: string;
 }
 
-const CambioAnalisisComparativoChart: React.FC<Props> = ({ data }) => {
+const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
+  const handleDownload = () => {
+    const element = document.getElementById(`chart-table-container-${title.replace(/\s+/g, '_')}`);
+    if (!element) return;
+
+    const width = element.scrollWidth + 64; // Compensar 32px de padding por lado
+    const height = element.scrollHeight + 64; // Compensar 32px de padding arriba y abajo
+
+    toPng(element, {
+      width: width,
+      height: height,
+      backgroundColor: '#FAF5E6',
+      style: {
+        borderRadius: '0px',
+        padding: '32px',
+        margin: '0px',
+        height: 'auto',
+        maxHeight: 'none',
+        overflow: 'visible'
+      },
+      pixelRatio: 2
+    })
+      .then((dataUrl) => {
+        const link = document.createElement('a');
+        const cleanTitle = title.replace(/\s+/g, '_');
+        const dateStr = new Date().toISOString().split('T')[0];
+        link.download = `Grafico_y_Tabla_Comparativa_${cleanTitle}_${dateStr}.png`;
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch((err) => {
+        console.error('Error generating PNG:', err);
+      });
+  };
+
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] border border-violeta/10 shadow-sm min-h-[600px] w-full">
-      <h3 className="text-[10px] font-black text-violeta uppercase tracking-[0.3em] mb-6 border-b border-calido pb-3">
-        ANÁLISIS COMPARATIVO
-      </h3>
+    <div id={`chart-container-${title.replace(/\s+/g, '_')}`} className="bg-white p-8 rounded-[2.5rem] border border-violeta/10 shadow-sm min-h-[600px] w-full">
+      <div className="flex justify-between items-center mb-6 border-b border-calido pb-3">
+        <h3 className="text-[10px] font-black text-violeta uppercase tracking-[0.3em]">
+          ANÁLISIS COMPARATIVO
+        </h3>
+        <button 
+          onClick={handleDownload}
+          disabled={data.length === 0}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black text-violeta hover:text-white border border-violeta/20 hover:bg-violeta rounded-xl transition-all active:scale-95 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-violeta cursor-pointer uppercase tracking-wider"
+          title="Descargar gráfico como imagen PNG"
+        >
+          <Download className="w-3 h-3" /> Descargar PNG
+        </button>
+      </div>
       
       <div style={{ width: '100%', height: '500px' }}>
         <ResponsiveContainer width="100%" height="100%">

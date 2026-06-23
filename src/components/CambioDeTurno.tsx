@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, FileText, TrendingUp, ArrowLeft } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, FileText, TrendingUp, ArrowLeft, Image } from 'lucide-react';
+import { toPng } from 'html-to-image';
 import CambioAnalisisComparativoChart, { formatDecimalToHHMM } from './CambioAnalisisComparativoChart';
 import CambioAnalisisProductoChart from './CambioAnalisisProductoChart';
 import { SimpleMarkdown } from './SimpleMarkdown';
 import { analyzeProductData } from '../services/localAnalysisService';
 import { cleanNumeric, parseExcelTime, normalizeHeader } from '../utils/dataProcessor';
+import { generateShiftReportPDF } from '../utils/pdfGenerator';
 
 interface ChartData {
   name: string;
@@ -46,6 +48,10 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [complianceData, setComplianceData] = useState<any[]>([]);
   const [complianceFiles, setComplianceFiles] = useState<string[]>([]);
+
+  // Lifted analysis states for PDF generation
+  const [novandinoAnalysis, setNovandinoAnalysis] = useState<string | null>(null);
+  const [sqmAnalysis, setSqmAnalysis] = useState<string | null>(null);
 
   // Intentar cargar datos existentes desde localStorage al inicializar
   useEffect(() => {
@@ -307,15 +313,87 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
     }
   }._fn;
 
-  const AnalysisPanel = ({ title, data, range, setRange, colorIdx }: { 
+  const downloadPDF = (type: 'novandino' | 'sqm') => {
+    if (type === 'novandino') {
+      generateShiftReportPDF({
+        title: "NOVANDINO",
+        data: aggregatedData1,
+        range: range1,
+        analysis: novandinoAnalysis
+      });
+    } else {
+      generateShiftReportPDF({
+        title: "SQM N.Y.",
+        data: aggregatedData2,
+        range: range2,
+        analysis: sqmAnalysis
+      });
+    }
+  };
+
+  const downloadPNG = (type: 'novandino' | 'sqm') => {
+    const id = type === 'novandino' ? 'chart-table-container-NOVANDINO' : 'chart-table-container-SQM_N.Y.';
+    const title = type === 'novandino' ? 'Novandino' : 'SQM N.Y.';
+    const element = document.getElementById(id);
+    if (!element) return;
+
+    // Obtener las dimensiones reales totales para evitar recortes por plegado de pantalla (viewport fold)
+    const width = element.scrollWidth + 64; // Compensar 32px de padding por lado
+    const height = element.scrollHeight + 64; // Compensar 32px de padding arriba y abajo
+
+    toPng(element, {
+      width: width,
+      height: height,
+      backgroundColor: '#FAF5E6',
+      style: {
+        borderRadius: '0px',
+        padding: '32px',
+        margin: '0px',
+        height: 'auto',
+        maxHeight: 'none',
+        overflow: 'visible'
+      },
+      pixelRatio: 2
+    })
+      .then((dataUrl) => {
+        const link = document.createElement('a');
+        const dateStr = new Date().toISOString().split('T')[0];
+        link.download = `Grafico_y_Tabla_Comparativa_${type === 'novandino' ? 'Novandino' : 'SQM'}_${dateStr}.png`;
+        link.href = dataUrl;
+        link.click();
+
+        // Log to Firestore
+        try {
+          const savedUser = localStorage.getItem('sqm_current_user');
+          if (savedUser) {
+            const parsedUser = JSON.parse(savedUser);
+            import('../services/firebase').then(({ logActivity }) => {
+              logActivity(
+                parsedUser,
+                'Descargó PNG',
+                `Exportó y descargó el Gráfico y Tabla Comparativa de ${title} en formato PNG.`
+              );
+            });
+          }
+        } catch (err) {
+          console.error('Error logging PNG download:', err);
+        }
+      })
+      .catch((err) => {
+        console.error('Error rendering PNG:', err);
+      });
+  };
+
+  const AnalysisPanel = ({ title, data, range, setRange, colorIdx, complianceData, analysis, setAnalysis }: { 
     title: string, 
     data: any[], 
     range: {start: string, end: string}, 
     setRange: any,
     colorIdx: number,
-    complianceData?: any[]
+    complianceData?: any[],
+    analysis: string | null,
+    setAnalysis: (val: string | null) => void
   }) => {
-    const [analysis, setAnalysis] = useState<string | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
@@ -327,7 +405,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
       try {
         await analyzeProductData(title, data, (partial) => {
           setAnalysis(partial);
-        }, complianceData);
+        }, complianceData, range);
       } catch (err) {
         console.error(err);
         setAnalysis(`Error al generar análisis: ${err instanceof Error ? err.message : 'Error desconocido'}`);
@@ -338,7 +416,8 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
     return (
       <div className="space-y-6">
-        <div className="bg-white p-4 rounded-2xl border border-violeta/10 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div id={`chart-table-container-${title.replace(/\s+/g, '_')}`} className="space-y-6 flex flex-col">
+          <div className="bg-white p-4 rounded-2xl border border-violeta/10 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h2 className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-tighter ${colorIdx === 1 ? 'bg-nucleo/10 text-nucleo' : 'bg-mineral/10 text-mineral'}`}>
             {title}
           </h2>
@@ -371,7 +450,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           )}
         </div>
 
-        <CambioAnalisisComparativoChart data={data} />
+        <CambioAnalisisComparativoChart data={data} title={title} />
 
         <div className="bg-white rounded-[2.5rem] border border-violeta/10 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-50 flex items-center justify-between">
@@ -415,6 +494,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
             </table>
           </div>
         </div>
+        </div>
 
         {/* Gráfico y tabla de tendencia diario del producto */}
         {data.length > 0 && (
@@ -452,6 +532,13 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
                     {isEditing ? 'Vista Previa' : 'Editar Texto'}
                   </button>
                 )}
+                <button 
+                  onClick={() => generateShiftReportPDF({ title, data, range, analysis })}
+                  disabled={data.length === 0}
+                  className="px-4 py-2 bg-violeta text-white text-[10px] font-black rounded-xl hover:bg-violeta/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2 uppercase tracking-widest"
+                >
+                  <Download className="w-3.5 h-3.5" /> Descargar PDF
+                </button>
                 <button 
                   onClick={handleRunAnalysis}
                   disabled={isAnalyzing || data.length === 0}
@@ -525,7 +612,35 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
               </button>
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={() => downloadPDF('novandino')}
+              disabled={aggregatedData1.length === 0}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-nucleo border-2 border-nucleo/10 hover:border-nucleo/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <FileText className="w-4 h-4" /> PDF Novandino
+            </button>
+            <button 
+              onClick={() => downloadPNG('novandino')}
+              disabled={aggregatedData1.length === 0}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-nucleo border-2 border-nucleo/10 hover:border-nucleo/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <Image className="w-4 h-4" /> PNG Novandino
+            </button>
+            <button 
+              onClick={() => downloadPDF('sqm')}
+              disabled={aggregatedData2.length === 0}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-mineral border-2 border-mineral/10 hover:border-mineral/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <FileText className="w-4 h-4" /> PDF SQM
+            </button>
+            <button 
+              onClick={() => downloadPNG('sqm')}
+              disabled={aggregatedData2.length === 0}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-mineral border-2 border-mineral/10 hover:border-mineral/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <Image className="w-4 h-4" /> PNG SQM
+            </button>
             <button onClick={downloadTemplate} className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-violeta border-2 border-violeta/10 hover:border-violeta/30 rounded-xl transition-all active:scale-95 bg-white">
               <Download className="w-4 h-4" /> Plantilla
             </button>
@@ -558,6 +673,8 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           setRange={setRange1} 
           colorIdx={1} 
           complianceData={complianceData} 
+          analysis={novandinoAnalysis}
+          setAnalysis={setNovandinoAnalysis}
         />
         <AnalysisPanel 
           title="SQM N.Y." 
@@ -566,6 +683,8 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           setRange={setRange2} 
           colorIdx={2} 
           complianceData={complianceData} 
+          analysis={sqmAnalysis}
+          setAnalysis={setSqmAnalysis}
         />
       </main>
 
