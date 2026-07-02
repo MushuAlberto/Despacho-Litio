@@ -8,7 +8,7 @@ import {
   Home, TrendingUp, Truck, Target, Scale, Eye, Award, BarChart3, Calendar, ShieldCheck, ArrowLeft, Filter,
   Clock, ClipboardCheck, Upload, CheckCircle2, AlertCircle, FileSpreadsheet, Loader2, Package, MapPin
 } from 'lucide-react';
-import { normalizeCompanyName, normalizeHeader, cleanNumeric, parseExcelTime } from '../utils/dataProcessor';
+import { normalizeCompanyName, normalizeHeader, cleanNumeric, parseExcelTime, formatNumberWithDecimals } from '../utils/dataProcessor';
 
 interface SlitRow {
   Fecha: string;
@@ -216,14 +216,18 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
             Ton_Real: isSlit ? cleanNumeric(row[34]) : (idx.tonReal !== -1 ? cleanNumeric(row[idx.tonReal]) : 0), // AI
             Eq_Prog: isSlit ? cleanNumeric(row[35]) : (idx.eqProg !== -1 ? cleanNumeric(row[idx.eqProg]) : 0),   // AJ
             Eq_Real: isSlit ? cleanNumeric(row[36]) : (idx.eqReal !== -1 ? cleanNumeric(row[idx.eqReal]) : 0),   // AK
-            Regulacion_Real: isSlit ? (() => {
-              const val = cleanNumeric(row[37]); // col AL: % Cumplimiento
-              return val > 0 && val <= 1.0 ? val * 100 : val;
-            })() : (idx.regReal !== -1 ? (() => {
+            Regulacion_Real: idx.regReal !== -1 ? (() => {
               const raw = row[idx.regReal];
               const val = cleanNumeric(raw);
               if (val > 0 && val <= 1.0) return val * 100;
               return val;
+            })() : (isSlit ? (() => {
+              const val38 = cleanNumeric(row[38]); // col AM: fallback % Regulación
+              if (val38 > 0) {
+                return val38 > 0 && val38 <= 1.0 ? val38 * 100 : val38;
+              }
+              const val37 = cleanNumeric(row[37]); // col AL fallback
+              return val37 > 0 && val37 <= 1.0 ? val37 * 100 : val37;
             })() : 0),
             sdaHours: idx.sda !== -1 ? parseExcelTime(row[idx.sda]) : 0,
             pangHours: idx.pang !== -1 ? parseExcelTime(row[idx.pang]) : 0,
@@ -513,14 +517,6 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
     return `${h}:${String(m).padStart(2, '0')}`;
   };
 
-  const formatNumberWithDecimals = (val: number, precision: number = 1): string => {
-    if (isNaN(val) || val === null || val === undefined) return "0";
-    return new Intl.NumberFormat("es-CL", { 
-      minimumFractionDigits: precision, 
-      maximumFractionDigits: precision 
-    }).format(val);
-  };
-
   const IndicatorRow = ({ label, value, color = 'text-[#461D77]' }: any) => (
     <div className="flex justify-between items-center py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50/55 px-2 rounded-xl transition-colors">
       <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{label}</span>
@@ -639,7 +635,7 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
 
       return {
         name: co,
-        tonsReal: Math.round(tonsReal),
+        tonsReal: Number(tonsReal.toFixed(2)),
         eqReal,
         physicalArrivals,
         tripsPerTruck: Number(tripsPerTruck.toFixed(1)),
@@ -672,7 +668,7 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
     return Object.values(grouped)
       .map(item => ({
         ...item,
-        RealTon: Math.round(item.RealTon)
+        RealTon: Number(item.RealTon.toFixed(2))
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [filteredSlitRows, filteredArrivalRows, showAsTimeline]);
@@ -766,8 +762,8 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
         timeInsideFaenaReal: Number(timeReal.toFixed(2)),
         avgLoadMeta: Number(loadMeta.toFixed(1)),
         avgLoadReal: Number(loadReal.toFixed(1)),
-        tonProg: Math.round(g.tonProg),
-        tonReal: Math.round(g.tonReal),
+        tonProg: Number(g.tonProg.toFixed(2)),
+        tonReal: Number(g.tonReal.toFixed(2)),
         eqProg: g.eqProg,
         eqReal: g.eqReal,
         compliancePercent: Number(avgCompliance.toFixed(1)),
@@ -861,8 +857,8 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
         timeReal: Number(globalTimeInsideFaenaReal.toFixed(2)),
         loadMeta: Number(globalAvgLoadMeta.toFixed(1)),
         loadReal: Number(globalAvgLoadReal.toFixed(1)),
-        tonProg: Math.round(globalTonProg),
-        tonReal: Math.round(globalTonReal),
+        tonProg: Number(globalTonProg.toFixed(2)),
+        tonReal: Number(globalTonReal.toFixed(2)),
         eqProg: globalEqProg,
         eqReal: globalEqReal,
         compliancePercent: Number(globalPercentCompliance.toFixed(1)),
@@ -888,8 +884,8 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
     });
     return Object.values(grouped).map(item => ({
       ...item,
-      Programado: Math.round(item.Programado),
-      Real: Math.round(item.Real)
+      Programado: Number(item.Programado.toFixed(2)),
+      Real: Number(item.Real.toFixed(2))
     })).sort((a, b) => b.Real - a.Real);
   }, [filteredSlitRows]);
 
@@ -933,8 +929,8 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
     return Object.values(grouped)
        .map(item => ({
          ...item,
-         ProgramadoTon: Math.round(item.ProgramadoTon),
-         RealTon: Math.round(item.RealTon)
+         ProgramadoTon: Number(item.ProgramadoTon.toFixed(2)),
+         RealTon: Number(item.RealTon.toFixed(2))
        }))
        .sort((a, b) => a.name.localeCompare(b.name));
   }, [filteredSlitRows, showAsTimeline]);
@@ -1415,10 +1411,10 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                       iconSize={8} 
                     />
                     <Bar isAnimationActive={false} dataKey="Programado" fill="#461D77" radius={[6, 6, 6, 6]} barSize={45}>
-                      <LabelList dataKey="Programado" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 1) : v.toLocaleString()} style={{ fill: '#461D77', fontSize: '10px', fontWeight: '900' }} offset={8} />
+                      <LabelList dataKey="Programado" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 2) : v.toLocaleString()} style={{ fill: '#461D77', fontSize: '10px', fontWeight: '900' }} offset={8} />
                     </Bar>
                     <Bar isAnimationActive={false} dataKey="Real" fill="#3FAA88" radius={[6, 6, 6, 6]} barSize={45}>
-                      <LabelList dataKey="Real" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 1) : v.toLocaleString()} style={{ fill: '#3FAA88', fontSize: '10px', fontWeight: '900' }} offset={8} />
+                      <LabelList dataKey="Real" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 2) : v.toLocaleString()} style={{ fill: '#3FAA88', fontSize: '10px', fontWeight: '900' }} offset={8} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>

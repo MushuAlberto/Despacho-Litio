@@ -18,7 +18,7 @@ import { ImageGallery } from './ImageGallery';
 import { PasswordPrompt } from './PasswordPrompt';
 import CambioDeTurno from './CambioDeTurno';
 import LCEModule from './LCE/LCEModule';
-import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, normalizeHeader } from '../utils/dataProcessor';
+import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, normalizeHeader, formatNumberWithDecimals } from '../utils/dataProcessor';
 import { NovandinoLogo } from './BrandLogo';
 
 // Firebase imports
@@ -382,14 +382,18 @@ const App: React.FC = () => {
             Ton_Real: isSlit ? cleanNumeric(row[34]) : (idx.tonReal !== -1 ? cleanNumeric(row[idx.tonReal]) : 0), // AI
             Eq_Prog: isSlit ? cleanNumeric(row[35]) : (idx.eqProg !== -1 ? cleanNumeric(row[idx.eqProg]) : 0),   // AJ
             Eq_Real: isSlit ? cleanNumeric(row[36]) : (idx.eqReal !== -1 ? cleanNumeric(row[idx.eqReal]) : 0),   // AK
-            Regulacion_Real: isSlit ? (() => {
-              const val = cleanNumeric(row[37]); // col AL: % Cumplimiento
-              return val > 0 && val <= 1.0 ? val * 100 : val;
-            })() : (idx.regReal !== -1 ? (() => {
+            Regulacion_Real: idx.regReal !== -1 ? (() => {
               const raw = row[idx.regReal];
               const val = cleanNumeric(raw);
               if (val > 0 && val <= 1.0) return val * 100;
               return val;
+            })() : (isSlit ? (() => {
+              const val38 = cleanNumeric(row[38]); // col AM: fallback % Regulación
+              if (val38 > 0) {
+                return val38 > 0 && val38 <= 1.0 ? val38 * 100 : val38;
+              }
+              const val37 = cleanNumeric(row[37]); // col AL fallback
+              return val37 > 0 && val37 <= 1.0 ? val37 * 100 : val37;
             })() : 0),
             sdaHours: idx.sda !== -1 ? parseExcelTime(row[idx.sda]) : 0,
             pangHours: idx.pang !== -1 ? parseExcelTime(row[idx.pang]) : 0,
@@ -463,7 +467,7 @@ const App: React.FC = () => {
       { label: "Tiempo Gral. Faena (SdA)", value: formatHoursToTime(avgSda), icon: <Clock className="w-3.5 h-3.5" /> },
       { label: "TIEMPO GRAL: FAENA (NY)", value: formatHoursToTime(avgPang), icon: <Clock className="w-3.5 h-3.5" /> },
       { label: "Productividad Diaria", value: `${productivity.toFixed(1)} T/H`, icon: <TrendingUp className="w-3.5 h-3.5" /> },
-      { label: "Carga Real Despachada", value: `${totalTonReal.toLocaleString()} Ton`, icon: <Truck className="w-3.5 h-3.5" /> },
+      { label: "Carga Real Despachada", value: `${formatNumberWithDecimals(totalTonReal, 2)} Ton`, icon: <Truck className="w-3.5 h-3.5" /> },
       { label: "Cumplimiento Programa", value: `${compliance.toFixed(1)}%`, icon: <Target className="w-3.5 h-3.5" />, status: compliance < 85 ? 'danger' : 'normal' },
       { label: "Intensidad de Flota", value: `${totalEqReal} EQ`, icon: <Users className="w-3.5 h-3.5" /> },
       { label: "Factor de Carga (Eficiencia)", value: `${avgLoad.toFixed(1)} T/EQ`, icon: <Scale className="w-3.5 h-3.5" /> },

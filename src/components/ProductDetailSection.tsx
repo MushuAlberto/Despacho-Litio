@@ -8,7 +8,7 @@ import {
   Package, Truck, Target, MapPin, TrendingDown, TrendingUp,
   ClipboardEdit, AlertCircle, Save, Loader2
 } from 'lucide-react';
-import { formatDateToCL } from '../utils/dataProcessor';
+import { formatDateToCL, formatNumberWithDecimals } from '../utils/dataProcessor';
 
 interface ProductDetailSectionProps {
   product: string;
@@ -30,7 +30,7 @@ const MetricCard = ({ icon, label, value, diff, unit = '', isPerc = false }: any
         <div className="p-2 bg-slate-50 rounded-lg text-violeta/70 group-hover:text-ionizado transition-colors">{icon}</div>
         {diff !== undefined && (
           <div className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isPositive ? 'bg-tecnico/10 text-tecnico' : 'bg-nucleo/10 text-nucleo'} uppercase tracking-tighter`}>
-            {isPositive ? '+' : ''}{isPerc ? diff.toFixed(1) : Math.round(diff).toLocaleString()} {isPerc ? '%' : unit}
+            {isPositive ? '+' : ''}{isPerc ? diff.toFixed(1) : formatNumberWithDecimals(diff, 2)} {isPerc ? '%' : unit}
           </div>
         )}
       </div>
@@ -87,8 +87,8 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
 
   const stats = useMemo(() => {
     if (!data || data.length === 0) return null;
-    const tonProg = Math.round(data.reduce((a, b) => a + (Number(b.Ton_Prog) || 0), 0));
-    const tonReal = Math.round(data.reduce((a, b) => a + (Number(b.Ton_Real) || 0), 0));
+    const tonProg = data.reduce((a, b) => a + (Number(b.Ton_Prog) || 0), 0);
+    const tonReal = data.reduce((a, b) => a + (Number(b.Ton_Real) || 0), 0);
     const eqProg = data.reduce((a, b) => a + (Number(b.Eq_Prog) || 0), 0);
     const eqReal = data.reduce((a, b) => a + (Number(b.Eq_Real) || 0), 0);
     const compliance = tonProg > 0 ? (tonReal / tonProg) * 100 : 0;
@@ -158,7 +158,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <MetricCard icon={<Package className="w-4 h-4" />} label="Carga Real" value={`${stats.tonReal.toLocaleString()} Ton`} diff={stats.tonDiff} unit="vs Prog" />
+        <MetricCard icon={<Package className="w-4 h-4" />} label="Carga Real" value={`${formatNumberWithDecimals(stats.tonReal, 2)} Ton`} diff={stats.tonDiff} unit="vs Prog" />
         <MetricCard icon={<Truck className="w-4 h-4" />} label="Flota Real" value={`${stats.eqReal} EQ`} diff={stats.eqDiff} unit="vs Prog" />
         <MetricCard icon={<Target className="w-4 h-4" />} label="Cumplimiento" value={`${stats.compliance.toFixed(1)}%`} diff={stats.compliance - 100} isPerc />
         <div className="bg-white p-5 rounded-[1.2rem] shadow-sm flex flex-col space-y-3">
@@ -177,10 +177,10 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
                 <YAxis hide />
                 <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '13px', fontWeight: '900' }} iconType="square" iconSize={8} />
                 <Bar isAnimationActive={false} dataKey="Programado" fill="#461D77" radius={[6, 6, 6, 6]} barSize={40}>
-                  <LabelList dataKey="Programado" position="top" formatter={(v: any) => v.toLocaleString()} style={{ fill: '#461D77', fontSize: '10px', fontWeight: '900' }} offset={8} />
+                  <LabelList dataKey="Programado" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 2) : v.toLocaleString()} style={{ fill: '#461D77', fontSize: '10px', fontWeight: '900' }} offset={8} />
                 </Bar>
                 <Bar isAnimationActive={false} dataKey="Real" fill="#3FAA88" radius={[6, 6, 6, 6]} barSize={40}>
-                  <LabelList dataKey="Real" position="top" formatter={(v: any) => v.toLocaleString()} style={{ fill: '#3FAA88', fontSize: '10px', fontWeight: '900' }} offset={8} />
+                  <LabelList dataKey="Real" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 2) : v.toLocaleString()} style={{ fill: '#3FAA88', fontSize: '10px', fontWeight: '900' }} offset={8} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

@@ -12,9 +12,44 @@ export const normalizeHeader = (h: any): string => {
 export const cleanNumeric = (val: any): number => {
   if (val === undefined || val === null || val === '') return 0;
   if (typeof val === 'number') return val;
-  const cleanStr = String(val).replace(',', '.').replace(/[^-0-9.]/g, '');
-  const num = parseFloat(cleanStr);
+  
+  let str = String(val).trim();
+  
+  // If the string has both dot and comma (e.g., "3.090,45" or "3,090.45")
+  if (str.includes('.') && str.includes(',')) {
+    const lastDotIdx = str.lastIndexOf('.');
+    const lastCommaIdx = str.lastIndexOf(',');
+    if (lastDotIdx < lastCommaIdx) {
+      // "3.090,45" -> dot is thousands, comma is decimal
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      // "3,090.45" -> comma is thousands, dot is decimal
+      str = str.replace(/,/g, '');
+    }
+  } else if (str.includes(',')) {
+    // Single separator comma, treat as decimal comma for Chilean context (e.g. "3090,45" or "3,09")
+    str = str.replace(',', '.');
+  } else if (str.includes('.')) {
+    // Single separator dot, e.g. "3.090"
+    // If the dot is followed by exactly 3 digits, in Spanish context it's thousands (e.g., 3.090 -> 3090)
+    const parts = str.split('.');
+    if (parts.length === 2 && parts[1].length === 3) {
+      str = str.replace('.', '');
+    }
+  }
+  
+  const num = parseFloat(str.replace(/[^-0-9.]/g, ''));
   return isNaN(num) ? 0 : num;
+};
+
+export const formatNumberWithDecimals = (val: number, precision: number = 2): string => {
+  if (isNaN(val) || val === null || val === undefined) {
+    return "0" + (precision > 0 ? "," + "0".repeat(precision) : "");
+  }
+  // Format with Chilean locale: '.' as thousands, ',' as decimal
+  const parts = Number(val).toFixed(precision).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return parts.join(precision > 0 ? ',' : '');
 };
 
 export const parseExcelTime = (val: any): number => {
