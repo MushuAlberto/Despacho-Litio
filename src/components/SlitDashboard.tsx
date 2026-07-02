@@ -103,7 +103,7 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
         const workbook = XLSX.read(bstr, { type: 'binary', cellDates: true });
         const sheetName = workbook.SheetNames.find(n => n === "Base de Datos") || workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true }) as any[][];
         if (jsonData.length < 2) throw new Error("Planilla vacía o estructura errónea.");
 
         let bestHeaderRowIdx = 0;
@@ -284,7 +284,7 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
         ) || workbook.SheetNames[0];
 
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true }) as any[][];
         if (jsonData.length < 2) throw new Error("Plantilla de llegada vacía.");
 
         let headerIdx = -1;
@@ -513,6 +513,14 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
     return `${h}:${String(m).padStart(2, '0')}`;
   };
 
+  const formatNumberWithDecimals = (val: number, precision: number = 1): string => {
+    if (isNaN(val) || val === null || val === undefined) return "0";
+    return new Intl.NumberFormat("es-CL", { 
+      minimumFractionDigits: precision, 
+      maximumFractionDigits: precision 
+    }).format(val);
+  };
+
   const IndicatorRow = ({ label, value, color = 'text-[#461D77]' }: any) => (
     <div className="flex justify-between items-center py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50/55 px-2 rounded-xl transition-colors">
       <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{label}</span>
@@ -523,8 +531,8 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
   // Aggregate metrics
   const stats = useMemo(() => {
     const count = filteredSlitRows.length;
-    const progTon = Math.round(filteredSlitRows.reduce((a, b) => a + b.Ton_Prog, 0));
-    const realTon = Math.round(filteredSlitRows.reduce((a, b) => a + b.Ton_Real, 0));
+    const progTon = filteredSlitRows.reduce((a, b) => a + b.Ton_Prog, 0);
+    const realTon = filteredSlitRows.reduce((a, b) => a + b.Ton_Real, 0);
     const progEq = filteredSlitRows.reduce((a, b) => a + b.Eq_Prog, 0);
     const realEq = filteredSlitRows.reduce((a, b) => a + b.Eq_Real, 0);
     const compliance = progTon > 0 ? (realTon / progTon) * 100 : 0;
@@ -1323,12 +1331,12 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                   <Package className="w-5 h-5" />
                 </div>
                 <div className={`text-[10px] font-black px-3 py-1 rounded-full ${stats.tonDiff >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} uppercase tracking-tight`}>
-                  {stats.tonDiff >= 0 ? '+' : ''}{stats.tonDiff.toLocaleString()} VS PROG
+                  {stats.tonDiff >= 0 ? '+' : ''}{formatNumberWithDecimals(stats.tonDiff, 2)} VS PROG
                 </div>
               </div>
               <div className="mt-4">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">CARGA REAL</p>
-                <h3 className="text-3xl font-[900] text-slate-800 tracking-tight">{stats.realTon.toLocaleString()} Ton</h3>
+                <h3 className="text-3xl font-[900] text-slate-800 tracking-tight">{formatNumberWithDecimals(stats.realTon, 2)} Ton</h3>
               </div>
             </div>
 
@@ -1407,19 +1415,19 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                       iconSize={8} 
                     />
                     <Bar isAnimationActive={false} dataKey="Programado" fill="#461D77" radius={[6, 6, 6, 6]} barSize={45}>
-                      <LabelList dataKey="Programado" position="top" formatter={(v: any) => v.toLocaleString()} style={{ fill: '#461D77', fontSize: '10px', fontWeight: '900' }} offset={8} />
+                      <LabelList dataKey="Programado" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 1) : v.toLocaleString()} style={{ fill: '#461D77', fontSize: '10px', fontWeight: '900' }} offset={8} />
                     </Bar>
                     <Bar isAnimationActive={false} dataKey="Real" fill="#3FAA88" radius={[6, 6, 6, 6]} barSize={45}>
-                      <LabelList dataKey="Real" position="top" formatter={(v: any) => v.toLocaleString()} style={{ fill: '#3FAA88', fontSize: '10px', fontWeight: '900' }} offset={8} />
+                      <LabelList dataKey="Real" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 1) : v.toLocaleString()} style={{ fill: '#3FAA88', fontSize: '10px', fontWeight: '900' }} offset={8} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
-
+ 
             {/* Indicators table: 1/3 width */}
             <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-center space-y-2">
-              <IndicatorRow label="REGULACIONES" value={`${Math.round(stats.avgReg)}%`} />
+              <IndicatorRow label="REGULACIONES" value={`${formatNumberWithDecimals(stats.avgReg, 1)}%`} />
               <IndicatorRow label="FACTOR CARGA" value={`${stats.avgLoad.toFixed(1)} T/EQ`} />
               <div className="h-px bg-slate-200/60 w-full my-2" />
               <IndicatorRow label="TPO. REAL" value={formatHoursToTime(stats.avgFaenaReal)} color={stats.avgFaenaReal > stats.avgFaenaMeta && (stats.avgFaenaReal - stats.avgFaenaMeta) >= (10 / 60) ? 'text-rose-600' : 'text-[#3FAA88]'} />
@@ -1953,8 +1961,8 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                           <td className="p-4 text-xs font-black text-slate-500 font-mono">{formatDateToCL(row.Fecha)}</td>
                           <td className="p-4 text-xs font-extrabold text-[#461D77] uppercase">{row.Empresa}</td>
                           <td className="p-4 text-xs font-bold text-slate-600 uppercase">{row.Destino}</td>
-                          <td className="p-4 text-xs font-bold text-slate-600 text-right font-mono">{Math.round(row.Ton_Prog).toLocaleString()}</td>
-                          <td className="p-4 text-xs font-bold text-slate-800 text-right font-mono">{Math.round(row.Ton_Real).toLocaleString()}</td>
+                          <td className="p-4 text-xs font-bold text-slate-600 text-right font-mono">{formatNumberWithDecimals(row.Ton_Prog, 2)}</td>
+                          <td className="p-4 text-xs font-bold text-slate-800 text-right font-mono">{formatNumberWithDecimals(row.Ton_Real, 2)}</td>
                           <td className="p-4 text-xs font-bold text-slate-500 text-right font-mono">{row.Eq_Prog}</td>
                           <td className="p-4 text-xs font-bold text-slate-800 text-right font-mono">{row.Eq_Real}</td>
                           <td className="p-4 text-center">

@@ -123,7 +123,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
         }
 
         const ws = wb.Sheets[wsname];
-        const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+        const rawData = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true }) as any[][];
         if (rawData.length < 2) throw new Error("Archivo vacío o estructura inválida.");
 
         // Detección dinámica de cabeceras similar a App.tsx

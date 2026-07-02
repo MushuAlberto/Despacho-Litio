@@ -187,7 +187,7 @@ const App: React.FC = () => {
         const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
         const sheetName = workbook.SheetNames.find(n => n === "Base de Datos") || workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true }) as any[][];
         if (jsonData.length < 2) throw new Error("Archivo vacío o no estructurado.");
         
         // Find the best header row within first 15 rows
