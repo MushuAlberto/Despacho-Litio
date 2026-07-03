@@ -15,90 +15,89 @@ const ai = new GoogleGenAI({
   }
 });
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const PORT = 3000;
 
-  app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));
 
-  // Helper to run Gemini models in sequence
-  const callGemini = async (prompt: string): Promise<string | null> => {
-    if (!process.env.GEMINI_API_KEY) return null;
-    const modelsToTry = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
-    for (const modelName of modelsToTry) {
-      try {
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: prompt,
-          config: { temperature: 0.3 }
-        });
-        if (response && response.text) {
-          return response.text;
-        }
-      } catch (e) {
-        console.log(`Model ${modelName} not available at this moment. Trying next fallback...`);
-      }
-    }
-    return null;
-  };
-
-  // Helper to run NVIDIA GLM models in sequence
-  const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024): Promise<string | null> => {
-    if (!process.env.NVIDIA_API_KEY) return null;
-    const modelsToTry = ["thm/glm-4-9b-chat", "z-ai/glm-4-9b-chat", "nvidia/glm-4-9b-chat"];
-    for (const modelName of modelsToTry) {
-      try {
-        console.log(`Trying NVIDIA model: ${modelName}`);
-        const nimResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: modelName,
-            messages: [
-              {
-                role: "user",
-                content: prompt
-              }
-            ],
-            temperature: 0.3,
-            max_tokens: maxTokens,
-            top_p: 0.7
-          })
-        });
-
-        if (nimResponse.ok) {
-          const nimJson = await nimResponse.json();
-          const text = nimJson.choices?.[0]?.message?.content;
-          if (text) {
-            console.log(`Successfully retrieved response from NVIDIA model ${modelName}`);
-            return text;
-          }
-        } else {
-          const errText = await nimResponse.text();
-          console.error(`NVIDIA model ${modelName} returned status: ${nimResponse.status}`, errText);
-        }
-      } catch (e) {
-        console.error(`NVIDIA model ${modelName} call failed:`, e);
-      }
-    }
-    return null;
-  };
-
-  // API routes FIRST
-  app.post("/api/analyze-shift", async (req, res) => {
+// Helper to run Gemini models in sequence
+const callGemini = async (prompt: string): Promise<string | null> => {
+  if (!process.env.GEMINI_API_KEY) return null;
+  const modelsToTry = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+  for (const modelName of modelsToTry) {
     try {
-      const { title, data, complianceData, model } = req.body;
-      
-      if (!process.env.GEMINI_API_KEY) {
-        console.warn("GEMINI_API_KEY is not defined in env.");
-        return res.status(500).json({ error: "La API Key de Gemini no está configurada." });
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: { temperature: 0.3 }
+      });
+      if (response && response.text) {
+        return response.text;
       }
+    } catch (e) {
+      console.log(`Model ${modelName} not available at this moment. Trying next fallback...`);
+    }
+  }
+  return null;
+};
 
-      // Format data and prompt
-      const prompt = `
+// Helper to run NVIDIA GLM models in sequence
+const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024): Promise<string | null> => {
+  if (!process.env.NVIDIA_API_KEY) return null;
+  const modelsToTry = ["thm/glm-4-9b-chat", "z-ai/glm-4-9b-chat", "nvidia/glm-4-9b-chat"];
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`Trying NVIDIA model: ${modelName}`);
+      const nimResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: maxTokens,
+          top_p: 0.7
+        })
+      });
+
+      if (nimResponse.ok) {
+        const nimJson = await nimResponse.json();
+        const text = nimJson.choices?.[0]?.message?.content;
+        if (text) {
+          console.log(`Successfully retrieved response from NVIDIA model ${modelName}`);
+          return text;
+        }
+      } else {
+        const errText = await nimResponse.text();
+        console.error(`NVIDIA model ${modelName} returned status: ${nimResponse.status}`, errText);
+      }
+    } catch (e) {
+      console.error(`NVIDIA model ${modelName} call failed:`, e);
+    }
+  }
+  return null;
+};
+
+// API routes FIRST
+app.post("/api/analyze-shift", async (req, res) => {
+  try {
+    const { title, data, complianceData, model } = req.body;
+    
+    if (!process.env.GEMINI_API_KEY) {
+      console.warn("GEMINI_API_KEY is not defined in env.");
+      return res.status(500).json({ error: "La API Key de Gemini no está configurada." });
+    }
+
+    // Format data and prompt
+    const prompt = `
 Actúa como un Especialista Senior de SQM Litio. Tu tarea es analizar las desviaciones operativas e informes de rendimiento de la jornada en la faena "${title}".
 
 A continuación tienes los datos de producción de la jornada:
@@ -120,69 +119,69 @@ Reglas:
 - No inventes justificaciones que no provengan del contexto de horas/tonelajes o justificaciones provistas en los datos adjuntos, pero interpreta la correlación entre las incidencias reportadas (ej. fallas mecánicas, esperas en romana) y los retrasos mostrados en los números.
 `;
 
-      // Check if user requested the NVIDIA GLM-5.2 model
-      if (model === "glm") {
-        console.log("User requested NVIDIA GLM model. Checking API Key...");
-        if (!process.env.NVIDIA_API_KEY) {
-          console.warn("NVIDIA_API_KEY is missing. Falling back to Gemini with notice.");
+    // Check if user requested the NVIDIA GLM-5.2 model
+    if (model === "glm") {
+      console.log("User requested NVIDIA GLM model. Checking API Key...");
+      if (!process.env.NVIDIA_API_KEY) {
+        console.warn("NVIDIA_API_KEY is missing. Falling back to Gemini with notice.");
+        const geminiText = await callGemini(prompt);
+        if (geminiText) {
+          return res.json({
+            analysis: geminiText + "\n\n---\n\n*(Nota: Se utilizó Gemini de respaldo debido a que `NVIDIA_API_KEY` no está configurada en las variables de entorno. Agrega tu API Key de NVIDIA en Configuración para activar GLM-5.2 nativo)*"
+          });
+        }
+      } else {
+        const nvidiaText = await callNvidiaGlm(prompt, 2048);
+        if (nvidiaText) {
+          return res.json({ analysis: nvidiaText });
+        } else {
+          console.warn("NVIDIA GLM model failed. Falling back to Gemini...");
           const geminiText = await callGemini(prompt);
           if (geminiText) {
             return res.json({
-              analysis: geminiText + "\n\n---\n\n*(Nota: Se utilizó Gemini de respaldo debido a que `NVIDIA_API_KEY` no está configurada en las variables de entorno. Agrega tu API Key de NVIDIA en Configuración para activar GLM-5.2 nativo)*"
+              analysis: geminiText + "\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a que los servidores de NVIDIA NIM GLM no respondieron correctamente.)*"
             });
           }
-        } else {
-          const nvidiaText = await callNvidiaGlm(prompt, 2048);
-          if (nvidiaText) {
-            return res.json({ analysis: nvidiaText });
-          } else {
-            console.warn("NVIDIA GLM model failed. Falling back to Gemini...");
-            const geminiText = await callGemini(prompt);
-            if (geminiText) {
-              return res.json({
-                analysis: geminiText + "\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a que los servidores de NVIDIA NIM GLM no respondieron correctamente.)*"
-              });
-            }
-          }
         }
       }
+    }
 
-      // Default to Gemini (or fallback if glm failed)
-      const geminiText = await callGemini(prompt);
-      if (geminiText) {
-        res.json({ analysis: geminiText });
-      } else {
-        console.log("Serving local analytic fallback.");
-        res.json({
-          analysis: null,
-          info: "Los servidores de IA están experimentando alta demanda. Se ha activado el motor de análisis local de respaldo."
-        });
-      }
-    } catch (outerException: any) {
-      console.log("Request handled via backup routine.", outerException);
-      res.json({ 
-        analysis: null, 
-        info: "Servicio en mantención de carga. Procesado por el motor local de respaldo." 
+    // Default to Gemini (or fallback if glm failed)
+    const geminiText = await callGemini(prompt);
+    if (geminiText) {
+      res.json({ analysis: geminiText });
+    } else {
+      console.log("Serving local analytic fallback.");
+      res.json({
+        analysis: null,
+        info: "Los servidores de IA están experimentando alta demanda. Se ha activado el motor de análisis local de respaldo."
       });
     }
-  });
+  } catch (outerException: any) {
+    console.log("Request handled via backup routine.", outerException);
+    res.json({ 
+      analysis: null, 
+      info: "Servicio en mantención de carga. Procesado por el motor local de respaldo." 
+    });
+  }
+});
 
-  // NEW: Refine performance justification with AI secure endpoint
-  app.post("/api/refine-justification", async (req, res) => {
-    try {
-      const { text, product, stats, model } = req.body;
+// NEW: Refine performance justification with AI secure endpoint
+app.post("/api/refine-justification", async (req, res) => {
+  try {
+    const { text, product, stats, model } = req.body;
 
-      if (model === "glm") {
-        if (!process.env.NVIDIA_API_KEY) {
-          return res.status(400).json({ error: "La API Key de NVIDIA no está configurada en las variables de entorno." });
-        }
-      } else {
-        if (!process.env.GEMINI_API_KEY) {
-          return res.status(500).json({ error: "La API Key de Gemini no está configurada." });
-        }
+    if (model === "glm") {
+      if (!process.env.NVIDIA_API_KEY) {
+        return res.status(400).json({ error: "La API Key de NVIDIA no está configurada en las variables de entorno." });
       }
+    } else {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "La API Key de Gemini no está configurada." });
+      }
+    }
 
-      const prompt = `
+    const prompt = `
 Actúa como un Especialista Senior de SQM Litio. Tu misión es redactar una justificación profesional, BREVE, EJECUTIVA y TÉCNICA (máximo 2 oraciones) para el reporte de desempeño.
 
 Información operativa de referencia:
@@ -201,37 +200,38 @@ REGLAS CRÍTICAS DE REDACCIÓN:
 - Si mencionas o calculas cualquier tiempo, duración o retraso (por ejemplo: "2.53 h", "1.5 h", "45 min"), debes expresarlo obligatoriamente en formato de horas y minutos "HH:MM" (por ejemplo: "02:32", "01:30", "00:45"). NUNCA uses decimales para las horas.
 `;
 
-      if (model === "glm") {
-        console.log("Calling NVIDIA GLM Refinement...");
-        const nvidiaText = await callNvidiaGlm(prompt, 250);
-        if (nvidiaText) {
-          return res.json({ refined: nvidiaText.trim().replace(/^["']|["']$/g, '') });
-        } else {
-          console.warn("NVIDIA Refinement failed. Falling back to Gemini...");
-          if (process.env.GEMINI_API_KEY) {
-            const geminiText = await callGemini(prompt);
-            if (geminiText) {
-              return res.json({ refined: geminiText.trim().replace(/^["']|["']$/g, '') });
-            }
-          }
-          return res.status(502).json({ error: "El motor de IA de NVIDIA no respondió correctamente y no hay respaldo de Gemini disponible." });
-        }
-      }
-
-      // Default to Gemini
-      const geminiText = await callGemini(prompt);
-      if (geminiText) {
-        return res.json({ refined: geminiText.trim().replace(/^["']|["']$/g, '') });
+    if (model === "glm") {
+      console.log("Calling NVIDIA GLM Refinement...");
+      const nvidiaText = await callNvidiaGlm(prompt, 250);
+      if (nvidiaText) {
+        return res.json({ refined: nvidiaText.trim().replace(/^["']|["']$/g, '') });
       } else {
-        return res.status(500).json({ error: "No se pudo procesar la reescritura con IA en este momento." });
+        console.warn("NVIDIA Refinement failed. Falling back to Gemini...");
+        if (process.env.GEMINI_API_KEY) {
+          const geminiText = await callGemini(prompt);
+          if (geminiText) {
+            return res.json({ refined: geminiText.trim().replace(/^["']|["']$/g, '') });
+          }
+        }
+        return res.status(502).json({ error: "El motor de IA de NVIDIA no respondió correctamente y no hay respaldo de Gemini disponible." });
       }
-    } catch (e: any) {
-      console.error("Error in refine-justification route:", e);
-      res.status(500).json({ error: e.message || "Error interno del servidor." });
     }
-  });
 
-  // Vite middleware for development
+    // Default to Gemini
+    const geminiText = await callGemini(prompt);
+    if (geminiText) {
+      return res.json({ refined: geminiText.trim().replace(/^["']|["']$/g, '') });
+    } else {
+      return res.status(500).json({ error: "No se pudo procesar la reescritura con IA en este momento." });
+    }
+  } catch (e: any) {
+    console.error("Error in refine-justification route:", e);
+    res.status(500).json({ error: e.message || "Error interno del servidor." });
+  }
+});
+
+// Conditionally start listening and mount Vite / static files
+async function startLocalServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -251,4 +251,10 @@ REGLAS CRÍTICAS DE REDACCIÓN:
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startLocalServer().catch(err => {
+    console.error("Failed to start local server:", err);
+  });
+}
+
+export default app;
