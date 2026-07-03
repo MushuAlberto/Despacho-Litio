@@ -42,6 +42,51 @@ async function startServer() {
     return null;
   };
 
+  // Helper to run NVIDIA GLM models in sequence
+  const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024): Promise<string | null> => {
+    if (!process.env.NVIDIA_API_KEY) return null;
+    const modelsToTry = ["thm/glm-4-9b-chat", "z-ai/glm-4-9b-chat", "nvidia/glm-4-9b-chat"];
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`Trying NVIDIA model: ${modelName}`);
+        const nimResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: [
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: maxTokens,
+            top_p: 0.7
+          })
+        });
+
+        if (nimResponse.ok) {
+          const nimJson = await nimResponse.json();
+          const text = nimJson.choices?.[0]?.message?.content;
+          if (text) {
+            console.log(`Successfully retrieved response from NVIDIA model ${modelName}`);
+            return text;
+          }
+        } else {
+          const errText = await nimResponse.text();
+          console.error(`NVIDIA model ${modelName} returned status: ${nimResponse.status}`, errText);
+        }
+      } catch (e) {
+        console.error(`NVIDIA model ${modelName} call failed:`, e);
+      }
+    }
+    return null;
+  };
+
   // API routes FIRST
   app.post("/api/analyze-shift", async (req, res) => {
     try {
@@ -87,53 +132,15 @@ Reglas:
             });
           }
         } else {
-          try {
-            console.log("Calling NVIDIA NIM API for GLM-5.2 / GLM-4...");
-            const nimResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: "z-ai/glm-4-9b-chat", // GLM standard model name in NVIDIA NIM API
-                messages: [
-                  {
-                    role: "user",
-                    content: prompt
-                  }
-                ],
-                temperature: 0.3,
-                max_tokens: 2048,
-                top_p: 0.7
-              })
-            });
-
-            if (nimResponse.ok) {
-              const nimJson = await nimResponse.json();
-              const text = nimJson.choices?.[0]?.message?.content;
-              if (text) {
-                console.log("Successfully retrieved response from NVIDIA GLM-4/5.2 NIM.");
-                return res.json({ analysis: text });
-              }
-            } else {
-              const errText = await nimResponse.text();
-              console.error(`NVIDIA NIM API returned error status: ${nimResponse.status}`, errText);
-              
-              // Fallback to Gemini
-              const geminiText = await callGemini(prompt);
-              if (geminiText) {
-                return res.json({
-                  analysis: geminiText + `\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a que el servidor de NVIDIA NIM GLM falló (Error ${nimResponse.status}).)*`
-                });
-              }
-            }
-          } catch (nimErr: any) {
-            console.error("Failed to fetch from NVIDIA NIM:", nimErr);
+          const nvidiaText = await callNvidiaGlm(prompt, 2048);
+          if (nvidiaText) {
+            return res.json({ analysis: nvidiaText });
+          } else {
+            console.warn("NVIDIA GLM model failed. Falling back to Gemini...");
             const geminiText = await callGemini(prompt);
             if (geminiText) {
               return res.json({
-                analysis: geminiText + `\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a un error de conexión con NVIDIA NIM: ${nimErr.message || nimErr})*`
+                analysis: geminiText + "\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a que los servidores de NVIDIA NIM GLM no respondieron correctamente.)*"
               });
             }
           }
@@ -165,8 +172,14 @@ Reglas:
     try {
       const { text, product, stats, model } = req.body;
 
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(500).json({ error: "La API Key de Gemini no está configurada." });
+      if (model === "glm") {
+        if (!process.env.NVIDIA_API_KEY) {
+          return res.status(400).json({ error: "La API Key de NVIDIA no está configurada en las variables de entorno." });
+        }
+      } else {
+        if (!process.env.GEMINI_API_KEY) {
+          return res.status(500).json({ error: "La API Key de Gemini no está configurada." });
+        }
       }
 
       const prompt = `
@@ -189,32 +202,19 @@ REGLAS CRÍTICAS DE REDACCIÓN:
 `;
 
       if (model === "glm") {
-        if (process.env.NVIDIA_API_KEY) {
-          try {
-            const nimResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: "z-ai/glm-4-9b-chat",
-                messages: [{ role: "user", content: prompt }],
-                temperature: 0.3,
-                max_tokens: 250
-              })
-            });
-
-            if (nimResponse.ok) {
-              const nimJson = await nimResponse.json();
-              const responseText = nimJson.choices?.[0]?.message?.content;
-              if (responseText) {
-                return res.json({ refined: responseText.trim().replace(/^["']|["']$/g, '') });
-              }
+        console.log("Calling NVIDIA GLM Refinement...");
+        const nvidiaText = await callNvidiaGlm(prompt, 250);
+        if (nvidiaText) {
+          return res.json({ refined: nvidiaText.trim().replace(/^["']|["']$/g, '') });
+        } else {
+          console.warn("NVIDIA Refinement failed. Falling back to Gemini...");
+          if (process.env.GEMINI_API_KEY) {
+            const geminiText = await callGemini(prompt);
+            if (geminiText) {
+              return res.json({ refined: geminiText.trim().replace(/^["']|["']$/g, '') });
             }
-          } catch (nimErr) {
-            console.error("NVIDIA Refinement failed, falling back to Gemini:", nimErr);
           }
+          return res.status(502).json({ error: "El motor de IA de NVIDIA no respondió correctamente y no hay respaldo de Gemini disponible." });
         }
       }
 

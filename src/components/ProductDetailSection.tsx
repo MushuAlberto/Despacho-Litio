@@ -199,8 +199,20 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           setRefineError("No se obtuvo una respuesta válida del motor de IA.");
         }
       } else {
-        const errData = await response.json();
-        setRefineError(errData.error || "Error al procesar la reescritura con IA.");
+        let errorMessage = "Error al procesar la reescritura con IA.";
+        try {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errData = await response.json();
+            errorMessage = errData.error || errorMessage;
+          } else {
+            const textError = await response.text();
+            errorMessage = textError || errorMessage;
+          }
+        } catch (parseErr) {
+          console.error("Error parsing API error response:", parseErr);
+        }
+        setRefineError(errorMessage);
       }
     } catch (err) {
       console.error(err);
