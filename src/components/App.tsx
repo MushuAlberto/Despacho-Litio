@@ -51,14 +51,17 @@ const App: React.FC = () => {
     foundHeaders?: string[];
   } | null>(null);
 
-  // Sync access state with user roles on change
+  // Sync access state with user roles on change and save session to localStorage
   useEffect(() => {
     if (currentUser) {
+      localStorage.setItem('sqm_current_user', JSON.stringify(currentUser));
       if (currentUser.role === 'admin' || currentUser.role === 'jefe_turno') {
         setIsJefeTurnoUnlocked(true);
       } else {
         setIsJefeTurnoUnlocked(false);
       }
+    } else {
+      localStorage.removeItem('sqm_current_user');
     }
   }, [currentUser]);
 
@@ -528,7 +531,7 @@ const App: React.FC = () => {
       return <ActivityLogsView currentUser={currentUser} onBack={() => setView('menu')} />;
     }
     if (view === 'users' && currentUser?.role === 'admin') {
-      return <UserManagementView currentUser={currentUser} onBack={() => setView('menu')} />;
+      return <UserManagementView currentUser={currentUser} onBack={() => setView('menu')} onUpdateCurrentUser={setCurrentUser} />;
     }
     if (view === 'menu') return (
       <MainMenu 

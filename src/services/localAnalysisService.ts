@@ -118,7 +118,8 @@ export async function analyzeProductData(
   data: AnalysisData[],
   onChunk: (text: string) => void,
   complianceData?: any[],
-  range?: { start: string; end: string }
+  range?: { start: string; end: string },
+  model: 'gemini' | 'glm' = 'gemini'
 ): Promise<string> {
   if (!data || data.length === 0) {
     const emptyMsg = "No hay datos de producción disponibles para generar el análisis.";
@@ -161,6 +162,7 @@ export async function analyzeProductData(
         title,
         data,
         complianceData: cleanComplianceData, // Enviar los datos pre-procesados y limpios a Gemini
+        model
       }),
     });
 

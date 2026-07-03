@@ -6,9 +6,11 @@ import {
 } from 'recharts';
 import {
   Package, Truck, Target, MapPin, TrendingDown, TrendingUp,
-  ClipboardEdit, AlertCircle, Save, Loader2
+  ClipboardEdit, AlertCircle, Save, Loader2, Sparkles
 } from 'lucide-react';
 import { formatDateToCL, formatNumberWithDecimals } from '../utils/dataProcessor';
+import { db } from '../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface ProductDetailSectionProps {
   product: string;
@@ -57,6 +59,157 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
 
   const initialJustificationRef = useRef(justification);
 
+  const [isRefining, setIsRefining] = useState(false);
+  const [refineError, setRefineError] = useState<string | null>(null);
+
+  const [globalAiSettings, setGlobalAiSettings] = useState({
+    activeAi: 'gemini' as 'gemini' | 'glm',
+    enableGemini: true,
+    enableGlm: true,
+    enableJustificationRefinement: true
+  });
+  const [userAiEnabled, setUserAiEnabled] = useState<boolean>(() => {
+    try {
+      const savedUser = localStorage.getItem('sqm_current_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        return parsedUser.enableAi !== false;
+      }
+    } catch (e) {
+      console.error('Error parsing sqm_current_user for AI state:', e);
+    }
+    return true; // Safe fallback
+  });
+
+  useEffect(() => {
+    const fetchAiSettings = async () => {
+      try {
+        const docRef = doc(db, 'system_config', 'ai_settings');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setGlobalAiSettings({
+            activeAi: data.activeAi || 'gemini',
+            enableGemini: data.enableGemini !== false,
+            enableGlm: data.enableGlm !== false,
+            enableJustificationRefinement: data.enableJustificationRefinement !== false
+          });
+        }
+
+        const savedUser = localStorage.getItem('sqm_current_user');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          const userDocRef = doc(db, 'users', parsedUser.userId);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            setUserAiEnabled(userData.enableAi !== false);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching AI settings in ProductDetail:', err);
+      }
+    };
+    fetchAiSettings();
+  }, []);
+
+  const handleRefineWithAI = async (textToRefine?: string) => {
+    const targetText = textToRefine !== undefined ? textToRefine : justification;
+    if (!targetText.trim()) return;
+
+    try {
+      // 1. Fetch latest global AI config from Firestore
+      const docRef = doc(db, 'system_config', 'ai_settings');
+      const docSnap = await getDoc(docRef);
+      let isGlobalRefinementEnabled = globalAiSettings.enableJustificationRefinement;
+      let activeModel = globalAiSettings.activeAi;
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        isGlobalRefinementEnabled = data.enableJustificationRefinement !== false;
+        activeModel = data.activeAi || 'gemini';
+        
+        // Sync local React state
+        setGlobalAiSettings({
+          activeAi: activeModel,
+          enableGemini: data.enableGemini !== false,
+          enableGlm: data.enableGlm !== false,
+          enableJustificationRefinement: isGlobalRefinementEnabled
+        });
+      }
+
+      // 2. Fetch latest user config from Firestore
+      let isUserEnabled = userAiEnabled;
+      const savedUser = localStorage.getItem('sqm_current_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        const userDocRef = doc(db, 'users', parsedUser.userId);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          isUserEnabled = userData.enableAi !== false;
+          
+          // Sync local React state
+          setUserAiEnabled(isUserEnabled);
+        }
+      }
+
+      // 3. Enforce permission check before showing loading status or calling API
+      if (!isGlobalRefinementEnabled || !isUserEnabled) {
+        console.log("AI refinement bypassed because it is disabled globally or for this user.");
+        return;
+      }
+
+      // If both are enabled, proceed with refining status and API call
+      setIsRefining(true);
+      setRefineError(null);
+
+      const response = await fetch("/api/refine-justification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          text: targetText,
+          product,
+          stats,
+          model: activeModel
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result && result.refined) {
+          const refinedVal = result.refined;
+          setJustification(refinedVal);
+          initialJustificationRef.current = refinedVal;
+          localStorage.setItem(storageKey, refinedVal);
+          
+          // Log activity if current user is saved
+          if (savedUser) {
+            const parsedUser = JSON.parse(savedUser);
+            const { logActivity } = await import('../services/firebase');
+            await logActivity(
+              parsedUser,
+              'Refinó Justificación con IA',
+              `Utilizó la IA (${activeModel.toUpperCase()}) para optimizar la justificación técnica de ${product} en la jornada ${formatDateToCL(date)}.`
+            );
+          }
+        } else {
+          setRefineError("No se obtuvo una respuesta válida del motor de IA.");
+        }
+      } else {
+        const errData = await response.json();
+        setRefineError(errData.error || "Error al procesar la reescritura con IA.");
+      }
+    } catch (err) {
+      console.error(err);
+      setRefineError("Error de conexión al intentar optimizar.");
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem(storageKey, justification);
   }, [justification, storageKey]);
@@ -66,8 +219,9 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
   };
 
   const handleBlur = async () => {
-    if (justification !== initialJustificationRef.current) {
-      initialJustificationRef.current = justification;
+    const textToRefine = justification;
+    if (textToRefine !== initialJustificationRef.current) {
+      initialJustificationRef.current = textToRefine;
       try {
         const savedUser = localStorage.getItem('sqm_current_user');
         if (savedUser) {
@@ -81,6 +235,11 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
         }
       } catch (err) {
         console.error('Error logging justification edit:', err);
+      }
+
+      // Automatically trigger AI refinement if text is not empty (permissions are enforced in handleRefineWithAI)
+      if (textToRefine.trim()) {
+        await handleRefineWithAI(textToRefine);
       }
     }
   };
@@ -227,6 +386,23 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
             placeholder="Escriba aquí la justificación técnica manual..."
             className="w-full h-32 bg-white border-2 border-slate-100 rounded-2xl p-5 text-sm font-medium transition-all shadow-inner resize-none no-pdf mb-2 text-slate-700 placeholder:text-slate-300 focus:ring-0"
           />
+          {/* Subtle status indicators when refining or on error */}
+          {(isRefining || refineError) && (
+            <div className="flex flex-wrap items-center gap-3 px-1 no-pdf mb-4">
+              {isRefining && (
+                <span className="text-[10px] text-[#461D77] font-black uppercase tracking-widest flex items-center gap-1.5 bg-[#461D77]/5 px-3 py-1.5 rounded-lg border border-[#461D77]/10 animate-pulse">
+                  <Loader2 size={12} className="animate-spin text-[#461D77]" />
+                  Reescribiendo...
+                </span>
+              )}
+              {refineError && (
+                <span className="text-[10px] text-rose-500 font-black uppercase tracking-tight bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                  <AlertCircle size={12} className="text-rose-500" />
+                  {refineError}
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="hidden pdf-only-block bg-white border border-slate-100 rounded-2xl p-6 text-sm font-medium text-tecnico h-auto min-h-[6rem] leading-relaxed whitespace-pre-wrap">
             {justification || "No se registraron observaciones para este ítem."}

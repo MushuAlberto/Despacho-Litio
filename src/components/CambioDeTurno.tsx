@@ -8,6 +8,8 @@ import { SimpleMarkdown } from './SimpleMarkdown';
 import { analyzeProductData } from '../services/localAnalysisService';
 import { cleanNumeric, parseExcelTime, normalizeHeader } from '../utils/dataProcessor';
 import { generateShiftReportPDF } from '../utils/pdfGenerator';
+import { db } from '../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface ChartData {
   name: string;
@@ -48,6 +50,60 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [complianceData, setComplianceData] = useState<any[]>([]);
   const [complianceFiles, setComplianceFiles] = useState<string[]>([]);
+
+  // Global AI settings fetched dynamically from Firestore
+  const [globalAiSettings, setGlobalAiSettings] = useState({
+    activeAi: 'gemini' as 'gemini' | 'glm',
+    enableGemini: true,
+    enableGlm: true,
+    enableShiftAnalysis: true,
+    enableJustificationRefinement: true
+  });
+  const [userAiEnabled, setUserAiEnabled] = useState<boolean>(() => {
+    try {
+      const savedUser = localStorage.getItem('sqm_current_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        return parsedUser.enableAi !== false;
+      }
+    } catch (e) {
+      console.error('Error parsing sqm_current_user for AI state in CambioDeTurno:', e);
+    }
+    return true; // Safe fallback
+  });
+
+  useEffect(() => {
+    const fetchAiSettings = async () => {
+      try {
+        const docRef = doc(db, 'system_config', 'ai_settings');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setGlobalAiSettings({
+            activeAi: data.activeAi || 'gemini',
+            enableGemini: data.enableGemini !== false,
+            enableGlm: data.enableGlm !== false,
+            enableShiftAnalysis: data.enableShiftAnalysis !== false,
+            enableJustificationRefinement: data.enableJustificationRefinement !== false
+          });
+        }
+
+        const savedUser = localStorage.getItem('sqm_current_user');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          const userDocRef = doc(db, 'users', parsedUser.userId);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            setUserAiEnabled(userData.enableAi !== false);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching AI settings in CambioDeTurno:', err);
+      }
+    };
+    fetchAiSettings();
+  }, []);
 
   // Lifted analysis states for PDF generation
   const [novandinoAnalysis, setNovandinoAnalysis] = useState<string | null>(null);
@@ -396,6 +452,11 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   }) => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [aiEngine, setAiEngine] = useState<'gemini' | 'glm'>(globalAiSettings.activeAi);
+
+    useEffect(() => {
+      setAiEngine(globalAiSettings.activeAi);
+    }, [globalAiSettings.activeAi]);
 
     const handleRunAnalysis = async () => {
       if (data.length === 0) return;
@@ -403,9 +464,34 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
       setAnalysis(""); 
       setIsEditing(false); 
       try {
-        await analyzeProductData(title, data, (partial) => {
-          setAnalysis(partial);
-        }, complianceData, range);
+        if (!globalAiSettings.enableShiftAnalysis || !userAiEnabled) {
+          // Fallback deterministic local summary when AI is deactivated by the Admin or for the user
+          await new Promise((resolve) => setTimeout(resolve, 800));
+
+          const totalProg = data.reduce((acc, item) => acc + (item.Ton_Prog || 0), 0);
+          const totalReal = data.reduce((acc, item) => acc + (item.Ton_Real || 0), 0);
+          const pctCumplimiento = totalProg > 0 ? (totalReal / totalProg) * 100 : 0;
+          
+          let text = `### **Resumen Ejecutivo - ${title}**\n\n`;
+          text += `Durante el periodo seleccionado de la faena **${title}**, se planificó un total de **${Math.round(totalProg).toLocaleString()} Ton** de carga, alcanzando una ejecución de carga real de **${Math.round(totalReal).toLocaleString()} Ton** (que representa un **${pctCumplimiento.toFixed(1)}% de cumplimiento**).\n\n`;
+          
+          if (pctCumplimiento >= 100) {
+            text += `La operación superó la meta definida con un excelente flujo de carguío y tránsito libre en boleterías y pesajes.\n\n`;
+          } else if (pctCumplimiento >= 85) {
+            text += `Se registra un ritmo constante dentro de los límites aceptables de la tolerancia operativa ordinaria, alcanzando un progreso cercano al óptimo.\n\n`;
+          } else {
+            text += `Se evidencia una desviación operativa con un cumplimiento inferior a la meta programada. Se recomienda revisar tiempos de de demora no identificados y cuellos de botella.\n\n`;
+          }
+          
+          text += `### **Análisis de Desviaciones de Desempeño**\n\n`;
+          text += `⚠️ *Nota: La funcionalidad de Inteligencia Artificial para análisis extendido ha sido desactivada temporalmente por el Administrador de la plataforma o para su usuario. Para volver a habilitar reportes enriquecidos con IA, active el interruptor correspondiente en el Panel de Usuarios o consulte con el Administrador.*`;
+
+          setAnalysis(text);
+        } else {
+          await analyzeProductData(title, data, (partial) => {
+            setAnalysis(partial);
+          }, complianceData, range, aiEngine);
+        }
       } catch (err) {
         console.error(err);
         setAnalysis(`Error al generar análisis: ${err instanceof Error ? err.message : 'Error desconocido'}`);
@@ -523,7 +609,38 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {(globalAiSettings.enableGemini || globalAiSettings.enableGlm) && (
+                  <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-white/5 mr-1">
+                    {globalAiSettings.enableGemini && (
+                      <button
+                        type="button"
+                        onClick={() => setAiEngine('gemini')}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
+                          aiEngine === 'gemini'
+                            ? 'bg-violeta text-white'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Gemini 3.5
+                      </button>
+                    )}
+                    {globalAiSettings.enableGlm && (
+                      <button
+                        type="button"
+                        onClick={() => setAiEngine('glm')}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
+                          aiEngine === 'glm'
+                            ? 'bg-amber-500 text-slate-950'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        GLM-5.2 (NVIDIA)
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {analysis && !isAnalyzing && (
                   <button 
                     onClick={() => setIsEditing(!isEditing)}

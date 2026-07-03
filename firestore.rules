@@ -44,5 +44,10 @@ service cloud.firestore {
         && incoming().timestamp is string && incoming().timestamp.size() <= 64;
       allow update, delete: if isValidId(logId);
     }
+
+    // 4. System Config Collection
+    match /system_config/{configId} {
+      allow read, write: if true;
+    }
   }
 }

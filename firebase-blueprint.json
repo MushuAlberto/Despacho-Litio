@@ -29,6 +29,21 @@
         "timestamp": { "type": "string", "format": "date-time", "description": "Server authenticated timestamp" }
       },
       "required": ["userId", "username", "name", "role", "action", "timestamp"]
+    },
+    "SystemConfig": {
+      "title": "System Configuration",
+      "description": "Global application configuration settings",
+      "type": "object",
+      "properties": {
+        "activeAi": { "type": "string", "enum": ["gemini", "glm"], "description": "The active/default AI engine for shift report analysis" },
+        "enableGemini": { "type": "boolean", "description": "Flag to enable Gemini 3.5" },
+        "enableGlm": { "type": "boolean", "description": "Flag to enable GLM-5.2" },
+        "enableShiftAnalysis": { "type": "boolean", "description": "Flag to enable AI in shift analysis module" },
+        "enableJustificationRefinement": { "type": "boolean", "description": "Flag to enable AI in justification refinement module" },
+        "lastUpdatedBy": { "type": "string", "description": "User who last updated settings" },
+        "lastUpdatedAt": { "type": "string", "format": "date-time", "description": "ISO timestamp of last update" }
+      },
+      "required": ["activeAi", "enableGemini", "enableGlm", "enableShiftAnalysis", "enableJustificationRefinement"]
     }
   },
   "firestore": {
@@ -39,6 +54,10 @@
     "activity_logs/{logId}": {
       "schema": "ActivityLog",
       "description": "Historical audit logs of user actions inside the application"
+    },
+    "system_config/{configId}": {
+      "schema": "SystemConfig",
+      "description": "Global system configurations"
     }
   }
 }
