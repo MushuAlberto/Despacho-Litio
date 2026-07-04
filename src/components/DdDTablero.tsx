@@ -40,19 +40,20 @@ const MetricCard: React.FC<{
     subtitle?: string;
     icon: React.ReactNode;
     color: string;
-}> = ({ title, value, subtitle, icon, color }) => (
+    isRed?: boolean;
+}> = ({ title, value, subtitle, icon, color, isRed }) => (
     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden group hover:shadow-xl transition-all duration-500">
-        <div className={`absolute top-0 right-0 w-24 h-24 ${color} opacity-5 rounded-bl-[4rem] -mr-8 -mt-8 group-hover:scale-110 transition-transform`} />
+        <div className={`absolute top-0 right-0 w-24 h-24 ${isRed ? 'bg-rose-500' : color} opacity-5 rounded-bl-[4rem] -mr-8 -mt-8 group-hover:scale-110 transition-transform`} />
         
         <div className="flex items-start justify-between relative z-10">
-            <div className={`p-3 rounded-2xl ${color} bg-opacity-10 text-black`}>
+            <div className={`p-3 rounded-2xl ${isRed ? 'bg-rose-500/10 text-rose-600' : `${color} bg-opacity-10 text-black`}`}>
                 {icon}
             </div>
         </div>
 
         <div className="mt-4 relative z-10">
             <p className="text-[10px] font-black text-black uppercase tracking-widest leading-none mb-1">{title}</p>
-            <h3 className="text-3xl font-black text-black tracking-tighter italic">{value}</h3>
+            <h3 className={`text-3xl font-black tracking-tighter italic ${isRed ? 'text-rose-600' : 'text-black'}`}>{value}</h3>
             {subtitle && <p className="text-[10px] text-black font-bold mt-1 uppercase tracking-tighter">{subtitle}</p>}
         </div>
     </div>
@@ -148,7 +149,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
             tonReal: totalR,
             avgSda: avgSda,
             avgPang: avgPang,
-            desviaciones: tableRows.filter(r => r.cumplif < 85 || r.realFaena > r.kpiFaena).length
+            desviaciones: tableRows.filter(r => r.cumplif < 85 || r.realFaena > r.kpiFaena + (10 / 60)).length
         };
     }, [dayData, tableRows]);
 
@@ -322,6 +323,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                         value={`${summary.cumplimiento.toFixed(1)}%`}
                         icon={<Target size={24} />}
                         color="bg-ionizado"
+                        isRed={summary.cumplimiento < 85}
                     />
                     <MetricCard 
                         title="Tms. Reales Despachadas"
@@ -409,19 +411,19 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                                 <td className="p-6 text-slate-500 group-hover:text-slate-800 transition-colors uppercase tracking-tight font-black text-sm">{row.producto}</td>
                                                 <td className="p-6 text-center">
                                                     <div className="flex flex-col items-center gap-2">
-                                                        <span className={`px-5 py-2 rounded-xl font-black text-base ${row.cumplif < 85 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                                        <span className={`px-5 py-2 rounded-xl font-black text-base ${row.cumplif < 85 ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
                                                             {row.cumplif.toFixed(1)}%
                                                         </span>
                                                         <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                                                             <div 
-                                                                className={`h-full rounded-full transition-all duration-1000 ${row.cumplif < 85 ? 'bg-nucleo' : 'bg-ionizado'}`}
+                                                                className={`h-full rounded-full transition-all duration-1000 ${row.cumplif < 85 ? 'bg-rose-500' : 'bg-ionizado'}`}
                                                                 style={{ width: `${Math.min(row.cumplif, 100)}%` }}
                                                             />
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="p-6 text-center">
-                                                    <div className={`flex items-center justify-center gap-2 text-base font-black ${row.realFaena > row.kpiFaena ? 'text-rose-500' : 'text-slate-700'}`}>
+                                                    <div className={`flex items-center justify-center gap-2 text-base font-black ${row.realFaena > row.kpiFaena + (10 / 60) ? 'text-rose-500' : 'text-slate-700'}`}>
                                                         {formatHoursToTime(row.realFaena)}
                                                     </div>
                                                 </td>
