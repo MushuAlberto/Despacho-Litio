@@ -207,12 +207,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
             errorMessage = errData.error || errorMessage;
           } else {
             const textError = await response.text();
-            // Detect Vercel-specific crash messages and replace with user-friendly text
-            if (textError.includes("FUNCTION_INVOCATION") || textError.includes("SERVERLESS_FUNCTION") || response.status === 504 || response.status === 502) {
-              errorMessage = "El motor de IA tardó demasiado en responder. Intente nuevamente o cambie a Gemini.";
-            } else {
-              errorMessage = textError || errorMessage;
-            }
+            errorMessage = textError || errorMessage;
           }
         } catch (parseErr) {
           console.error("Error parsing API error response:", parseErr);
