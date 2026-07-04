@@ -49,9 +49,10 @@ const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024, singleMod
   for (const modelName of modelsToTry) {
     try {
       console.log(`Trying NVIDIA model: ${modelName}`);
-      // Use AbortController to enforce a per-request timeout of 25s
+      // Use AbortController to enforce a per-request timeout of 7s
+      // Vercel Hobby plan has a hard 10s limit, so we must finish well under that
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
       const nimResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -87,7 +88,7 @@ const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024, singleMod
       }
     } catch (e: any) {
       if (e?.name === 'AbortError') {
-        console.error(`NVIDIA model ${modelName} timed out after 25s. Trying next fallback...`);
+        console.error(`NVIDIA model ${modelName} timed out after 7s. Trying next fallback...`);
       } else {
         console.error(`NVIDIA model ${modelName} call failed:`, e);
       }
