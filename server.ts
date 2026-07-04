@@ -101,15 +101,16 @@ const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024, singleMod
 const callOpenRouter = async (prompt: string, maxTokens: number = 1024): Promise<string | null> => {
   if (!process.env.OPENROUTER_API_KEY) return null;
   const modelsToTry = [
-    "nvidia/nemotron-4-340b-instruct:free",
-    "nvidia/nemotron-4-340b-instruct",
-    "meta/llama-3.1-8b-instruct:free"
+    "nvidia/llama-3.1-nemotron-70b-instruct:free",
+    "nvidia/llama-3.1-nemotron-70b-instruct",
+    "meta-llama/llama-3.1-8b-instruct:free",
+    "meta-llama/llama-3.1-8b-instruct"
   ];
   for (const modelName of modelsToTry) {
     try {
       console.log(`Trying OpenRouter model: ${modelName}`);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 7000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -147,7 +148,7 @@ const callOpenRouter = async (prompt: string, maxTokens: number = 1024): Promise
       }
     } catch (e: any) {
       if (e?.name === 'AbortError') {
-        console.error(`OpenRouter model ${modelName} timed out after 7s. Trying next fallback...`);
+        console.error(`OpenRouter model ${modelName} timed out after 5s. Trying next fallback...`);
       } else {
         console.error(`OpenRouter model ${modelName} call failed:`, e);
       }
