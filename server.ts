@@ -44,8 +44,8 @@ const callGemini = async (prompt: string): Promise<string | null> => {
 const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024, singleModelOnly = false): Promise<string | null> => {
   if (!process.env.NVIDIA_API_KEY) return null;
   const modelsToTry = singleModelOnly
-    ? ["z-ai/glm-5.2"]
-    : ["z-ai/glm-5.2", "thm/glm-4-9b-chat", "z-ai/glm-4-9b-chat", "nvidia/glm-4-9b-chat"];
+    ? ["meta/llama-3.1-8b-instruct"]
+    : ["meta/llama-3.1-8b-instruct", "meta/llama-3.1-70b-instruct", "z-ai/glm-5.2"];
   for (const modelName of modelsToTry) {
     try {
       console.log(`Trying NVIDIA model: ${modelName}`);
