@@ -97,6 +97,65 @@ const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024, singleMod
   return null;
 };
 
+// Helper to run OpenRouter models in sequence
+const callOpenRouter = async (prompt: string, maxTokens: number = 1024): Promise<string | null> => {
+  if (!process.env.OPENROUTER_API_KEY) return null;
+  const modelsToTry = [
+    "nvidia/nemotron-4-340b-instruct:free",
+    "nvidia/nemotron-4-340b-instruct",
+    "meta/llama-3.1-8b-instruct:free"
+  ];
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`Trying OpenRouter model: ${modelName}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
+      
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "HTTP-Referer": "https://ai.studio",
+          "X-Title": "SQM Litio AI"
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: maxTokens
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const json = await response.json();
+        const text = json.choices?.[0]?.message?.content;
+        if (text) {
+          console.log(`Successfully retrieved response from OpenRouter model ${modelName}`);
+          return text;
+        }
+      } else {
+        const errText = await response.text();
+        console.error(`OpenRouter model ${modelName} returned status: ${response.status}`, errText);
+      }
+    } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        console.error(`OpenRouter model ${modelName} timed out after 7s. Trying next fallback...`);
+      } else {
+        console.error(`OpenRouter model ${modelName} call failed:`, e);
+      }
+    }
+  }
+  return null;
+};
+
 // API routes FIRST
 app.post("/api/analyze-shift", async (req, res) => {
   try {
@@ -129,6 +188,33 @@ Reglas:
 - Utiliza terminología minera y logística formal apropiada para SQM (ej. boletería, romana, zona de carguío, unidades de pesaje, saturación de flujo, dotación, etc.).
 - No inventes justificaciones que no provengan del contexto de horas/tonelajes o justificaciones provistas en los datos adjuntos, pero interpreta la correlación entre las incidencias reportadas (ej. fallas mecánicas, esperas en romana) y los retrasos mostrados en los números.
 `;
+
+    // Check if user requested OpenRouter
+    if (model === "openrouter") {
+      console.log("User requested OpenRouter model. Checking API Key...");
+      if (!process.env.OPENROUTER_API_KEY) {
+        console.warn("OPENROUTER_API_KEY is missing. Falling back to Gemini with notice.");
+        const geminiText = await callGemini(prompt);
+        if (geminiText) {
+          return res.json({
+            analysis: geminiText + "\n\n---\n\n*(Nota: Se utilizó Gemini de respaldo debido a que `OPENROUTER_API_KEY` no está configurada en las variables de entorno. Agrega tu API Key de OpenRouter en Configuración para activar Nemotron)*"
+          });
+        }
+      } else {
+        const orText = await callOpenRouter(prompt, 2048);
+        if (orText) {
+          return res.json({ analysis: orText });
+        } else {
+          console.warn("OpenRouter model failed. Falling back to Gemini...");
+          const geminiText = await callGemini(prompt);
+          if (geminiText) {
+            return res.json({
+              analysis: geminiText + "\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a que los servidores de OpenRouter no respondieron correctamente.)*"
+            });
+          }
+        }
+      }
+    }
 
     // Check if user requested the NVIDIA GLM-5.2 model
     if (model === "glm") {
@@ -182,7 +268,11 @@ app.post("/api/refine-justification", async (req, res) => {
   try {
     const { text, product, stats, model } = req.body;
 
-    if (model === "glm") {
+    if (model === "openrouter") {
+      if (!process.env.OPENROUTER_API_KEY) {
+        return res.status(400).json({ error: "La API Key de OpenRouter no está configurada en las variables de entorno." });
+      }
+    } else if (model === "glm") {
       if (!process.env.NVIDIA_API_KEY) {
         return res.status(400).json({ error: "La API Key de NVIDIA no está configurada en las variables de entorno." });
       }
@@ -210,6 +300,23 @@ REGLAS CRÍTICAS DE REDACCIÓN:
 - Siempre usa la abreviatura "ton." en minúscula para toneladas si llegas a mencionarlas.
 - Si mencionas o calculas cualquier tiempo, duración o retraso (por ejemplo: "2.53 h", "1.5 h", "45 min"), debes expresarlo obligatoriamente en formato de horas y minutos "HH:MM" (por ejemplo: "02:32", "01:30", "00:45"). NUNCA uses decimales para las horas.
 `;
+
+    if (model === "openrouter") {
+      console.log("Calling OpenRouter Refinement...");
+      const orText = await callOpenRouter(prompt, 400);
+      if (orText) {
+        return res.json({ refined: orText.trim().replace(/^["']|["']$/g, '') });
+      } else {
+        console.warn("OpenRouter Refinement failed. Falling back to Gemini...");
+        if (process.env.GEMINI_API_KEY) {
+          const geminiText = await callGemini(prompt);
+          if (geminiText) {
+            return res.json({ refined: geminiText.trim().replace(/^["']|["']$/g, '') });
+          }
+        }
+        return res.status(502).json({ error: "El motor de IA de OpenRouter no respondió correctamente y no hay respaldo de Gemini disponible." });
+      }
+    }
 
     if (model === "glm") {
       console.log("Calling NVIDIA GLM Refinement...");

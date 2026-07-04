@@ -53,9 +53,10 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
   // Global AI settings fetched dynamically from Firestore
   const [globalAiSettings, setGlobalAiSettings] = useState({
-    activeAi: 'gemini' as 'gemini' | 'glm',
+    activeAi: 'gemini' as 'gemini' | 'glm' | 'openrouter',
     enableGemini: true,
     enableGlm: true,
+    enableOpenrouter: true,
     enableShiftAnalysis: true,
     enableJustificationRefinement: true
   });
@@ -83,6 +84,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
             activeAi: data.activeAi || 'gemini',
             enableGemini: data.enableGemini !== false,
             enableGlm: data.enableGlm !== false,
+            enableOpenrouter: data.enableOpenrouter !== false,
             enableShiftAnalysis: data.enableShiftAnalysis !== false,
             enableJustificationRefinement: data.enableJustificationRefinement !== false
           });
@@ -452,7 +454,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   }) => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [aiEngine, setAiEngine] = useState<'gemini' | 'glm'>(globalAiSettings.activeAi);
+    const [aiEngine, setAiEngine] = useState<'gemini' | 'glm' | 'openrouter'>(globalAiSettings.activeAi);
 
     useEffect(() => {
       setAiEngine(globalAiSettings.activeAi);

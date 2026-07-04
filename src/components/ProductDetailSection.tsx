@@ -63,9 +63,10 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
   const [refineError, setRefineError] = useState<string | null>(null);
 
   const [globalAiSettings, setGlobalAiSettings] = useState({
-    activeAi: 'gemini' as 'gemini' | 'glm',
+    activeAi: 'gemini' as 'gemini' | 'glm' | 'openrouter',
     enableGemini: true,
     enableGlm: true,
+    enableOpenrouter: true,
     enableJustificationRefinement: true
   });
   const [userAiEnabled, setUserAiEnabled] = useState<boolean>(() => {
@@ -92,6 +93,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
             activeAi: data.activeAi || 'gemini',
             enableGemini: data.enableGemini !== false,
             enableGlm: data.enableGlm !== false,
+            enableOpenrouter: data.enableOpenrouter !== false,
             enableJustificationRefinement: data.enableJustificationRefinement !== false
           });
         }
@@ -134,6 +136,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           activeAi: activeModel,
           enableGemini: data.enableGemini !== false,
           enableGlm: data.enableGlm !== false,
+          enableOpenrouter: data.enableOpenrouter !== false,
           enableJustificationRefinement: isGlobalRefinementEnabled
         });
       }
