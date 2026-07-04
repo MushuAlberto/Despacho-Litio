@@ -63,9 +63,9 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
   const [refineError, setRefineError] = useState<string | null>(null);
 
   const [globalAiSettings, setGlobalAiSettings] = useState({
-    activeAi: 'gemini' as 'gemini' | 'glm' | 'openrouter',
+    activeAi: 'gemini' as 'gemini' | 'openrouter',
     enableGemini: true,
-    enableGlm: true,
+    enableGlm: false,
     enableOpenrouter: true,
     enableJustificationRefinement: true
   });
@@ -89,10 +89,11 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
+          const rawActive = data.activeAi || 'gemini';
           setGlobalAiSettings({
-            activeAi: data.activeAi || 'gemini',
+            activeAi: (rawActive === 'glm' ? 'gemini' : rawActive) as 'gemini' | 'openrouter',
             enableGemini: data.enableGemini !== false,
-            enableGlm: data.enableGlm !== false,
+            enableGlm: false,
             enableOpenrouter: data.enableOpenrouter !== false,
             enableJustificationRefinement: data.enableJustificationRefinement !== false
           });
@@ -129,13 +130,14 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
       if (docSnap.exists()) {
         const data = docSnap.data();
         isGlobalRefinementEnabled = data.enableJustificationRefinement !== false;
-        activeModel = data.activeAi || 'gemini';
+        const rawActive = data.activeAi || 'gemini';
+        activeModel = (rawActive === 'glm' ? 'gemini' : rawActive) as 'gemini' | 'openrouter';
         
         // Sync local React state
         setGlobalAiSettings({
           activeAi: activeModel,
           enableGemini: data.enableGemini !== false,
-          enableGlm: data.enableGlm !== false,
+          enableGlm: false,
           enableOpenrouter: data.enableOpenrouter !== false,
           enableJustificationRefinement: isGlobalRefinementEnabled
         });

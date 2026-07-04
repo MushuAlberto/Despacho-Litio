@@ -28,9 +28,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
 
   // AI Configuration States
   const [aiSettings, setAiSettings] = useState({
-    activeAi: 'gemini' as 'gemini' | 'glm' | 'openrouter',
+    activeAi: 'gemini' as 'gemini' | 'openrouter',
     enableGemini: true,
-    enableGlm: true,
+    enableGlm: false,
     enableOpenrouter: true,
     enableShiftAnalysis: true,
     enableJustificationRefinement: true
@@ -65,10 +65,11 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
+        const rawActive = data.activeAi || 'gemini';
         setAiSettings({
-          activeAi: data.activeAi || 'gemini',
+          activeAi: (rawActive === 'glm' ? 'gemini' : rawActive) as 'gemini' | 'openrouter',
           enableGemini: data.enableGemini !== false,
-          enableGlm: data.enableGlm !== false,
+          enableGlm: false,
           enableOpenrouter: data.enableOpenrouter !== false,
           enableShiftAnalysis: data.enableShiftAnalysis !== false,
           enableJustificationRefinement: data.enableJustificationRefinement !== false
@@ -78,7 +79,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
         const defaultSettings = {
           activeAi: 'gemini',
           enableGemini: true,
-          enableGlm: true,
+          enableGlm: false,
           enableOpenrouter: true,
           enableShiftAnalysis: true,
           enableJustificationRefinement: true,
@@ -89,7 +90,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
         setAiSettings({
           activeAi: 'gemini',
           enableGemini: true,
-          enableGlm: true,
+          enableGlm: false,
           enableOpenrouter: true,
           enableShiftAnalysis: true,
           enableJustificationRefinement: true
@@ -110,7 +111,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
       const payload = {
         activeAi: aiSettings.activeAi,
         enableGemini: aiSettings.enableGemini,
-        enableGlm: aiSettings.enableGlm,
+        enableGlm: false,
         enableOpenrouter: aiSettings.enableOpenrouter,
         enableShiftAnalysis: aiSettings.enableShiftAnalysis,
         enableJustificationRefinement: aiSettings.enableJustificationRefinement,
@@ -122,7 +123,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
       await logActivity(
         currentUser,
         'Configuración IA Actualizada',
-        `Se actualizó la configuración de IA. Motor activo: ${aiSettings.activeAi.toUpperCase()}. Habilitados: Gemini=${aiSettings.enableGemini ? 'SÍ' : 'NO'}, GLM=${aiSettings.enableGlm ? 'SÍ' : 'NO'}, OpenRouter=${aiSettings.enableOpenrouter ? 'SÍ' : 'NO'}. CambioTurno=${aiSettings.enableShiftAnalysis ? 'SÍ' : 'NO'}, RefinarJustif=${aiSettings.enableJustificationRefinement ? 'SÍ' : 'NO'}`
+        `Se actualizó la configuración de IA. Motor activo: ${aiSettings.activeAi.toUpperCase()}. Habilitados: Gemini=${aiSettings.enableGemini ? 'SÍ' : 'NO'}, OpenRouter=${aiSettings.enableOpenrouter ? 'SÍ' : 'NO'}. CambioTurno=${aiSettings.enableShiftAnalysis ? 'SÍ' : 'NO'}, RefinarJustif=${aiSettings.enableJustificationRefinement ? 'SÍ' : 'NO'}`
       );
 
       setStatusMsg({ type: 'success', text: 'Configuración de Inteligencia Artificial guardada correctamente.' });
@@ -458,18 +459,18 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                     <label className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
                       Habilitar Motores en la Aplicación
                     </label>
-                    <div className="grid grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-2 gap-2.5">
                       {/* Gemini Switch */}
                       <button
                         type="button"
                         onClick={() => {
                           const nextVal = !aiSettings.enableGemini;
-                          if (!nextVal && !aiSettings.enableGlm && !aiSettings.enableOpenrouter) return; 
+                          if (!nextVal && !aiSettings.enableOpenrouter) return; 
                           setAiSettings({
                             ...aiSettings,
                             enableGemini: nextVal,
                             activeAi: !nextVal && aiSettings.activeAi === 'gemini' 
-                              ? (aiSettings.enableGlm ? 'glm' : 'openrouter') 
+                              ? 'openrouter' 
                               : aiSettings.activeAi
                           });
                         }}
@@ -488,46 +489,17 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                         <span className="text-[9px] text-slate-500 font-medium leading-tight">Google AI</span>
                       </button>
 
-                      {/* GLM Switch */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextVal = !aiSettings.enableGlm;
-                          if (!nextVal && !aiSettings.enableGemini && !aiSettings.enableOpenrouter) return;
-                          setAiSettings({
-                            ...aiSettings,
-                            enableGlm: nextVal,
-                            activeAi: !nextVal && aiSettings.activeAi === 'glm' 
-                              ? (aiSettings.enableGemini ? 'gemini' : 'openrouter') 
-                              : aiSettings.activeAi
-                          });
-                        }}
-                        className={`p-3 rounded-2xl border transition-all text-left flex flex-col justify-between h-24 cursor-pointer ${
-                          aiSettings.enableGlm 
-                            ? 'bg-amber-500/5 border-amber-500/20 shadow-sm' 
-                            : 'bg-slate-50/50 border-slate-200 opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="font-extrabold text-[10px] sm:text-xs text-slate-800">GLM-5.2</span>
-                          <div className={`w-7 h-4 rounded-full transition-colors relative p-0.5 cursor-pointer ${aiSettings.enableGlm ? 'bg-amber-500' : 'bg-slate-300'}`}>
-                            <div className={`w-3 h-3 bg-white rounded-full shadow-md transition-transform transform ${aiSettings.enableGlm ? 'translate-x-3' : 'translate-x-0'}`} />
-                          </div>
-                        </div>
-                        <span className="text-[9px] text-slate-500 font-medium leading-tight">NVIDIA NIM</span>
-                      </button>
-
                       {/* OpenRouter Switch */}
                       <button
                         type="button"
                         onClick={() => {
                           const nextVal = !aiSettings.enableOpenrouter;
-                          if (!nextVal && !aiSettings.enableGemini && !aiSettings.enableGlm) return;
+                          if (!nextVal && !aiSettings.enableGemini) return;
                           setAiSettings({
                             ...aiSettings,
                             enableOpenrouter: nextVal,
                             activeAi: !nextVal && aiSettings.activeAi === 'openrouter' 
-                              ? (aiSettings.enableGemini ? 'gemini' : 'glm') 
+                              ? 'gemini' 
                               : aiSettings.activeAi
                           });
                         }}
@@ -565,18 +537,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                         }`}
                       >
                         Gemini 3.5
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!aiSettings.enableGlm}
-                        onClick={() => setAiSettings({ ...aiSettings, activeAi: 'glm' })}
-                        className={`flex-1 py-2 text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
-                          aiSettings.activeAi === 'glm'
-                            ? 'bg-amber-500 text-slate-950 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-800 disabled:opacity-40 disabled:cursor-not-allowed'
-                        }`}
-                      >
-                        GLM-5.2
                       </button>
                       <button
                         type="button"

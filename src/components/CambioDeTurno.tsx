@@ -53,9 +53,9 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
   // Global AI settings fetched dynamically from Firestore
   const [globalAiSettings, setGlobalAiSettings] = useState({
-    activeAi: 'gemini' as 'gemini' | 'glm' | 'openrouter',
+    activeAi: 'gemini' as 'gemini' | 'openrouter',
     enableGemini: true,
-    enableGlm: true,
+    enableGlm: false,
     enableOpenrouter: true,
     enableShiftAnalysis: true,
     enableJustificationRefinement: true
@@ -80,10 +80,11 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
+          const rawActive = data.activeAi || 'gemini';
           setGlobalAiSettings({
-            activeAi: data.activeAi || 'gemini',
+            activeAi: (rawActive === 'glm' ? 'gemini' : rawActive) as 'gemini' | 'openrouter',
             enableGemini: data.enableGemini !== false,
-            enableGlm: data.enableGlm !== false,
+            enableGlm: false,
             enableOpenrouter: data.enableOpenrouter !== false,
             enableShiftAnalysis: data.enableShiftAnalysis !== false,
             enableJustificationRefinement: data.enableJustificationRefinement !== false
@@ -454,7 +455,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   }) => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [aiEngine, setAiEngine] = useState<'gemini' | 'glm' | 'openrouter'>(globalAiSettings.activeAi);
+    const [aiEngine, setAiEngine] = useState<'gemini' | 'openrouter'>(globalAiSettings.activeAi);
 
     useEffect(() => {
       setAiEngine(globalAiSettings.activeAi);
@@ -612,7 +613,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
               </div>
               
               <div className="flex flex-wrap items-center gap-2">
-                {(globalAiSettings.enableGemini || globalAiSettings.enableGlm || globalAiSettings.enableOpenrouter) && (
+                {(globalAiSettings.enableGemini || globalAiSettings.enableOpenrouter) && (
                   <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-white/5 mr-1">
                     {globalAiSettings.enableGemini && (
                       <button
@@ -625,19 +626,6 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
                         }`}
                       >
                         Gemini 3.5
-                      </button>
-                    )}
-                    {globalAiSettings.enableGlm && (
-                      <button
-                        type="button"
-                        onClick={() => setAiEngine('glm')}
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
-                          aiEngine === 'glm'
-                            ? 'bg-amber-500 text-slate-950'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        GLM-5.2 (NVIDIA)
                       </button>
                     )}
                     {globalAiSettings.enableOpenrouter && (

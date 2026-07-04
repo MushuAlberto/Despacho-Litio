@@ -223,34 +223,7 @@ Reglas:
       }
     }
 
-    // Check if user requested the NVIDIA GLM-5.2 model
-    if (model === "glm") {
-      console.log("User requested NVIDIA GLM model. Checking API Key...");
-      if (!process.env.NVIDIA_API_KEY) {
-        console.warn("NVIDIA_API_KEY is missing. Falling back to Gemini with notice.");
-        const geminiText = await callGemini(prompt);
-        if (geminiText) {
-          return res.json({
-            analysis: geminiText + "\n\n---\n\n*(Nota: Se utilizó Gemini de respaldo debido a que `NVIDIA_API_KEY` no está configurada en las variables de entorno. Agrega tu API Key de NVIDIA en Configuración para activar GLM-5.2 nativo)*"
-          });
-        }
-      } else {
-        const nvidiaText = await callNvidiaGlm(prompt, 2048);
-        if (nvidiaText) {
-          return res.json({ analysis: nvidiaText });
-        } else {
-          console.warn("NVIDIA GLM model failed. Falling back to Gemini...");
-          const geminiText = await callGemini(prompt);
-          if (geminiText) {
-            return res.json({
-              analysis: geminiText + "\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a que los servidores de NVIDIA NIM GLM no respondieron correctamente.)*"
-            });
-          }
-        }
-      }
-    }
-
-    // Default to Gemini (or fallback if glm failed)
+    // Default to Gemini
     const geminiText = await callGemini(prompt);
     if (geminiText) {
       res.json({ analysis: geminiText });
@@ -278,10 +251,6 @@ app.post("/api/refine-justification", async (req, res) => {
     if (model === "openrouter") {
       if (!process.env.OPENROUTER_API_KEY) {
         return res.status(400).json({ error: "La API Key de OpenRouter no está configurada en las variables de entorno." });
-      }
-    } else if (model === "glm") {
-      if (!process.env.NVIDIA_API_KEY) {
-        return res.status(400).json({ error: "La API Key de NVIDIA no está configurada en las variables de entorno." });
       }
     } else {
       if (!process.env.GEMINI_API_KEY) {
@@ -322,24 +291,6 @@ REGLAS CRÍTICAS DE REDACCIÓN:
           }
         }
         return res.status(502).json({ error: "El motor de IA de OpenRouter no respondió correctamente y no hay respaldo de Gemini disponible." });
-      }
-    }
-
-    if (model === "glm") {
-      console.log("Calling NVIDIA GLM Refinement...");
-      // Use singleModelOnly=true to avoid chaining 4 models and risking a timeout
-      const nvidiaText = await callNvidiaGlm(prompt, 400, true);
-      if (nvidiaText) {
-        return res.json({ refined: nvidiaText.trim().replace(/^["']|["']$/g, '') });
-      } else {
-        console.warn("NVIDIA Refinement failed. Falling back to Gemini...");
-        if (process.env.GEMINI_API_KEY) {
-          const geminiText = await callGemini(prompt);
-          if (geminiText) {
-            return res.json({ refined: geminiText.trim().replace(/^["']|["']$/g, '') });
-          }
-        }
-        return res.status(502).json({ error: "El motor de IA de NVIDIA no respondió correctamente y no hay respaldo de Gemini disponible." });
       }
     }
 
