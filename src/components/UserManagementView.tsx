@@ -538,7 +538,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                         }`}
                       >
                         <div className="flex items-center justify-between w-full">
-                          <span className="font-extrabold text-[10px] sm:text-xs text-slate-800 text-ellipsis overflow-hidden">Nemotron</span>
+                          <span className="font-extrabold text-[10px] sm:text-xs text-slate-800 text-ellipsis overflow-hidden">OpenRouter</span>
                           <div className={`w-7 h-4 rounded-full transition-colors relative p-0.5 cursor-pointer ${aiSettings.enableOpenrouter ? 'bg-teal-600' : 'bg-slate-300'}`}>
                             <div className={`w-3 h-3 bg-white rounded-full shadow-md transition-transform transform ${aiSettings.enableOpenrouter ? 'translate-x-3' : 'translate-x-0'}`} />
                           </div>
@@ -588,7 +588,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                             : 'text-slate-500 hover:text-slate-800 disabled:opacity-40 disabled:cursor-not-allowed'
                         }`}
                       >
-                        Nemotron (OR)
+                        OpenRouter (OR)
                       </button>
                     </div>
                   </div>

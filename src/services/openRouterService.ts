@@ -15,7 +15,7 @@ const getEnvVar = (key: string): string => {
 const API_KEY = getEnvVar("VITE_OPENROUTER_API_KEY");
 // Permite cambiar el modelo desde Vercel usando VITE_OPENROUTER_MODEL. 
 // Si no se configura, usa el modelo NVIDIA por defecto.
-const MODEL_ID = getEnvVar("VITE_OPENROUTER_MODEL") || "nvidia/llama-3.1-nemotron-70b-instruct:free";
+const MODEL_ID = getEnvVar("VITE_OPENROUTER_MODEL") || "google/gemma-4-31b-it:free";
 
 export const refineJustificationWithAI = async (text: string, product: string, stats?: any): Promise<string> => {
     if (!API_KEY) {
@@ -96,6 +96,10 @@ REGLAS CRÍTICAS:
         
         if (!result) {
             throw new Error("Respuesta de IA vacía");
+        }
+
+        if (result.toLowerCase().includes("user safety")) {
+            throw new Error("Respuesta inválida (Filtro de moderación de seguridad detectado: 'User Safety')");
         }
 
         console.log("DEBUG: Reescritura exitosa");

@@ -101,10 +101,12 @@ const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024, singleMod
 const callOpenRouter = async (prompt: string, maxTokens: number = 1024): Promise<string | null> => {
   if (!process.env.OPENROUTER_API_KEY) return null;
   const modelsToTry = [
-    "nvidia/llama-3.1-nemotron-70b-instruct:free",
-    "nvidia/llama-3.1-nemotron-70b-instruct",
-    "meta-llama/llama-3.1-8b-instruct:free",
-    "meta-llama/llama-3.1-8b-instruct"
+    "google/gemma-4-31b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+    "openrouter/free"
   ];
   for (const modelName of modelsToTry) {
     try {
@@ -139,6 +141,10 @@ const callOpenRouter = async (prompt: string, maxTokens: number = 1024): Promise
         const json = await response.json();
         const text = json.choices?.[0]?.message?.content;
         if (text) {
+          if (text.toLowerCase().includes("user safety")) {
+            console.warn(`Skipping safety-moderation classification response from model ${modelName}: "${text}"`);
+            continue;
+          }
           console.log(`Successfully retrieved response from OpenRouter model ${modelName}`);
           return text;
         }

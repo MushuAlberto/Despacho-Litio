@@ -612,7 +612,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
               </div>
               
               <div className="flex flex-wrap items-center gap-2">
-                {(globalAiSettings.enableGemini || globalAiSettings.enableGlm) && (
+                {(globalAiSettings.enableGemini || globalAiSettings.enableGlm || globalAiSettings.enableOpenrouter) && (
                   <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-white/5 mr-1">
                     {globalAiSettings.enableGemini && (
                       <button
@@ -638,6 +638,19 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
                         }`}
                       >
                         GLM-5.2 (NVIDIA)
+                      </button>
+                    )}
+                    {globalAiSettings.enableOpenrouter && (
+                      <button
+                        type="button"
+                        onClick={() => setAiEngine('openrouter')}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
+                          aiEngine === 'openrouter'
+                            ? 'bg-teal-600 text-white'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        OpenRouter (OR)
                       </button>
                     )}
                   </div>
