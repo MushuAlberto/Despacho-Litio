@@ -43,7 +43,7 @@ const callGemini = async (prompt: string): Promise<string | null> => {
 // Helper to run NVIDIA GLM models in sequence
 const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024): Promise<string | null> => {
   if (!process.env.NVIDIA_API_KEY) return null;
-  const modelsToTry = ["thm/glm-4-9b-chat", "z-ai/glm-4-9b-chat", "nvidia/glm-4-9b-chat"];
+  const modelsToTry = ["z-ai/glm-5.2", "thm/glm-4-9b-chat", "z-ai/glm-4-9b-chat", "nvidia/glm-4-9b-chat"];
   for (const modelName of modelsToTry) {
     try {
       console.log(`Trying NVIDIA model: ${modelName}`);
