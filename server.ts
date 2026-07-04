@@ -41,12 +41,17 @@ const callGemini = async (prompt: string): Promise<string | null> => {
 };
 
 // Helper to run NVIDIA GLM models in sequence
-const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024): Promise<string | null> => {
+const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024, singleModelOnly = false): Promise<string | null> => {
   if (!process.env.NVIDIA_API_KEY) return null;
-  const modelsToTry = ["z-ai/glm-5.2", "thm/glm-4-9b-chat", "z-ai/glm-4-9b-chat", "nvidia/glm-4-9b-chat"];
+  const modelsToTry = singleModelOnly
+    ? ["z-ai/glm-5.2"]
+    : ["z-ai/glm-5.2", "thm/glm-4-9b-chat", "z-ai/glm-4-9b-chat", "nvidia/glm-4-9b-chat"];
   for (const modelName of modelsToTry) {
     try {
       console.log(`Trying NVIDIA model: ${modelName}`);
+      // Use AbortController to enforce a per-request timeout of 25s
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
       const nimResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -64,8 +69,10 @@ const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024): Promise<
           temperature: 0.3,
           max_tokens: maxTokens,
           top_p: 0.7
-        })
+        }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (nimResponse.ok) {
         const nimJson = await nimResponse.json();
@@ -78,8 +85,12 @@ const callNvidiaGlm = async (prompt: string, maxTokens: number = 1024): Promise<
         const errText = await nimResponse.text();
         console.error(`NVIDIA model ${modelName} returned status: ${nimResponse.status}`, errText);
       }
-    } catch (e) {
-      console.error(`NVIDIA model ${modelName} call failed:`, e);
+    } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        console.error(`NVIDIA model ${modelName} timed out after 25s. Trying next fallback...`);
+      } else {
+        console.error(`NVIDIA model ${modelName} call failed:`, e);
+      }
     }
   }
   return null;
@@ -201,7 +212,8 @@ REGLAS CRÍTICAS DE REDACCIÓN:
 
     if (model === "glm") {
       console.log("Calling NVIDIA GLM Refinement...");
-      const nvidiaText = await callNvidiaGlm(prompt, 250);
+      // Use singleModelOnly=true to avoid chaining 4 models and risking a timeout
+      const nvidiaText = await callNvidiaGlm(prompt, 400, true);
       if (nvidiaText) {
         return res.json({ refined: nvidiaText.trim().replace(/^["']|["']$/g, '') });
       } else {
