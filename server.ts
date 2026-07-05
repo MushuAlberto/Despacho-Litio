@@ -5,14 +5,25 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
+let ai: GoogleGenAI | null = null;
+
+const getGeminiClient = (): GoogleGenAI => {
+  if (!ai) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is missing");
     }
+    ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
   }
-});
+  return ai;
+};
 
 const app = express();
 const PORT = 3000;
@@ -25,7 +36,8 @@ const callGemini = async (prompt: string): Promise<string | null> => {
   const modelsToTry = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
   for (const modelName of modelsToTry) {
     try {
-      const response = await ai.models.generateContent({
+      const client = getGeminiClient();
+      const response = await client.models.generateContent({
         model: modelName,
         contents: prompt,
         config: { temperature: 0.3 }
