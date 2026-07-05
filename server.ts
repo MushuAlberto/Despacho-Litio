@@ -179,11 +179,6 @@ const callOpenRouter = async (prompt: string, maxTokens: number = 1024): Promise
 app.post("/api/analyze-shift", async (req, res) => {
   try {
     const { title, data, complianceData, model } = req.body;
-    
-    if (!process.env.GEMINI_API_KEY) {
-      console.warn("GEMINI_API_KEY is not defined in env.");
-      return res.status(500).json({ error: "La API Key de Gemini no está configurada." });
-    }
 
     // Format data and prompt
     const prompt = `
@@ -199,7 +194,7 @@ Por favor, elabora un análisis ejecutivo estructurado en español chileno/profe
 
 Sigue esta estructura limpia en Markdown con títulos profesionales en negrita:
 1. ### **Resumen Ejecutivo**: Una síntesis de las operaciones de la jornada, indicando el total programado y cargado, y el porcentaje general de cumplimiento.
-2. ### **Análisis de Desviaciones de Desempeño**: Un análisis minucioso y detallado de las desviaciones y eventos anómalos basándote directamente en las "Justificación de Desempeño" reportadas en los archivos JSON. Si no hay registros de un producto específico, descríbelo de manera ejecutiva según las desviaciones de tiempos (horas reales vs meta).
+2. ### **Análisis de Desviaciones de Desempeño**: Un análisis minucioso y detallado de las desviaciones y eventos anómalos basándose directamente en las "Justificación de Desempeño" reportadas en los archivos JSON. Si no hay registros de un producto específico, descríbelo de manera ejecutiva según las desviaciones de tiempos (horas reales vs meta).
 3. ### **Rendimiento Operativo Clave**: Compara la planificación horaria contra el desempeño real (horas promedio de faena meta y real). Identifica el producto con mejor cumplimiento y el de mayor desviación.
 
 Reglas:
@@ -213,29 +208,40 @@ Reglas:
       console.log("User requested OpenRouter model. Checking API Key...");
       if (!process.env.OPENROUTER_API_KEY) {
         console.warn("OPENROUTER_API_KEY is missing. Falling back to Gemini with notice.");
-        const geminiText = await callGemini(prompt);
-        if (geminiText) {
-          return res.json({
-            analysis: geminiText + "\n\n---\n\n*(Nota: Se utilizó Gemini de respaldo debido a que `OPENROUTER_API_KEY` no está configurada en las variables de entorno. Agrega tu API Key de OpenRouter en Configuración para activar Nemotron)*"
-          });
+        if (process.env.GEMINI_API_KEY) {
+          const geminiText = await callGemini(prompt);
+          if (geminiText) {
+            return res.json({
+              analysis: geminiText + "\n\n---\n\n*(Nota: Se utilizó Gemini de respaldo debido a que `OPENROUTER_API_KEY` no está configurada en las variables de entorno. Agrega tu API Key de OpenRouter en Configuración para activar)*"
+            });
+          }
         }
+        return res.status(400).json({ error: "La API Key de OpenRouter no está configurada en las variables de entorno." });
       } else {
         const orText = await callOpenRouter(prompt, 2048);
         if (orText) {
           return res.json({ analysis: orText });
         } else {
           console.warn("OpenRouter model failed. Falling back to Gemini...");
-          const geminiText = await callGemini(prompt);
-          if (geminiText) {
-            return res.json({
-              analysis: geminiText + "\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a que los servidores de OpenRouter no respondieron correctamente.)*"
-            });
+          if (process.env.GEMINI_API_KEY) {
+            const geminiText = await callGemini(prompt);
+            if (geminiText) {
+              return res.json({
+                analysis: geminiText + "\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a que los servidores de OpenRouter no respondieron correctamente.)*"
+              });
+            }
           }
+          return res.status(502).json({ error: "El motor de IA de OpenRouter no respondió correctamente y no hay respaldo de Gemini disponible." });
         }
       }
     }
 
     // Default to Gemini
+    if (!process.env.GEMINI_API_KEY) {
+      console.warn("GEMINI_API_KEY is not defined in env.");
+      return res.status(400).json({ error: "La API Key de Gemini no está configurada." });
+    }
+
     const geminiText = await callGemini(prompt);
     if (geminiText) {
       res.json({ analysis: geminiText });
