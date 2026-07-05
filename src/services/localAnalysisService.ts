@@ -119,7 +119,7 @@ export async function analyzeProductData(
   onChunk: (text: string) => void,
   complianceData?: any[],
   range?: { start: string; end: string },
-  model: 'gemini' | 'openrouter' = 'gemini'
+  model: 'gemini' | 'glm' = 'gemini'
 ): Promise<string> {
   if (!data || data.length === 0) {
     const emptyMsg = "No hay datos de producción disponibles para generar el análisis.";

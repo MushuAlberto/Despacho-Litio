@@ -63,10 +63,9 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
   const [refineError, setRefineError] = useState<string | null>(null);
 
   const [globalAiSettings, setGlobalAiSettings] = useState({
-    activeAi: 'gemini' as 'gemini' | 'openrouter',
+    activeAi: 'gemini' as 'gemini' | 'glm',
     enableGemini: true,
-    enableGlm: false,
-    enableOpenrouter: true,
+    enableGlm: true,
     enableJustificationRefinement: true
   });
   const [userAiEnabled, setUserAiEnabled] = useState<boolean>(() => {
@@ -89,12 +88,10 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const rawActive = data.activeAi || 'gemini';
           setGlobalAiSettings({
-            activeAi: (rawActive === 'glm' ? 'gemini' : rawActive) as 'gemini' | 'openrouter',
+            activeAi: data.activeAi || 'gemini',
             enableGemini: data.enableGemini !== false,
-            enableGlm: false,
-            enableOpenrouter: data.enableOpenrouter !== false,
+            enableGlm: data.enableGlm !== false,
             enableJustificationRefinement: data.enableJustificationRefinement !== false
           });
         }
@@ -130,15 +127,13 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
       if (docSnap.exists()) {
         const data = docSnap.data();
         isGlobalRefinementEnabled = data.enableJustificationRefinement !== false;
-        const rawActive = data.activeAi || 'gemini';
-        activeModel = (rawActive === 'glm' ? 'gemini' : rawActive) as 'gemini' | 'openrouter';
+        activeModel = data.activeAi || 'gemini';
         
         // Sync local React state
         setGlobalAiSettings({
           activeAi: activeModel,
           enableGemini: data.enableGemini !== false,
-          enableGlm: false,
-          enableOpenrouter: data.enableOpenrouter !== false,
+          enableGlm: data.enableGlm !== false,
           enableJustificationRefinement: isGlobalRefinementEnabled
         });
       }
@@ -204,20 +199,8 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           setRefineError("No se obtuvo una respuesta válida del motor de IA.");
         }
       } else {
-        let errorMessage = "Error al procesar la reescritura con IA.";
-        try {
-          const contentType = response.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const errData = await response.json();
-            errorMessage = errData.error || errorMessage;
-          } else {
-            const textError = await response.text();
-            errorMessage = textError || errorMessage;
-          }
-        } catch (parseErr) {
-          console.error("Error parsing API error response:", parseErr);
-        }
-        setRefineError(errorMessage);
+        const errData = await response.json();
+        setRefineError(errData.error || "Error al procesar la reescritura con IA.");
       }
     } catch (err) {
       console.error(err);
