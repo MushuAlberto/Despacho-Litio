@@ -41,6 +41,46 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
   const [pendingUserAiChanges, setPendingUserAiChanges] = useState<Record<string, boolean>>({});
   const [savingUserAi, setSavingUserAi] = useState(false);
 
+  // AI Diagnostic States
+  const [testingAi, setTestingAi] = useState<'gemini' | 'glm' | null>(null);
+  const [testResult, setTestResult] = useState<{
+    model: 'gemini' | 'glm';
+    success: boolean;
+    message: string;
+    latencyMs?: number;
+    modelUsed?: string;
+  } | null>(null);
+
+  const handleTestAiConnection = async (model: 'gemini' | 'glm') => {
+    setTestingAi(model);
+    setTestResult(null);
+    try {
+      const response = await fetch("/api/test-ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ model })
+      });
+      const result = await response.json();
+      setTestResult({
+        model,
+        success: response.ok && result.success === true,
+        message: result.message || "Error inesperado durante la prueba.",
+        latencyMs: result.latencyMs,
+        modelUsed: result.modelUsed
+      });
+    } catch (err: any) {
+      setTestResult({
+        model,
+        success: false,
+        message: `Error de red al conectar con el servidor: ${err.message || err}`
+      });
+    } finally {
+      setTestingAi(null);
+    }
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -481,7 +521,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                         <span className="text-[10px] text-slate-500 font-medium leading-tight">Google AI Flash</span>
                       </button>
 
-                      {/* GLM Switch */}
+                      {/* OpenRouter Gemma Switch */}
                       <button
                         type="button"
                         onClick={() => {
@@ -500,12 +540,12 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                         }`}
                       >
                         <div className="flex items-center justify-between w-full">
-                          <span className="font-extrabold text-xs text-slate-800">GLM-5.2</span>
+                          <span className="font-extrabold text-xs text-slate-800">Gemma Free</span>
                           <div className={`w-8 h-4 rounded-full transition-colors relative p-0.5 cursor-pointer ${aiSettings.enableGlm ? 'bg-amber-500' : 'bg-slate-300'}`}>
                             <div className={`w-3 h-3 bg-white rounded-full shadow-md transition-transform transform ${aiSettings.enableGlm ? 'translate-x-4' : 'translate-x-0'}`} />
                           </div>
                         </div>
-                        <span className="text-[10px] text-slate-500 font-medium leading-tight">NVIDIA NIM</span>
+                        <span className="text-[10px] text-slate-500 font-medium leading-tight">OpenRouter Free</span>
                       </button>
                     </div>
                   </div>
@@ -538,7 +578,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                             : 'text-slate-500 hover:text-slate-800 disabled:opacity-40 disabled:cursor-not-allowed'
                         }`}
                       >
-                        GLM-5.2 (NVIDIA)
+                        Gemma (OpenRouter)
                       </button>
                     </div>
                   </div>
@@ -602,6 +642,91 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                       </>
                     )}
                   </button>
+
+                  {/* Panel de Diagnóstico y Conectividad en Tiempo Real */}
+                  <div className="space-y-3 pt-4 border-t border-slate-100">
+                    <label className="text-[10px] font-black tracking-widest text-slate-400 uppercase block">
+                      Panel de Diagnóstico de Conectividad
+                    </label>
+                    <p className="text-[10px] font-medium text-slate-500 leading-tight">
+                      Verifique en tiempo real el estado y la latencia de las conexiones con los motores de Inteligencia Artificial de forma segura en el servidor.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={testingAi !== null}
+                        onClick={() => handleTestAiConnection('gemini')}
+                        className="flex-1 py-2 px-3 bg-slate-50 hover:bg-[#461D77]/5 border border-slate-200 hover:border-[#461D77]/30 rounded-xl text-[10px] font-extrabold text-slate-700 hover:text-[#461D77] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
+                      >
+                        {testingAi === 'gemini' ? (
+                          <>
+                            <Loader2 size={11} className="animate-spin text-[#461D77]" />
+                            Probando...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={11} className="text-[#461D77]" />
+                            Probar Gemini
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={testingAi !== null}
+                        onClick={() => handleTestAiConnection('glm')}
+                        className="flex-1 py-2 px-3 bg-slate-50 hover:bg-amber-500/5 border border-slate-200 hover:border-amber-500/30 rounded-xl text-[10px] font-extrabold text-slate-700 hover:text-amber-600 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
+                      >
+                        {testingAi === 'glm' ? (
+                          <>
+                            <Loader2 size={11} className="animate-spin text-amber-500" />
+                            Probando...
+                          </>
+                        ) : (
+                          <>
+                            <Cpu size={11} className="text-amber-500" />
+                            Probar Gemma
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Diagnostic Result Banner */}
+                    {testResult && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`p-3.5 rounded-2xl border text-[10px] leading-relaxed font-medium flex flex-col gap-1.5 shadow-sm ${
+                          testResult.success
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            : 'bg-rose-50 border-rose-200 text-rose-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-black uppercase tracking-wider text-[9px]">
+                          <span className="flex items-center gap-1.5">
+                            {testResult.success ? (
+                              <CheckCircle size={12} className="text-emerald-600" />
+                            ) : (
+                              <ShieldAlert size={12} className="text-rose-600" />
+                            )}
+                            Diagnóstico: {testResult.model === 'gemini' ? 'Google Gemini' : 'Google Gemma (OpenRouter)'}
+                          </span>
+                          {testResult.success && testResult.latencyMs !== undefined && (
+                            <span className="font-mono text-emerald-600 text-[8px] bg-emerald-100/50 px-1.5 py-0.5 rounded">
+                              {testResult.latencyMs} ms
+                            </span>
+                          )}
+                        </div>
+                        <p>{testResult.message}</p>
+                        {testResult.success && testResult.modelUsed && (
+                          <div className="font-mono text-[8px] text-slate-400 uppercase mt-0.5 border-t border-slate-200/50 pt-1.5 flex justify-between">
+                            <span>Motor en producción:</span>
+                            <span className="font-extrabold">{testResult.modelUsed}</span>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

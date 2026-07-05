@@ -14,8 +14,8 @@ const getEnvVar = (key: string): string => {
 // Clave de API (Se obtiene exclusivamente de variables de entorno por seguridad)
 const API_KEY = getEnvVar("VITE_OPENROUTER_API_KEY");
 // Permite cambiar el modelo desde Vercel usando VITE_OPENROUTER_MODEL. 
-// Si no se configura, usa el modelo NVIDIA por defecto.
-const MODEL_ID = getEnvVar("VITE_OPENROUTER_MODEL") || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
+// Si no se configura, usa el modelo Gemma 4 31B por defecto.
+const MODEL_ID = getEnvVar("VITE_OPENROUTER_MODEL") || "google/gemma-4-31b-it:free";
 
 export const refineJustificationWithAI = async (text: string, product: string, stats?: any): Promise<string> => {
     if (!API_KEY) {
@@ -59,50 +59,66 @@ REGLAS CRÍTICAS:
 - NO menciones ningún destino, locación externa, ni el nombre del cliente en el reporte.
 `.trim();
 
-    try {
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${API_KEY}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": typeof window !== 'undefined' ? window.location.origin : 'https://sqm-litio.vercel.app',
-                "X-Title": "SQM Logistics Dashboard",
-            },
-            body: JSON.stringify({
-                "model": MODEL_ID,
-                "messages": [
-                    { "role": "system", "content": "Eres un redactor técnico experto en logística minera." },
-                    { "role": "user", "content": prompt }
-                ],
-                "temperature": 0.5,
-                "max_tokens": 100
-            })
-        });
+    const modelsToTry = Array.from(new Set([
+        MODEL_ID,
+        "google/gemma-4-26b-a4b-it:free",
+        "openrouter/free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+    ]));
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("DEBUG: Error de OpenRouter:", response.status, errorData);
+    let lastError: Error | null = null;
+
+    for (const currentModel of modelsToTry) {
+        try {
+            console.log(`[OpenRouter Client] Calling model: ${currentModel}`);
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": typeof window !== 'undefined' ? window.location.origin : 'https://sqm-litio.vercel.app',
+                    "X-Title": "SQM Logistics Dashboard",
+                },
+                body: JSON.stringify({
+                    "model": currentModel,
+                    "messages": [
+                        { "role": "system", "content": "Eres un redactor técnico experto en logística minera." },
+                        { "role": "user", "content": prompt }
+                    ],
+                    "temperature": 0.5,
+                    "max_tokens": 100
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.log(`[OpenRouter Recovery] Model ${currentModel} returned status ${response.status}. Attempting next...`);
+                
+                if (response.status === 429) lastError = new Error("Servidor saturado, reintenta en 10 seg.");
+                else if (response.status === 401) lastError = new Error("Clave de API no válida o expirada.");
+                else if (response.status === 402) lastError = new Error("Créditos insuficientes en OpenRouter.");
+                else if (response.status >= 500) lastError = new Error("Error del proveedor, intenta en un momento.");
+                else lastError = new Error(errorData.error?.message || `Error ${response.status}: Servicio no disponible.`);
+                
+                continue;
+            }
+
+            const data = await response.json();
+            const result = data.choices?.[0]?.message?.content?.trim();
             
-            if (response.status === 429) throw new Error("Servidor saturado, reintenta en 10 seg.");
-            if (response.status === 401) throw new Error("Clave de API no válida o expirada.");
-            if (response.status === 402) throw new Error("Créditos insuficientes en OpenRouter.");
-            if (response.status >= 500) throw new Error("Error del proveedor, intenta en un momento.");
-            
-            throw new Error(errorData.error?.message || `Error ${response.status}: Servicio no disponible.`);
-        }
+            if (!result) {
+                lastError = new Error("Respuesta de IA vacía");
+                continue;
+            }
 
-        const data = await response.json();
-        const result = data.choices?.[0]?.message?.content?.trim();
-        
-        if (!result) {
-            throw new Error("Respuesta de IA vacía");
+            console.log(`[OpenRouter Client] Success with model: ${currentModel}`);
+            return result.replace(/^["']|["']$/g, '');
+        } catch (error: any) {
+            console.log(`[OpenRouter Recovery] Problem calling ${currentModel}. Attempting next...`);
+            lastError = error;
         }
-
-        console.log("DEBUG: Reescritura exitosa");
-        return result.replace(/^["']|["']$/g, '');
-        
-    } catch (error: any) {
-        console.error("DEBUG: Falló el servicio de IA:", error.message);
-        throw error;
     }
+
+    throw lastError || new Error("Todos los intentos con OpenRouter fallaron.");
 };

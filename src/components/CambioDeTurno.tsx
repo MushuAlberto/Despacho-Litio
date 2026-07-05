@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, FileText, TrendingUp, ArrowLeft, Image } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, AlertCircle, CheckCircle2, FileText, TrendingUp, ArrowLeft, Image, Loader2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import CambioAnalisisComparativoChart, { formatDecimalToHHMM } from './CambioAnalisisComparativoChart';
 import CambioAnalisisProductoChart from './CambioAnalisisProductoChart';
@@ -10,6 +10,7 @@ import { cleanNumeric, parseExcelTime, normalizeHeader } from '../utils/dataProc
 import { generateShiftReportPDF } from '../utils/pdfGenerator';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useToast } from './Toast';
 
 interface ChartData {
   name: string;
@@ -42,6 +43,8 @@ interface CambioDeTurnoProps {
 }
 
 export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
+  const { success, error: toastError, warning, info } = useToast();
+
   const [allData, setAllData] = useState<ChartData[]>([]);
   const [range1, setRange1] = useState({ start: '', end: '' });
   const [range2, setRange2] = useState({ start: '', end: '' });
@@ -50,6 +53,12 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [complianceData, setComplianceData] = useState<any[]>([]);
   const [complianceFiles, setComplianceFiles] = useState<string[]>([]);
+
+  // Drag & drop uploader states
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   // Global AI settings fetched dynamically from Firestore
   const [globalAiSettings, setGlobalAiSettings] = useState({
@@ -287,12 +296,66 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
     reader.readAsArrayBuffer(file);
   }, []);
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+              setIsUploading(false);
+              processFile(file);
+              success(`Archivo ${file.name} procesado correctamente`, "Carga Completa");
+            }, 300);
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 40);
+    }
+  }, [processFile, success]);
+
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach(processFile);
+    if (files && files.length > 0) {
+      const file = files[0];
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+              setIsUploading(false);
+              processFile(file);
+              success(`Archivo ${file.name} procesado correctamente`, "Carga Completa");
+            }, 300);
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 40);
     }
-  }, [processFile]);
+  }, [processFile, success]);
 
   const clearCompliance = () => {
     setComplianceData([]);
@@ -369,21 +432,82 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
     }
   }._fn;
 
-  const downloadPDF = (type: 'novandino' | 'sqm') => {
-    if (type === 'novandino') {
-      generateShiftReportPDF({
-        title: "NOVANDINO",
-        data: aggregatedData1,
-        range: range1,
-        analysis: novandinoAnalysis
+  const downloadPDF = async (type: 'novandino' | 'sqm') => {
+    const reportTitle = type === 'novandino' ? "NOVANDINO" : "SQM N.Y.";
+    const reportData = type === 'novandino' ? aggregatedData1 : aggregatedData2;
+    const reportRange = type === 'novandino' ? range1 : range2;
+    const reportAnalysis = type === 'novandino' ? novandinoAnalysis : sqmAnalysis;
+    
+    setDownloadingPdf(true);
+    info(`Iniciando generación de PDF de alta precisión en el servidor para ${reportTitle}...`, "Generando Reporte", 4000);
+    
+    try {
+      const currentUserStr = localStorage.getItem('sqm_current_user');
+      const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
+      const operatorName = currentUser ? currentUser.name : '';
+
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: reportTitle,
+          data: reportData,
+          range: reportRange,
+          analysis: reportAnalysis,
+          operatorName: operatorName
+        })
       });
-    } else {
-      generateShiftReportPDF({
-        title: "SQM N.Y.",
-        data: aggregatedData2,
-        range: range2,
-        analysis: sqmAnalysis
-      });
+
+      if (!response.ok) {
+        throw new Error('La respuesta del servidor no fue exitosa');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Reporte_Cambio_Turno_Server_${type.toUpperCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      success(`Reporte PDF de ${reportTitle} descargado correctamente`, "Generación Completada");
+
+      // Log to Firestore
+      try {
+        if (currentUser) {
+          const { logActivity } = await import('../services/firebase');
+          await logActivity(
+            currentUser,
+            'Descargó PDF Servidor',
+            `Exportó y descargó el Reporte PDF de alta precisión generado en el servidor para la faena ${reportTitle}.`
+          );
+        }
+      } catch (logErr) {
+        console.error('Error logging PDF server download:', logErr);
+      }
+
+    } catch (err) {
+      console.error('Error fetching server-side PDF:', err);
+      warning("No se pudo completar el PDF en el servidor. Utilizando motor del cliente como respaldo...", "Respaldo Activado");
+      
+      // Fallback to client-side generation
+      try {
+        generateShiftReportPDF({
+          title: reportTitle,
+          data: reportData,
+          range: reportRange,
+          analysis: reportAnalysis
+        });
+        success(`Reporte PDF de ${reportTitle} generado en el cliente`, "Descarga Exitosa");
+      } catch (clientErr) {
+        toastError("Fallo crítico: No se pudo generar el reporte en el cliente.", "Error");
+      }
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -635,7 +759,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        GLM-5.2 (NVIDIA)
+                        Gemma (OpenRouter)
                       </button>
                     )}
                   </div>
@@ -703,7 +827,30 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   };
 
   return (
-    <div className="min-h-screen bg-calido p-4 md:p-8 max-w-[1800px] mx-auto space-y-6">
+    <div 
+      onDragOver={handleDragOver}
+      onDragOverCapture={(e) => { e.preventDefault(); setIsDragging(true); }}
+      className="min-h-screen bg-calido p-4 md:p-8 max-w-[1800px] mx-auto space-y-6 relative"
+    >
+      {/* Screen-wide Drag & Drop Overlay Portal */}
+      {isDragging && (
+        <div 
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex flex-col items-center justify-center border-8 border-dashed border-violeta m-4 rounded-[3rem] transition-all duration-300"
+        >
+          <div className="text-center p-8 space-y-4 max-w-md pointer-events-none">
+            <div className="mx-auto w-20 h-20 bg-violeta/10 rounded-full flex items-center justify-center text-violeta animate-bounce">
+              <Upload className="w-10 h-10" />
+            </div>
+            <h2 className="text-2xl font-black text-white uppercase tracking-widest">Suelta para Procesar</h2>
+            <p className="text-slate-300 text-sm font-semibold">
+              Suelta tu plantilla Excel o archivo JSON de justificación aquí para cargarlos instantáneamente.
+            </p>
+          </div>
+        </div>
+      )}
+
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-violeta/10 shadow-sm">
         <div className="flex items-center gap-4">
           <button 
@@ -732,10 +879,15 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           <div className="flex flex-wrap gap-2">
             <button 
               onClick={() => downloadPDF('novandino')}
-              disabled={aggregatedData1.length === 0}
+              disabled={aggregatedData1.length === 0 || downloadingPdf}
               className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-nucleo border-2 border-nucleo/10 hover:border-nucleo/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              <FileText className="w-4 h-4" /> PDF Novandino
+              {downloadingPdf ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              PDF Novandino
             </button>
             <button 
               onClick={() => downloadPNG('novandino')}
@@ -746,10 +898,15 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
             </button>
             <button 
               onClick={() => downloadPDF('sqm')}
-              disabled={aggregatedData2.length === 0}
+              disabled={aggregatedData2.length === 0 || downloadingPdf}
               className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-mineral border-2 border-mineral/10 hover:border-mineral/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              <FileText className="w-4 h-4" /> PDF SQM
+              {downloadingPdf ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              PDF SQM
             </button>
             <button 
               onClick={() => downloadPNG('sqm')}
@@ -782,28 +939,92 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
         </div>
       )}
 
-      <main className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <AnalysisPanel 
-          title="NOVANDINO" 
-          data={aggregatedData1} 
-          range={range1} 
-          setRange={setRange1} 
-          colorIdx={1} 
-          complianceData={complianceData} 
-          analysis={novandinoAnalysis}
-          setAnalysis={setNovandinoAnalysis}
-        />
-        <AnalysisPanel 
-          title="SQM N.Y." 
-          data={aggregatedData2} 
-          range={range2} 
-          setRange={setRange2} 
-          colorIdx={2} 
-          complianceData={complianceData} 
-          analysis={sqmAnalysis}
-          setAnalysis={setSqmAnalysis}
-        />
-      </main>
+      {/* Advanced interactive Drag & Drop landing zone if no data is loaded */}
+      {allData.length === 0 ? (
+        <div 
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`relative overflow-hidden min-h-[420px] flex flex-col items-center justify-center border-4 border-dashed rounded-[3rem] p-12 transition-all duration-300 bg-white ${
+            isDragging 
+              ? 'border-violeta bg-violeta/5 scale-[1.01] shadow-2xl' 
+              : 'border-slate-200 hover:border-violeta/30 hover:bg-slate-50/50 shadow-sm'
+          }`}
+        >
+          {isUploading ? (
+            <div className="flex flex-col items-center space-y-6 max-w-md w-full text-center">
+              <div className="relative flex items-center justify-center w-20 h-20 bg-violeta/5 rounded-full">
+                <Loader2 className="w-12 h-12 text-violeta animate-spin" />
+                <span className="absolute text-[11px] font-black text-slate-800">{uploadProgress}%</span>
+              </div>
+              <div className="space-y-2 w-full">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Procesando Archivo Operativo</h3>
+                <p className="text-[11px] text-slate-500 font-bold">Analizando cabeceras dinámicas y mapeando registros...</p>
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-4 border border-slate-200">
+                  <div 
+                    className="h-full bg-violeta rounded-full transition-all duration-100 ease-out" 
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center text-center space-y-6 max-w-xl">
+              <div className="p-6 bg-violeta/10 rounded-full text-violeta mb-1 animate-bounce">
+                <Upload className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-lg font-black text-violeta uppercase tracking-widest">Arrastra tus Archivos Aquí</h2>
+                <p className="text-xs text-slate-500 font-semibold max-w-md leading-relaxed">
+                  Soporta plantillas comparativas de turnos en formato <span className="text-emerald-600 font-bold">Excel (.xlsx, .xls)</span> o archivos de justificación <span className="text-amber-500 font-bold">JSON (.json)</span> de desviaciones.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" /> Excel Base
+                <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                <FileText className="w-3.5 h-3.5 text-amber-500" /> JSON Justificaciones
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                <label className="flex items-center gap-2 px-8 py-3.5 bg-violeta text-white font-black rounded-2xl cursor-pointer hover:bg-violeta/90 transition-all shadow-lg hover:shadow-violeta/20 active:scale-95 uppercase tracking-wider text-[10px]">
+                  <Upload className="w-4 h-4" /> Seleccionar Archivo
+                  <input type="file" className="hidden" accept=".xlsx, .xls, .csv, .xlsm, .json" multiple onChange={handleFileUpload} />
+                </label>
+                <button 
+                  onClick={downloadTemplate} 
+                  className="flex items-center gap-2 px-6 py-3.5 text-[10px] font-black text-slate-600 border-2 border-slate-200 hover:border-slate-300 rounded-2xl transition-all active:scale-95 bg-white uppercase tracking-wider cursor-pointer"
+                >
+                  <Download className="w-4 h-4" /> Plantilla Base
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <main className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <AnalysisPanel 
+            title="NOVANDINO" 
+            data={aggregatedData1} 
+            range={range1} 
+            setRange={setRange1} 
+            colorIdx={1} 
+            complianceData={complianceData} 
+            analysis={novandinoAnalysis}
+            setAnalysis={setNovandinoAnalysis}
+          />
+          <AnalysisPanel 
+            title="SQM N.Y." 
+            data={aggregatedData2} 
+            range={range2} 
+            setRange={setRange2} 
+            colorIdx={2} 
+            complianceData={complianceData} 
+            analysis={sqmAnalysis}
+            setAnalysis={setSqmAnalysis}
+          />
+        </main>
+      )}
 
       <footer className="text-center pb-8 border-t border-slate-100 pt-8 mt-12">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Excel Analytic Platform · Modo Dual Activo</p>
