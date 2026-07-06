@@ -62,6 +62,14 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
         },
         body: JSON.stringify({ model })
       });
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        const snippet = text.slice(0, 100).replace(/<[^>]*>/g, '').trim();
+        throw new Error(`El servidor no respondió con JSON (Código HTTP ${response.status}). Detalle: "${snippet || 'Vacío'}"`);
+      }
+
       const result = await response.json();
       setTestResult({
         model,
@@ -74,7 +82,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
       setTestResult({
         model,
         success: false,
-        message: `Error de red al conectar con el servidor: ${err.message || err}`
+        message: `Error de conexión: ${err.message || err}`
       });
     } finally {
       setTestingAi(null);
