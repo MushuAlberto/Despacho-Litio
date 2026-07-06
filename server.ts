@@ -6,14 +6,24 @@ import PDFDocument from "pdfkit";
 
 dotenv.config();
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
+let aiClient: GoogleGenAI | null = null;
+const getAiClient = (): GoogleGenAI => {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("Falta la variable de entorno 'GEMINI_API_KEY' en el servidor.");
     }
+    aiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
   }
-});
+  return aiClient;
+};
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -24,6 +34,7 @@ app.use(express.json({ limit: '10mb' }));
     const modelsToTry = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
     for (const modelName of modelsToTry) {
       try {
+        const ai = getAiClient();
         const response = await ai.models.generateContent({
           model: modelName,
           contents: prompt,
