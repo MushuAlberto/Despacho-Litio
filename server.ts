@@ -1,6 +1,5 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import PDFDocument from "pdfkit";
@@ -553,13 +552,15 @@ REGLAS CRÍTICAS DE REDACCIÓN:
   if (process.env.VERCEL !== "1") {
     const PORT = 3000;
     if (process.env.NODE_ENV !== "production") {
-      createViteServer({
-        server: { middlewareMode: true },
-        appType: "spa",
-      }).then((vite) => {
-        app.use(vite.middlewares);
-        app.listen(PORT, "0.0.0.0", () => {
-          console.log(`Server running on http://localhost:${PORT}`);
+      import("vite").then(({ createServer: createViteServer }) => {
+        createViteServer({
+          server: { middlewareMode: true },
+          appType: "spa",
+        }).then((vite) => {
+          app.use(vite.middlewares);
+          app.listen(PORT, "0.0.0.0", () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+          });
         });
       });
     } else {
