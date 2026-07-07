@@ -52,7 +52,7 @@ service cloud.firestore {
 
     // 5. Shared Gallery Images
     match /gallery_images/{imageId} {
-      allow get, list: if isValidId(imageId);
+      allow get, list: if true;
       allow create, update: if isValidId(imageId)
         && incoming().url is string && incoming().url.size() <= 1048500
         && incoming().name is string && incoming().name.size() <= 256
