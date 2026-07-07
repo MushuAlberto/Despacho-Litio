@@ -110,6 +110,8 @@ app.use(express.json({ limit: '10mb' }));
   };
 
   // API routes FIRST
+  app.use('/sda', express.static(path.join(process.cwd(), 'sda')));
+
   app.post("/api/test-ai", async (req, res) => {
     try {
       const { model } = req.body;

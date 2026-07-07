@@ -206,12 +206,40 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
     const staticNovandino: GalleryImage = {
       id: 'static_novandino',
-      url: '/novandino.png',
-      name: 'Novandino Corporativo',
+      url: '/sda/home.png',
+      name: 'Home',
       date: 'General'
     };
 
-    return [staticNovandino, ...sortedList];
+    const baseList = [staticNovandino, ...sortedList];
+    const sdaImagesList = [
+      { name: 'Imagen 1', filename: '1.png' },
+      { name: 'Imagen 2', filename: '2.png' },
+      { name: 'Imagen 3', filename: '3.png' },
+      { name: 'Imagen 4', filename: '4.png' },
+      { name: 'Imagen 5', filename: '5.png' },
+      { name: 'Imagen 6', filename: '6.png' },
+      { name: 'Imagen 7', filename: '7.png' },
+      { name: 'Imagen 8', filename: '8.png' }
+    ];
+
+    const weavedList: GalleryImage[] = [];
+    for (let i = 0; i < baseList.length; i++) {
+      weavedList.push(baseList[i]);
+      if (i < baseList.length - 1) {
+        const sdaIndex = i % sdaImagesList.length;
+        const sdaImgObj = sdaImagesList[sdaIndex];
+        
+        weavedList.push({
+          id: `sda_random_${i}_${sdaImgObj.filename}`,
+          url: `/sda/${sdaImgObj.filename}`,
+          name: sdaImgObj.name,
+          date: 'General'
+        });
+      }
+    }
+
+    return weavedList;
   }, [images, sortBy, productList]);
 
   // Automatic report image generation effect
@@ -407,7 +435,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   };
 
   const deleteImage = async (id: string) => {
-    if (id === 'static_novandino') return;
+    if (id === 'static_novandino' || id.startsWith('sda_random_')) return;
     const imgToDelete = sortedImages.find(img => img.id === id);
     try {
       // Delete from Firestore
@@ -745,7 +773,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                     onClick={() => setCurrentIndex(idx)}
                   >
                     <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
-                    {img.id !== 'static_novandino' && (
+                    {img.id !== 'static_novandino' && !img.id.startsWith('sda_random_') && (
                       <div className="absolute inset-0 bg-nucleo/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}
