@@ -213,7 +213,31 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
 
   useEffect(() => {
     localStorage.setItem(storageKey, justification);
-  }, [justification, storageKey]);
+    // Dispatch custom event to notify other instances of ProductDetailSection
+    window.dispatchEvent(new CustomEvent('sqm-justification-updated', {
+      detail: { date, product, value: justification }
+    }));
+  }, [justification, storageKey, date, product]);
+
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ date: string; product: string; value: string }>;
+      if (customEvent.detail && customEvent.detail.date === date && customEvent.detail.product === product) {
+        if (customEvent.detail.value !== justification) {
+          setJustification(customEvent.detail.value);
+          initialJustificationRef.current = customEvent.detail.value;
+        }
+      }
+    };
+    window.addEventListener('sqm-justification-updated', handleUpdate);
+    return () => window.removeEventListener('sqm-justification-updated', handleUpdate);
+  }, [date, product, justification]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey) || "";
+    setJustification(saved);
+    initialJustificationRef.current = saved;
+  }, [storageKey]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setJustification(e.target.value);
