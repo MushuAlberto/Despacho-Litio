@@ -44,6 +44,19 @@
         "lastUpdatedAt": { "type": "string", "format": "date-time", "description": "ISO timestamp of last update" }
       },
       "required": ["activeAi", "enableGemini", "enableGlm", "enableShiftAnalysis", "enableJustificationRefinement"]
+    },
+    "GalleryImage": {
+      "title": "Gallery Image",
+      "description": "Image saved in the shared gallery, including uploads and auto-reports",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique image identifier" },
+        "url": { "type": "string", "description": "DataURL base64 or URL of the image" },
+        "name": { "type": "string", "description": "Display title or date category of the image" },
+        "date": { "type": "string", "description": "Human-readable date label" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "ISO timestamp when the image was added" }
+      },
+      "required": ["url", "name", "date", "createdAt"]
     }
   },
   "firestore": {
@@ -58,6 +71,10 @@
     "system_config/{configId}": {
       "schema": "SystemConfig",
       "description": "Global system configurations"
+    },
+    "gallery_images/{imageId}": {
+      "schema": "GalleryImage",
+      "description": "Shared visual evidence and daily automated report screenshots"
     }
   }
 }

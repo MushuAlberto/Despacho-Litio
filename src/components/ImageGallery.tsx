@@ -6,6 +6,8 @@ import {
   Maximize2, Minimize2, Play, Pause, Timer,
   Clock, TrendingUp, Target, Users, Scale, ClipboardCheck, Truck, Loader2
 } from 'lucide-react';
+import { collection, onSnapshot, query, setDoc, doc, deleteDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, logActivity } from '../services/firebase';
 import ChartCard from './ChartCard';
 import { ProductDetailSection } from './ProductDetailSection';
 import { NovandinoLogo } from './BrandLogo';
@@ -18,6 +20,7 @@ interface GalleryImage {
   url: string;
   name: string;
   date: string;
+  createdAt?: string;
 }
 
 interface ImageGalleryProps {
@@ -28,6 +31,7 @@ interface ImageGalleryProps {
 
 export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = [], selectedDate = '' }) => {
   const [images, setImages] = useState<GalleryImage[]>([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -35,21 +39,37 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   const [intervalTime, setIntervalTime] = useState(5); // en segundos
   const [isGeneratingAuto, setIsGeneratingAuto] = useState(false);
 
-  // Persistence
+  // Live Persistence via Firestore
   useEffect(() => {
-    const savedImages = localStorage.getItem('sqm_gallery_images');
-    if (savedImages) {
-      try {
-        setImages(JSON.parse(savedImages));
-      } catch (e) {
-        console.error("Error loading gallery images", e);
-      }
-    }
-  }, []);
+    const q = query(collection(db, 'gallery_images'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedImages: GalleryImage[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        fetchedImages.push({
+          id: docSnap.id,
+          url: data.url,
+          name: data.name,
+          date: data.date,
+          createdAt: data.createdAt
+        });
+      });
+      // Sort images by createdAt descending, fallback to id
+      fetchedImages.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return b.id.localeCompare(a.id);
+      });
+      setImages(fetchedImages);
+      setHasLoaded(true);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'gallery_images');
+    });
 
-  useEffect(() => {
-    localStorage.setItem('sqm_gallery_images', JSON.stringify(images));
-  }, [images]);
+    return () => unsubscribe();
+  }, []);
 
   // Data calculations for report generation
   const filteredData = useMemo(() => {
@@ -96,26 +116,16 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
   // Automatic report image generation effect
   useEffect(() => {
-    if (!rawData || rawData.length === 0 || !selectedDate) return;
+    if (!hasLoaded || !rawData || rawData.length === 0 || !selectedDate) return;
 
     const runAutomaticCapture = async () => {
-      const savedImages = localStorage.getItem('sqm_gallery_images');
-      let currentImagesList: GalleryImage[] = [];
-      if (savedImages) {
-        try {
-          currentImagesList = JSON.parse(savedImages);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
       const prefixKpiId = `auto_kpi_${selectedDate}`;
       const prefixChartId = `auto_chart_${selectedDate}`;
       const prefixProductsIds = productList.map(p => `auto_prod_${p.replace(/\s+/g, '_')}_${selectedDate}`);
 
-      const hasKpis = currentImagesList.some(img => img.id === prefixKpiId);
-      const hasChart = currentImagesList.some(img => img.id === prefixChartId);
-      const hasProducts = prefixProductsIds.every(id => currentImagesList.some(img => img.id === id));
+      const hasKpis = images.some(img => img.id === prefixKpiId);
+      const hasChart = images.some(img => img.id === prefixChartId);
+      const hasProducts = prefixProductsIds.every(id => images.some(img => img.id === id));
 
       if (hasKpis && hasChart && hasProducts) {
         return; // Already exists, don't regenerate
@@ -123,7 +133,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
       setIsGeneratingAuto(true);
       // Wait for rendering to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       const generatedList: GalleryImage[] = [];
 
@@ -160,7 +170,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         for (let i = 0; i < productList.length; i++) {
           const prod = productList[i];
           const prodId = prefixProductsIds[i];
-          const hasProd = currentImagesList.some(img => img.id === prodId);
+          const hasProd = images.some(img => img.id === prodId);
           if (!hasProd) {
             const prodEl = document.getElementById(`capture-product-${i}`);
             if (prodEl) {
@@ -176,12 +186,21 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         }
 
         if (generatedList.length > 0) {
-          setImages(prev => {
-            const filteredPrev = prev.filter(p => !generatedList.some(g => g.id === p.id));
-            const newList = [...generatedList, ...filteredPrev];
-            localStorage.setItem('sqm_gallery_images', JSON.stringify(newList));
-            return newList;
-          });
+          // Upload each generated image to Firestore
+          for (const newImg of generatedList) {
+            try {
+              const path = 'gallery_images';
+              const docRef = doc(db, path, newImg.id);
+              await setDoc(docRef, {
+                url: newImg.url,
+                name: newImg.name,
+                date: newImg.date,
+                createdAt: new Date().toISOString()
+              });
+            } catch (innerErr) {
+              console.error("Error saving automatic report image to Firestore:", innerErr);
+            }
+          }
         }
       } catch (err) {
         console.error("Error generating automatic report images:", err);
@@ -191,7 +210,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     };
 
     runAutomaticCapture();
-  }, [rawData, selectedDate, productList]);
+  }, [rawData, selectedDate, productList, hasLoaded, images]);
 
   // Autoplay Effect
   useEffect(() => {
@@ -211,59 +230,66 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       if (!file.type.startsWith('image/')) return;
 
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const newImage: GalleryImage = {
-          id: Math.random().toString(36).substr(2, 9),
-          url: e.target?.result as string,
-          name: file.name,
-          date: new Date().toLocaleDateString()
-        };
-        setImages(prev => [newImage, ...prev]);
+      reader.onload = async (e) => {
+        const imageId = Math.random().toString(36).substr(2, 9);
+        const name = file.name;
+        const date = new Date().toLocaleDateString();
+        const url = e.target?.result as string;
 
-        // Record Image upload activity log in Firestore
         try {
+          // Upload to Firestore
+          const path = 'gallery_images';
+          const docRef = doc(db, path, imageId);
+          await setDoc(docRef, {
+            url,
+            name,
+            date,
+            createdAt: new Date().toISOString()
+          });
+
+          // Record Image upload activity log in Firestore
           const savedUser = localStorage.getItem('sqm_current_user');
           if (savedUser) {
             const parsedUser = JSON.parse(savedUser);
-            import('../services/firebase').then(async ({ logActivity }) => {
-              await logActivity(
-                parsedUser,
-                'Subió Evidencia',
-                `Cargó una nueva imagen de terreno (${file.name}) a la Galería Operativa.`
-              );
-            }).catch(err => console.error(err));
+            await logActivity(
+              parsedUser,
+              'Subió Evidencia',
+              `Cargó una nueva imagen de terreno (${name}) a la Galería Operativa.`
+            );
           }
         } catch (err) {
-          console.error('Error logging image upload:', err);
+          console.error('Error saving image upload:', err);
+          handleFirestoreError(err, OperationType.WRITE, `gallery_images/${imageId}`);
         }
       };
       reader.readAsDataURL(file);
     });
   };
 
-  const deleteImage = (id: string) => {
+  const deleteImage = async (id: string) => {
     const imgToDelete = images.find(img => img.id === id);
-    const newImages = images.filter(img => img.id !== id);
-    setImages(newImages);
-    if (currentIndex >= newImages.length) {
-      setCurrentIndex(Math.max(0, newImages.length - 1));
-    }
-
-    // Record Image deletion activity log in Firestore
     try {
+      // Delete from Firestore
+      const path = 'gallery_images';
+      await deleteDoc(doc(db, path, id));
+
+      if (currentIndex >= images.length - 1) {
+        setCurrentIndex(Math.max(0, images.length - 2));
+      }
+
+      // Record Image deletion activity log in Firestore
       const savedUser = localStorage.getItem('sqm_current_user');
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
-        import('../services/firebase').then(async ({ logActivity }) => {
-          await logActivity(
-            parsedUser,
-            'Eliminó Evidencia',
-            `Eliminó la imagen (${imgToDelete?.name || 'sin_nombre'}) de la Galería Operativa.`
-          );
-        }).catch(err => console.error(err));
+        await logActivity(
+          parsedUser,
+          'Eliminó Evidencia',
+          `Eliminó la imagen (${imgToDelete?.name || 'sin_nombre'}) de la Galería Operativa.`
+        );
       }
     } catch (err) {
-      console.error('Error logging image delete:', err);
+      console.error('Error deleting image:', err);
+      handleFirestoreError(err, OperationType.DELETE, `gallery_images/${id}`);
     }
   };
 
@@ -478,13 +504,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                       className="w-full h-full object-cover"
                     />
                     
-                    {/* Overlay Info (Static per slide but simplified) */}
-                    <div className="absolute bottom-0 left-0 right-0 p-12 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none">
-                      <div className="text-white space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/50">{img.date}</p>
-                        <h3 className="text-3xl font-black tracking-tight">{img.name}</h3>
-                      </div>
-                    </div>
+
                   </div>
                 ))}
 

@@ -49,5 +49,16 @@ service cloud.firestore {
     match /system_config/{configId} {
       allow read, write: if true;
     }
+
+    // 5. Shared Gallery Images
+    match /gallery_images/{imageId} {
+      allow get, list: if isValidId(imageId);
+      allow create, update: if isValidId(imageId)
+        && incoming().url is string && incoming().url.size() <= 1048500
+        && incoming().name is string && incoming().name.size() <= 256
+        && incoming().date is string && incoming().date.size() <= 128
+        && incoming().createdAt is string && incoming().createdAt.size() <= 64;
+      allow delete: if isValidId(imageId);
+    }
   }
 }
