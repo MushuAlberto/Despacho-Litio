@@ -141,7 +141,14 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   }, [filteredData]);
 
   const sortedImages = useMemo(() => {
-    const list = [...images];
+    // Only keep manual uploads and automatic images of the CURRENT selected date
+    const list = images.filter(img => {
+      if (img.id.startsWith('auto_')) {
+        return img.id.includes(selectedDate);
+      }
+      return true;
+    });
+
     let sortedList: GalleryImage[] = [];
     if (sortBy === 'report-order') {
       sortedList = list.sort((a, b) => {
@@ -211,27 +218,38 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       date: 'General'
     };
 
+    // Deduplicate the baseList first (user uploaded / auto-generated images)
     const baseList = [staticNovandino, ...sortedList];
+    const seenUrls = new Set<string>();
+    const uniqueBaseList: GalleryImage[] = [];
+
+    for (const item of baseList) {
+      if (!seenUrls.has(item.url)) {
+        seenUrls.add(item.url);
+        uniqueBaseList.push(item);
+      }
+    }
+
     const sdaImagesList = [
-      { name: 'Imagen 1', filename: '1.png' },
-      { name: 'Imagen 2', filename: '2.png' },
-      { name: 'Imagen 3', filename: '3.png' },
-      { name: 'Imagen 4', filename: '4.png' },
-      { name: 'Imagen 5', filename: '5.png' },
-      { name: 'Imagen 6', filename: '6.png' },
-      { name: 'Imagen 7', filename: '7.png' },
-      { name: 'Imagen 8', filename: '8.png' }
+      { name: 'Salar de Atacama 1', filename: '1.png' },
+      { name: 'Salar de Atacama 2', filename: '2.png' },
+      { name: 'Salar de Atacama 3', filename: '3.png' },
+      { name: 'Salar de Atacama 4', filename: '4.png' },
+      { name: 'Salar de Atacama 5', filename: '5.png' },
+      { name: 'Salar de Atacama 6', filename: '6.png' },
+      { name: 'Salar de Atacama 7', filename: '7.png' },
+      { name: 'Salar de Atacama 8', filename: '8.png' }
     ];
 
     const weavedList: GalleryImage[] = [];
-    for (let i = 0; i < baseList.length; i++) {
-      weavedList.push(baseList[i]);
-      if (i < baseList.length - 1) {
+    for (let i = 0; i < uniqueBaseList.length; i++) {
+      weavedList.push(uniqueBaseList[i]);
+      if (i < uniqueBaseList.length - 1) {
         const sdaIndex = i % sdaImagesList.length;
         const sdaImgObj = sdaImagesList[sdaIndex];
         
         weavedList.push({
-          id: `sda_random_${i}_${sdaImgObj.filename}`,
+          id: `sda_weaved_${i}_${sdaImgObj.filename}`,
           url: `/sda/${sdaImgObj.filename}`,
           name: sdaImgObj.name,
           date: 'General'
@@ -240,7 +258,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     }
 
     return weavedList;
-  }, [images, sortBy, productList]);
+  }, [images, sortBy, productList, selectedDate]);
 
   // Automatic report image generation effect
   useEffect(() => {
