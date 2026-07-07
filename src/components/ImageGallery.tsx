@@ -142,8 +142,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
   const sortedImages = useMemo(() => {
     const list = [...images];
+    let sortedList: GalleryImage[] = [];
     if (sortBy === 'report-order') {
-      return list.sort((a, b) => {
+      sortedList = list.sort((a, b) => {
         const getPriority = (img: GalleryImage) => {
           if (img.id.startsWith('auto_kpi_')) return 1;
           if (img.id.startsWith('auto_chart_')) return 2;
@@ -174,26 +175,21 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         if (timeA !== timeB) return timeB - timeA;
         return b.id.localeCompare(a.id);
       });
-    }
-    if (sortBy === 'recent') {
-      return list;
-    }
-    if (sortBy === 'oldest') {
-      return list.sort((a, b) => {
+    } else if (sortBy === 'recent') {
+      sortedList = list;
+    } else if (sortBy === 'oldest') {
+      sortedList = list.sort((a, b) => {
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         if (timeA !== timeB) return timeA - timeB;
         return a.id.localeCompare(b.id);
       });
-    }
-    if (sortBy === 'name-asc') {
-      return list.sort((a, b) => a.name.localeCompare(b.name));
-    }
-    if (sortBy === 'name-desc') {
-      return list.sort((a, b) => b.name.localeCompare(a.name));
-    }
-    if (sortBy === 'type-first') {
-      return list.sort((a, b) => {
+    } else if (sortBy === 'name-asc') {
+      sortedList = list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'name-desc') {
+      sortedList = list.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sortBy === 'type-first') {
+      sortedList = list.sort((a, b) => {
         const isAAuto = a.id.startsWith('auto_');
         const isBAuto = b.id.startsWith('auto_');
         if (isAAuto && !isBAuto) return -1;
@@ -204,8 +200,18 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         if (timeA !== timeB) return timeB - timeA;
         return b.id.localeCompare(a.id);
       });
+    } else {
+      sortedList = list;
     }
-    return list;
+
+    const staticNovandino: GalleryImage = {
+      id: 'static_novandino',
+      url: '/novandino.png',
+      name: 'Novandino Corporativo',
+      date: 'General'
+    };
+
+    return [staticNovandino, ...sortedList];
   }, [images, sortBy, productList]);
 
   // Automatic report image generation effect
@@ -401,6 +407,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   };
 
   const deleteImage = async (id: string) => {
+    if (id === 'static_novandino') return;
     const imgToDelete = sortedImages.find(img => img.id === id);
     try {
       // Delete from Firestore
@@ -738,14 +745,16 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                     onClick={() => setCurrentIndex(idx)}
                   >
                     <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-nucleo/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}
-                        className="w-10 h-10 bg-rose-500 text-white rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors shadow-lg"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                    {img.id !== 'static_novandino' && (
+                      <div className="absolute inset-0 bg-nucleo/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}
+                          className="w-10 h-10 bg-rose-500 text-white rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors shadow-lg"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -257,7 +257,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
       accentColor: '#7177EC',
       badge: 'SOPORTE EN TERRENO',
       status: 'REGISTRO',
-      group: 'jefe_turno' as const
+      group: 'supervision' as const
     },
     {
       id: 'memoria' as const,

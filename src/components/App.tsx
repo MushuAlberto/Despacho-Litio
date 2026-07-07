@@ -503,12 +503,6 @@ const App: React.FC = () => {
       } else {
         setPasswordRequest({ view: 'memoria', name: 'Memoria' });
       }
-    } else if (v === 'galeria') {
-      if (isJefeTurnoUnlocked) {
-        setView('galeria');
-      } else {
-        setPasswordRequest({ view: 'galeria', name: 'Galería Operativa' });
-      }
     } else if (v === 'cambioTurno') {
       if (isJefeTurnoUnlocked) {
         setView('cambioTurno');
