@@ -597,13 +597,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           />
 
           {/* Floating Top Header Control */}
-          <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-50 pointer-events-none">
-            {/* Ambient Info Panel */}
-            <div className="bg-black/40 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 flex flex-col gap-0.5 shadow-2xl pointer-events-auto">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/60">{images[currentIndex].date}</p>
-              <h3 className="text-lg font-black tracking-tight text-white max-w-md truncate">{images[currentIndex].name}</h3>
-            </div>
-
+          <div className="absolute top-6 left-6 right-6 flex justify-end items-start z-50 pointer-events-none">
             {/* Floating Control buttons */}
             <div className="flex items-center gap-3 pointer-events-auto">
               <button 
