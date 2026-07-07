@@ -346,11 +346,9 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
         <div className="bg-black text-white px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest uppercase mb-1 no-print">Ítem {index} / {total}</div>
       </div>
 
-      <div className="flex flex-col items-center space-y-2 pt-1">
-        <div className={`px-8 py-1.5 rounded-full ${stats.compliance < 85 ? 'bg-amber-500/15 text-amber-700 border border-amber-500/20' : 'bg-ionizado/10 text-ionizado'} text-[9px] font-black tracking-[0.2em] shadow-sm uppercase`}>
-          {stats.compliance < 85 ? 'Desviación de Desempeño' : 'Cumplimiento Operativo Exitoso'}
-        </div>
-      </div>
+
+      {/* Centered compliance status pill removed as per user request */}
+
 
       <div className="grid grid-cols-4 gap-3">
         <MetricCard icon={<Package className="w-4 h-4" />} label="Carga Real" value={`${formatNumberWithDecimals(stats.tonReal, 2)} Ton`} diff={stats.tonDiff} unit="vs Prog" />
@@ -389,6 +387,92 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           <IndicatorRow label="Tpo. Meta" value={formatHoursToTime(stats.avgFaenaMeta)} />
         </div>
       </div>
+
+      {/* Sección de Justificación y Observaciones Técnicas */}
+      {hasAnyDeviation && (
+        <div className="mt-6 bg-slate-50/50 p-6 rounded-[1.5rem] border border-slate-100/80 flex flex-col space-y-4 no-print">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ClipboardEdit className="w-4 h-4 text-violeta/80" />
+              <span className="text-[11px] font-black text-violeta/80 uppercase tracking-widest">
+                Justificación de Desempeño
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {isTonDeviation && (
+                <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 uppercase tracking-tight">
+                  ⚠️ Desviación Tonelaje
+                </span>
+              )}
+              {isTimeDeviation && (
+                <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 uppercase tracking-tight">
+                  ⚠️ Desviación Tiempo
+                </span>
+              )}
+              {!hasAnyDeviation && (
+                <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 uppercase tracking-tight">
+                  ✓ Operación en Rango Meta (Sin Desviaciones)
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="relative">
+            <textarea
+              value={justification}
+              onChange={handleTextChange}
+              onBlur={handleBlur}
+              className="w-full h-[110px] p-4 text-xs font-semibold text-slate-800 bg-white rounded-xl border border-slate-200/80 shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-violeta/20 focus:border-violeta transition-all leading-relaxed"
+              placeholder={
+                hasAnyDeviation
+                  ? "Escriba aquí la justificación técnica de la desviación de tonelaje/tiempo detectada..."
+                  : "Escriba observaciones técnicas adicionales opcionales de la jornada o deje en blanco..."
+              }
+            />
+            {isRefining && (
+              <div className="absolute inset-0 bg-white/70 rounded-xl flex items-center justify-center backdrop-blur-[1px]">
+                <div className="flex items-center gap-2 text-violeta font-black text-[10px] uppercase tracking-wider">
+                  <Loader2 className="w-4 h-4 animate-spin text-violeta" />
+                  Refinando redacción con IA...
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-1">
+            {refineError && (
+              <div className="flex items-center gap-1.5 text-rose-600 text-[10px] font-black">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{refineError}</span>
+              </div>
+            )}
+            {!refineError && (
+              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                * El texto se guarda automáticamente al hacer clic fuera del cuadro.
+              </div>
+            )}
+            
+            {globalAiSettings.enableJustificationRefinement && userAiEnabled && (
+              <button
+                onClick={() => handleRefineWithAI()}
+                disabled={isRefining || !justification.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 bg-violeta hover:bg-violeta/90 disabled:bg-slate-100 text-white disabled:text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Optimizar con IA</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Versión imprimible estática de la justificación */}
+      {justification.trim() && (
+        <div className="hidden print:block mt-6 p-5 border border-slate-200 rounded-xl bg-slate-50">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Justificación Técnica Registrada:</p>
+          <p className="text-xs text-slate-800 leading-relaxed font-semibold italic">"{justification}"</p>
+        </div>
+      )}
 
       <div className="flex justify-end items-center no-print no-pdf pt-4">
         <div className="text-[8px] font-black text-violeta/60 uppercase tracking-widest">Persistencia Local: {date} • {product}</div>
