@@ -4,7 +4,7 @@ import {
   Upload, Trash2, ChevronLeft, ChevronRight, 
   Image as ImageIcon, X, Home, Plus,
   Maximize2, Minimize2, Play, Pause, Timer,
-  Clock, TrendingUp, Target, Users, Scale, ClipboardCheck, Truck, Loader2
+  Clock, TrendingUp, Target, Users, Scale, ClipboardCheck, Truck, Loader2, RefreshCw
 } from 'lucide-react';
 import { collection, onSnapshot, query, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, logActivity } from '../services/firebase';
@@ -38,6 +38,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   const [autoPlay, setAutoPlay] = useState(false);
   const [intervalTime, setIntervalTime] = useState(5); // en segundos
   const [isGeneratingAuto, setIsGeneratingAuto] = useState(false);
+  const [sortBy, setSortBy] = useState<'report-order' | 'recent' | 'oldest' | 'name-asc' | 'name-desc' | 'type-first'>('report-order');
 
   // Live Persistence via Firestore
   useEffect(() => {
@@ -114,6 +115,74 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     });
   }, [filteredData]);
 
+  const sortedImages = useMemo(() => {
+    const list = [...images];
+    if (sortBy === 'report-order') {
+      return list.sort((a, b) => {
+        const getPriority = (img: GalleryImage) => {
+          if (img.id.startsWith('auto_kpi_')) return 1;
+          if (img.id.startsWith('auto_chart_')) return 2;
+          if (img.id.startsWith('auto_prod_')) {
+            // Find product index
+            const match = img.id.match(/^auto_prod_(.+?)_\d{4}-\d{2}-\d{2}$/);
+            if (match) {
+              const prodNameUnderscored = match[1];
+              const idx = productList.findIndex(p => p.replace(/\s+/g, '_') === prodNameUnderscored);
+              if (idx !== -1) {
+                return 3 + idx;
+              }
+            }
+            return 3 + productList.length;
+          }
+          return 1000; // Manual images
+        };
+
+        const prioA = getPriority(a);
+        const prioB = getPriority(b);
+
+        if (prioA !== prioB) {
+          return prioA - prioB;
+        }
+
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return b.id.localeCompare(a.id);
+      });
+    }
+    if (sortBy === 'recent') {
+      return list;
+    }
+    if (sortBy === 'oldest') {
+      return list.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA !== timeB) return timeA - timeB;
+        return a.id.localeCompare(b.id);
+      });
+    }
+    if (sortBy === 'name-asc') {
+      return list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    if (sortBy === 'name-desc') {
+      return list.sort((a, b) => b.name.localeCompare(a.name));
+    }
+    if (sortBy === 'type-first') {
+      return list.sort((a, b) => {
+        const isAAuto = a.id.startsWith('auto_');
+        const isBAuto = b.id.startsWith('auto_');
+        if (isAAuto && !isBAuto) return -1;
+        if (!isAAuto && isBAuto) return 1;
+        
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return b.id.localeCompare(a.id);
+      });
+    }
+    return list;
+  }, [images, sortBy, productList]);
+
   // Automatic report image generation effect
   useEffect(() => {
     if (!hasLoaded || !rawData || rawData.length === 0 || !selectedDate) return;
@@ -138,6 +207,11 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       const generatedList: GalleryImage[] = [];
 
       try {
+        // Temporarily add 'is-exporting' so that 'pdf-only-block' is rendered and inputs are hidden
+        document.body.classList.add('is-exporting');
+        // Let layout styles apply
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         // 1. Capture KPIs
         if (!hasKpis) {
           const kpiEl = document.getElementById('capture-kpis-executive');
@@ -205,6 +279,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       } catch (err) {
         console.error("Error generating automatic report images:", err);
       } finally {
+        document.body.classList.remove('is-exporting');
         setIsGeneratingAuto(false);
       }
     };
@@ -212,16 +287,50 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     runAutomaticCapture();
   }, [rawData, selectedDate, productList, hasLoaded, images]);
 
+  const handleRegenerateAutoImages = async () => {
+    if (isGeneratingAuto || !selectedDate) return;
+    
+    setIsGeneratingAuto(true);
+    
+    try {
+      const prefixKpiId = `auto_kpi_${selectedDate}`;
+      const prefixChartId = `auto_chart_${selectedDate}`;
+      const prefixProductsIds = productList.map(p => `auto_prod_${p.replace(/\s+/g, '_')}_${selectedDate}`);
+      
+      const idsToDelete = [prefixKpiId, prefixChartId, ...prefixProductsIds];
+      
+      const path = 'gallery_images';
+      for (const id of idsToDelete) {
+        if (images.some(img => img.id === id)) {
+          await deleteDoc(doc(db, path, id));
+        }
+      }
+      
+      const savedUser = localStorage.getItem('sqm_current_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        await logActivity(
+          parsedUser,
+          'Regeneró Reportes',
+          `Solicitó regenerar las capturas automáticas para la jornada ${formatDateToCL(selectedDate)}.`
+        );
+      }
+    } catch (err) {
+      console.error("Error deleting auto images for regeneration:", err);
+      setIsGeneratingAuto(false);
+    }
+  };
+
   // Autoplay Effect
   useEffect(() => {
     let interval: any;
-    if (autoPlay && images.length > 0) {
+    if (autoPlay && sortedImages.length > 0) {
       interval = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % images.length);
+        setCurrentIndex((prev) => (prev + 1) % sortedImages.length);
       }, intervalTime * 1000);
     }
     return () => clearInterval(interval);
-  }, [autoPlay, images.length, intervalTime]);
+  }, [autoPlay, sortedImages.length, intervalTime]);
 
   const handleFileUpload = (files: FileList | null) => {
     if (!files) return;
@@ -267,14 +376,14 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   };
 
   const deleteImage = async (id: string) => {
-    const imgToDelete = images.find(img => img.id === id);
+    const imgToDelete = sortedImages.find(img => img.id === id);
     try {
       // Delete from Firestore
       const path = 'gallery_images';
       await deleteDoc(doc(db, path, id));
 
-      if (currentIndex >= images.length - 1) {
-        setCurrentIndex(Math.max(0, images.length - 2));
+      if (currentIndex >= sortedImages.length - 1) {
+        setCurrentIndex(Math.max(0, sortedImages.length - 2));
       }
 
       // Record Image deletion activity log in Firestore
@@ -294,18 +403,18 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   };
 
   const nextSlide = useCallback(() => {
-    if (images.length === 0) return;
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  }, [images.length]);
+    if (sortedImages.length === 0) return;
+    setCurrentIndex((prev) => (prev + 1) % sortedImages.length);
+  }, [sortedImages.length]);
 
   const prevSlide = useCallback(() => {
-    if (images.length === 0) return;
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  }, [images.length]);
+    if (sortedImages.length === 0) return;
+    setCurrentIndex((prev) => (prev - 1 + sortedImages.length) % sortedImages.length);
+  }, [sortedImages.length]);
 
   const openFullScreen = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (images.length > 0) {
+    if (sortedImages.length > 0) {
       setIsFullScreen(true);
       try {
         const docEl = document.documentElement;
@@ -387,13 +496,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         }
       }
       
-      if (images.length === 0) return;
+      if (sortedImages.length === 0) return;
       if (e.key === 'ArrowRight') nextSlide();
       if (e.key === 'ArrowLeft') prevSlide();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [images.length, nextSlide, prevSlide, isFullScreen, onBack]);
+  }, [sortedImages.length, nextSlide, prevSlide, isFullScreen, onBack]);
 
   return (
     <div className="min-h-screen bg-calido flex flex-col font-sans text-tecnico relative">
@@ -411,17 +520,50 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
             <h1 className="text-2xl font-[950] text-nucleo tracking-tighter uppercase leading-none">Galería Operativa</h1>
             <p className="text-[10px] font-bold text-violeta/60 uppercase tracking-[0.3em] mt-1">Registro Visual de Faena</p>
           </div>
-          {isGeneratingAuto && (
+          {isGeneratingAuto ? (
             <div className="flex items-center gap-2 bg-ionizado/10 px-4 py-2 rounded-full border border-ionizado/20 animate-pulse">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-ionizado" />
               <span className="text-[9px] font-black text-ionizado uppercase tracking-wider">Sincronizando reportes automáticos...</span>
             </div>
+          ) : (
+            rawData.length > 0 && selectedDate && (
+              <button
+                onClick={handleRegenerateAutoImages}
+                className="flex items-center gap-1.5 bg-violeta/5 hover:bg-violeta/10 border border-violeta/15 hover:border-violeta/30 text-violeta font-black text-[9px] uppercase tracking-wider px-3 py-2 rounded-xl transition-all cursor-pointer"
+                title="Regenera todas las capturas automáticas para incluir las últimas modificaciones o justificaciones de desempeño."
+              >
+                <RefreshCw size={12} className="text-violeta" />
+                Actualizar Reportes
+              </button>
+            )
           )}
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Sorting Option */}
+          {sortedImages.length > 0 && (
+            <div className="bg-calido/50 rounded-2xl p-1.5 flex items-center gap-1.5 border border-violeta/5 px-3">
+              <span className="text-[9px] font-black uppercase text-violeta/50 tracking-wider">Ordenar:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as any);
+                  setCurrentIndex(0); // Reset to first image in sorted list
+                }}
+                className="bg-transparent text-[10px] font-black text-violeta uppercase outline-none cursor-pointer border-none p-0 focus:ring-0"
+              >
+                <option value="report-order">Orden del Informe</option>
+                <option value="recent">Recientes primero</option>
+                <option value="oldest">Antiguas primero</option>
+                <option value="name-asc">Nombre (A-Z)</option>
+                <option value="name-desc">Nombre (Z-A)</option>
+                <option value="type-first">Reportes primero</option>
+              </select>
+            </div>
+          )}
+
           {/* Autoplay Controls */}
-          {images.length > 0 && (
+          {sortedImages.length > 0 && (
             <div className="bg-calido/50 rounded-2xl p-1 flex items-center gap-1 border border-violeta/5">
               <button 
                 onClick={handleToggleAutoPlay}
@@ -463,7 +605,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       </header>
 
       <main className="flex-1 p-8 max-w-7xl mx-auto w-full space-y-12">
-        {images.length === 0 ? (
+        {sortedImages.length === 0 ? (
           <div 
             className={`
               w-full h-[60vh] border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center space-y-6 transition-all duration-500
@@ -490,7 +632,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
             {/* Main Carousel */}
             <section className="relative group">
               <div className="aspect-[21/9] w-full bg-tecnico rounded-[3rem] overflow-hidden shadow-2xl relative carousel-container">
-                {images.map((img, idx) => (
+                {sortedImages.map((img, idx) => (
                   <div
                     key={img.id}
                     className={`
@@ -539,7 +681,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
                 {/* Indicators */}
                 <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                  {images.map((_, idx) => (
+                  {sortedImages.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentIndex(idx)}
@@ -557,11 +699,11 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                   <div className="w-1.5 h-6 bg-ionizado rounded-full" />
                   <h2 className="text-xl font-black text-nucleo uppercase tracking-tight">Biblioteca de Medios</h2>
                 </div>
-                <p className="text-[10px] font-black text-violeta/40 uppercase tracking-widest">{images.length} Archivos</p>
+                <p className="text-[10px] font-black text-violeta/40 uppercase tracking-widest">{sortedImages.length} Archivos</p>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                {images.map((img, idx) => (
+                {sortedImages.map((img, idx) => (
                   <div 
                     key={img.id}
                     className={`
@@ -588,12 +730,12 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       </main>
 
       {/* Fullscreen Overlay */}
-      {isFullScreen && images[currentIndex] && (
+      {isFullScreen && sortedImages[currentIndex] && (
         <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden animate-in fade-in duration-300">
           {/* Background image blurred to fill space beautifully (ambient glow) */}
           <div 
             className="absolute inset-0 bg-cover bg-center scale-110 blur-3xl opacity-30 select-none pointer-events-none" 
-            style={{ backgroundImage: `url(${images[currentIndex].url})` }}
+            style={{ backgroundImage: `url(${sortedImages[currentIndex].url})` }}
           />
 
           {/* Floating Top Header Control */}
@@ -633,8 +775,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
             {/* Image (Fills absolute maximum space with object-contain) */}
             <img 
-              src={images[currentIndex].url} 
-              alt={images[currentIndex].name} 
+              src={sortedImages[currentIndex].url} 
+              alt={sortedImages[currentIndex].name} 
               className="w-full h-full max-w-full max-h-full object-contain shadow-2xl z-10 select-none animate-in fade-in zoom-in-95 duration-300" 
             />
 
@@ -653,7 +795,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           {/* Bottom Slides Counter and Help Overlay */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 bg-black/40 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 shadow-2xl pointer-events-none">
             <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">
-              {currentIndex + 1} / {images.length}
+              {currentIndex + 1} / {sortedImages.length}
             </span>
           </div>
         </div>
