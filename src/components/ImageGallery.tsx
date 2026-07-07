@@ -876,7 +876,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
         {/* 3. Products Details */}
         {productList.map((prod, idx) => (
-          <div key={prod} id={`capture-product-${idx}`} style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
+          <div key={`${selectedDate}-${prod}`} id={`capture-product-${idx}`} style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
             <ProductDetailSection 
               product={prod} 
               data={filteredData.filter(d => d.Producto === prod)} 

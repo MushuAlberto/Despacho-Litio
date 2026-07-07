@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { formatDateToCL, formatNumberWithDecimals } from '../utils/dataProcessor';
 import { db } from '../services/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 
 interface ProductDetailSectionProps {
   product: string;
@@ -184,6 +184,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           setJustification(refinedVal);
           initialJustificationRef.current = refinedVal;
           localStorage.setItem(storageKey, refinedVal);
+          await deleteStaleImage();
           
           // Log activity if current user is saved
           if (savedUser) {
@@ -218,10 +219,21 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
     setJustification(e.target.value);
   };
 
+  const deleteStaleImage = async () => {
+    try {
+      const prodId = `auto_prod_${product.replace(/\s+/g, '_')}_${date}`;
+      const imgDocRef = doc(db, 'gallery_images', prodId);
+      await deleteDoc(imgDocRef);
+    } catch (err) {
+      console.error('Error deleting stale image:', err);
+    }
+  };
+
   const handleBlur = async () => {
     const textToRefine = justification;
     if (textToRefine !== initialJustificationRef.current) {
       initialJustificationRef.current = textToRefine;
+      await deleteStaleImage();
       try {
         const savedUser = localStorage.getItem('sqm_current_user');
         if (savedUser) {
