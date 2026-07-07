@@ -347,8 +347,8 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
       </div>
 
       <div className="flex flex-col items-center space-y-2 pt-1">
-        <div className={`px-8 py-1.5 rounded-full ${stats.compliance < 85 ? 'bg-nucleo text-white' : 'bg-ionizado/10 text-ionizado'} text-[9px] font-black tracking-[0.2em] shadow-sm uppercase`}>
-          {stats.compliance < 85 ? 'Requiere Justificación Técnica' : 'Cumplimiento Operativo Exitoso'}
+        <div className={`px-8 py-1.5 rounded-full ${stats.compliance < 85 ? 'bg-amber-500/15 text-amber-700 border border-amber-500/20' : 'bg-ionizado/10 text-ionizado'} text-[9px] font-black tracking-[0.2em] shadow-sm uppercase`}>
+          {stats.compliance < 85 ? 'Desviación de Desempeño' : 'Cumplimiento Operativo Exitoso'}
         </div>
       </div>
 
@@ -390,64 +390,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
         </div>
       </div>
 
-      {hasAnyDeviation && (
-        <div className="mt-6 bg-slate-50/50 p-8 rounded-[1.8rem] space-y-6 transition-all duration-300">
-        <div className="flex justify-between items-start border-b border-calido pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-violeta/70 shadow-sm">
-              <ClipboardEdit className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <p className="text-[9px] font-black text-violeta/70 uppercase tracking-widest leading-none mb-1">Registro Operativo</p>
-              <div className="flex items-center gap-2">
-                <h4 className="text-xl font-black text-nucleo tracking-tighter uppercase leading-none">Justificación de Desempeño</h4>
-                <div className="flex gap-1.5 ml-2">
-                  {isTimeDeviation && (
-                    <span className="bg-nucleo/10 text-nucleo border border-nucleo/20 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">Desviación Tpo.</span>
-                  )}
-                  {isTonDeviation && (
-                    <span className="bg-mineral/10 text-mineral border border-mineral/20 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">Desviación Ton.</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative">
-          <textarea
-            value={justification}
-            onChange={handleTextChange}
-            onBlur={handleBlur}
-            placeholder="Escriba aquí la justificación técnica manual..."
-            className="w-full h-32 bg-white border-2 border-slate-100 rounded-2xl p-5 text-sm font-medium transition-all shadow-inner resize-none no-pdf mb-2 text-slate-700 placeholder:text-slate-300 focus:ring-0"
-          />
-          {/* Subtle status indicators when refining or on error */}
-          {(isRefining || refineError) && (
-            <div className="flex flex-wrap items-center gap-3 px-1 no-pdf mb-4">
-              {isRefining && (
-                <span className="text-[10px] text-[#461D77] font-black uppercase tracking-widest flex items-center gap-1.5 bg-[#461D77]/5 px-3 py-1.5 rounded-lg border border-[#461D77]/10 animate-pulse">
-                  <Loader2 size={12} className="animate-spin text-[#461D77]" />
-                  Reescribiendo...
-                </span>
-              )}
-              {refineError && (
-                <span className="text-[10px] text-rose-500 font-black uppercase tracking-tight bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
-                  <AlertCircle size={12} className="text-rose-500" />
-                  {refineError}
-                </span>
-              )}
-            </div>
-          )}
-
-          <div className="hidden pdf-only-block bg-white border border-slate-100 rounded-2xl p-6 text-sm font-medium text-tecnico h-auto min-h-[6rem] leading-relaxed whitespace-pre-wrap">
-            {justification || "No se registraron observaciones para este ítem."}
-          </div>
-        </div>
-      </div>
-    )}
-
-      <div className="flex justify-end items-center no-print no-pdf">
+      <div className="flex justify-end items-center no-print no-pdf pt-4">
         <div className="text-[8px] font-black text-violeta/60 uppercase tracking-widest">Persistencia Local: {date} • {product}</div>
       </div>
     </div>

@@ -72,6 +72,31 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     return () => unsubscribe();
   }, []);
 
+  // Cleanup stale auto-generated images from before the design update (2026-07-07T06:50:00.000Z)
+  useEffect(() => {
+    if (!hasLoaded || images.length === 0) return;
+    const updateThreshold = new Date('2026-07-07T06:50:00.000Z').getTime();
+    
+    const deleteStale = async () => {
+      const path = 'gallery_images';
+      for (const img of images) {
+        if (img.id.startsWith('auto_')) {
+          const createdTime = img.createdAt ? new Date(img.createdAt).getTime() : 0;
+          if (createdTime < updateThreshold) {
+            console.log(`Deleting stale auto-generated image: ${img.id}`);
+            try {
+              await deleteDoc(doc(db, path, img.id));
+            } catch (err) {
+              console.error(`Error deleting stale image ${img.id}:`, err);
+            }
+          }
+        }
+      }
+    };
+    
+    deleteStale();
+  }, [hasLoaded, images]);
+
   // Data calculations for report generation
   const filteredData = useMemo(() => {
     if (!rawData || !selectedDate) return [];
