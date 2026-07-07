@@ -196,13 +196,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   // Autoplay Effect
   useEffect(() => {
     let interval: any;
-    if (autoPlay && images.length > 0 && !isFullScreen) {
+    if (autoPlay && images.length > 0) {
       interval = setInterval(() => {
         setCurrentIndex((prev) => (prev + 1) % images.length);
       }, intervalTime * 1000);
     }
     return () => clearInterval(interval);
-  }, [autoPlay, images.length, intervalTime, isFullScreen]);
+  }, [autoPlay, images.length, intervalTime]);
 
   const handleFileUpload = (files: FileList | null) => {
     if (!files) return;
@@ -300,6 +300,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
   const closeFullScreen = async () => {
     setIsFullScreen(false);
+    setAutoPlay(false);
     try {
       if (document.fullscreenElement) {
         if (document.exitFullscreen) {
@@ -317,11 +318,24 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     }
   };
 
+  const handleToggleAutoPlay = async () => {
+    const nextAutoPlay = !autoPlay;
+    setAutoPlay(nextAutoPlay);
+    if (nextAutoPlay) {
+      await openFullScreen();
+    } else {
+      await closeFullScreen();
+    }
+  };
+
   // Sync React state with browser's native fullscreen state changes
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isCurrentlyFullscreen = !!document.fullscreenElement;
       setIsFullScreen(isCurrentlyFullscreen);
+      if (!isCurrentlyFullscreen) {
+        setAutoPlay(false);
+      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -384,7 +398,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           {images.length > 0 && (
             <div className="bg-calido/50 rounded-2xl p-1 flex items-center gap-1 border border-violeta/5">
               <button 
-                onClick={() => setAutoPlay(!autoPlay)}
+                onClick={handleToggleAutoPlay}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${autoPlay ? 'bg-ionizado text-white shadow-lg' : 'bg-white text-violeta hover:bg-white'}`}
               >
                 {autoPlay ? <Pause size={12} fill="currentColor" /> : <Play size={12} fill="currentColor" />}
@@ -570,14 +584,24 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
               <h3 className="text-lg font-black tracking-tight text-white max-w-md truncate">{images[currentIndex].name}</h3>
             </div>
 
-            {/* Floating Close Button */}
-            <button 
-              onClick={closeFullScreen}
-              className="w-14 h-14 bg-black/40 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/15 shadow-2xl cursor-pointer pointer-events-auto hover:scale-105 active:scale-95"
-              title="Cerrar Pantalla Completa"
-            >
-              <X size={26} />
-            </button>
+            {/* Floating Control buttons */}
+            <div className="flex items-center gap-3 pointer-events-auto">
+              <button 
+                onClick={() => setAutoPlay(!autoPlay)}
+                className={`w-14 h-14 backdrop-blur-md rounded-full flex items-center justify-center transition-all border border-white/15 shadow-2xl cursor-pointer hover:scale-105 active:scale-95 ${autoPlay ? 'bg-ionizado text-white border-ionizado' : 'bg-black/40 text-white hover:bg-white hover:text-black'}`}
+                title={autoPlay ? "Pausar Reproducción" : "Iniciar Reproducción"}
+              >
+                {autoPlay ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+              </button>
+
+              <button 
+                onClick={closeFullScreen}
+                className="w-14 h-14 bg-black/40 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/15 shadow-2xl cursor-pointer hover:scale-105 active:scale-95"
+                title="Cerrar Pantalla Completa"
+              >
+                <X size={26} />
+              </button>
+            </div>
           </div>
           
           {/* Main Full-Size Image Container */}
