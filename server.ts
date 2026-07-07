@@ -1,50 +1,59 @@
 import express from "express";
 import path from "path";
-import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import PDFDocument from "pdfkit";
 
 dotenv.config();
 
-let aiClient: GoogleGenAI | null = null;
-const getAiClient = (): GoogleGenAI => {
-  if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Falta la variable de entorno 'GEMINI_API_KEY' en el servidor.");
-    }
-    aiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  return aiClient;
-};
-
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 
-  // Helper to run Gemini models in sequence
+  // Helper to run Gemini models in sequence via OpenRouter (using OpenRouter API Key)
   const callGemini = async (prompt: string): Promise<string | null> => {
-    if (!process.env.GEMINI_API_KEY) return null;
-    const modelsToTry = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+    if (!apiKey) {
+      console.warn("Falta la API Key de OpenRouter para realizar la consulta de Gemini.");
+      return null;
+    }
+
+    // Ordered list of Gemini models on OpenRouter (free tier/low cost models)
+    const modelsToTry = [
+      "google/gemini-2.5-flash:free",
+      "google/gemini-2.5-pro:free",
+      "google/gemini-flash-1.5-8b:free",
+      "google/gemma-2-9b-it:free"
+    ];
+
     for (const modelName of modelsToTry) {
       try {
-        const ai = getAiClient();
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: prompt,
-          config: { temperature: 0.3 }
+        console.log(`Calling OpenRouter (Gemini Route) with model ${modelName}...`);
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+            "HTTP-Referer": "https://sqm-litio.vercel.app",
+            "X-Title": "SQM Logistics Dashboard"
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.3,
+            max_tokens: 2048
+          })
         });
-        if (response && response.text) {
-          return response.text;
+
+        if (response.ok) {
+          const json = await response.json();
+          const content = json.choices?.[0]?.message?.content;
+          if (content) {
+            return content;
+          }
+        } else {
+          console.log(`[OpenRouter Gemini Fallback] Model ${modelName} status is ${response.status}. Trying next...`);
         }
       } catch (e) {
-        console.log(`Model ${modelName} not available at this moment. Trying next fallback...`);
+        console.log(`[OpenRouter Gemini Fallback] Problem calling ${modelName}. Trying next...`);
       }
     }
     return null;
@@ -105,15 +114,16 @@ app.use(express.json({ limit: '10mb' }));
     try {
       const { model } = req.body;
       const startTime = Date.now();
+      const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+
+      if (!apiKey) {
+        return res.status(400).json({
+          success: false,
+          message: "Falta la variable de entorno 'OPENROUTER_API_KEY' en el servidor. Configure la clave de OpenRouter en Configuración o en su archivo .env para habilitar el servicio de IA."
+        });
+      }
 
       if (model === "glm") {
-        const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-        if (!apiKey) {
-          return res.status(400).json({
-            success: false,
-            message: "Falta la variable de entorno 'OPENROUTER_API_KEY' en el servidor. Configure la clave de OpenRouter en Configuración o en su archivo .env para habilitar Google Gemma desde OpenRouter Free."
-          });
-        }
         try {
           const result = await callOpenRouter("Responde únicamente con la palabra 'OK'.");
           if (result && result.text) {
@@ -137,33 +147,26 @@ app.use(express.json({ limit: '10mb' }));
         }
       }
 
-      // Default to Gemini
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(400).json({
-          success: false,
-          message: "Falta la variable de entorno 'GEMINI_API_KEY' en el servidor. Agregue la clave de Gemini en su archivo .env o en el menú de Configuración para habilitar Gemini."
-        });
-      }
-
+      // Default to Gemini (now queried securely via OpenRouter!)
       try {
         const text = await callGemini("Responde únicamente con la palabra 'OK'.");
         if (text) {
           const latency = Date.now() - startTime;
           return res.json({
             success: true,
-            message: "Conectividad exitosa con Google Gemini API. El modelo está respondiendo de forma óptima.",
+            message: "Conectividad exitosa con Google Gemini (canalizado de forma segura vía OpenRouter). El modelo está respondiendo de forma óptima.",
             latencyMs: latency,
-            modelUsed: "gemini-3.5-flash / gemini-flash-latest"
+            modelUsed: "google/gemini-2.5-flash:free (vía OpenRouter)"
           });
         }
         return res.status(500).json({
           success: false,
-          message: "La API de Gemini respondió con un texto vacío o no válido."
+          message: "El modelo Gemini en OpenRouter respondió con un texto vacío o no válido."
         });
       } catch (err: any) {
         return res.status(500).json({
           success: false,
-          message: `Fallo de conexión o autenticación con Google Gemini API: ${err.message || err}`
+          message: `Fallo de conexión o autenticación con Google Gemini vía OpenRouter: ${err.message || err}`
         });
       }
     } catch (outerErr: any) {
@@ -178,9 +181,10 @@ app.use(express.json({ limit: '10mb' }));
     try {
       const { title, data, complianceData, model } = req.body;
       
-      if (!process.env.GEMINI_API_KEY) {
-        console.warn("GEMINI_API_KEY is not defined in env.");
-        return res.status(500).json({ error: "La API Key de Gemini no está configurada." });
+      const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+      if (!apiKey) {
+        console.warn("OPENROUTER_API_KEY is not defined in env.");
+        return res.status(500).json({ error: "La API Key de OpenRouter no está configurada. Configure la clave de OpenRouter en Configuración para activar los servicios de IA." });
       }
 
       // Format data and prompt
@@ -208,48 +212,36 @@ Reglas:
 
       // Check if user requested the Gemma (OpenRouter) model
       if (model === "glm") {
-        console.log("User requested OpenRouter Gemma model. Checking API Key...");
-        const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-        if (!apiKey) {
-          console.warn("OPENROUTER_API_KEY is missing. Falling back to Gemini with notice.");
-          const geminiText = await callGemini(prompt);
-          if (geminiText) {
+        try {
+          const orResult = await callOpenRouter(prompt);
+          if (orResult && orResult.text) {
             return res.json({
-              analysis: geminiText + "\n\n---\n\n*(Nota: Se utilizó Gemini de respaldo debido a que `OPENROUTER_API_KEY` no está configurada en las variables de entorno. Agregue su API Key de OpenRouter en Configuración para activar Gemma desde OpenRouter Free)*"
+              analysis: orResult.text + `\n\n---\n\n*Análisis generado con **Gemma (OpenRouter Free)** [Motor: ${orResult.modelUsed}]*`
             });
-          }
-        } else {
-          try {
-            const orResult = await callOpenRouter(prompt);
-            if (orResult && orResult.text) {
-              return res.json({
-                analysis: orResult.text + `\n\n---\n\n*Análisis generado con **Gemma (OpenRouter Free)** [Motor: ${orResult.modelUsed}]*`
-              });
-            } else {
-              // Fallback to Gemini
-              const geminiText = await callGemini(prompt);
-              if (geminiText) {
-                return res.json({
-                  analysis: geminiText + `\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a que OpenRouter Gemma no devolvió una respuesta válida)*`
-                });
-              }
-            }
-          } catch (orErr: any) {
-            console.error("Failed to fetch from OpenRouter:", orErr);
+          } else {
+            // Fallback to Gemini via OpenRouter
             const geminiText = await callGemini(prompt);
             if (geminiText) {
               return res.json({
-                analysis: geminiText + `\n\n---\n\n*(Nota: Se activó Gemini de respaldo debido a un error de conexión con OpenRouter: ${orErr.message || orErr})*`
+                analysis: geminiText + `\n\n---\n\n*(Nota: Se activó Gemini de respaldo en OpenRouter debido a que Gemma no devolvió una respuesta válida)*`
               });
             }
+          }
+        } catch (orErr: any) {
+          console.error("Failed to fetch from OpenRouter Gemma:", orErr);
+          const geminiText = await callGemini(prompt);
+          if (geminiText) {
+            return res.json({
+              analysis: geminiText + `\n\n---\n\n*(Nota: Se activó Gemini de respaldo en OpenRouter debido a un error de conexión con Gemma: ${orErr.message || orErr})*`
+            });
           }
         }
       }
 
-      // Default to Gemini (or fallback if glm failed)
+      // Default to Gemini (now queried securely via OpenRouter!)
       const geminiText = await callGemini(prompt);
       if (geminiText) {
-        res.json({ analysis: geminiText });
+        res.json({ analysis: geminiText + `\n\n---\n\n*Análisis generado con **Google Gemini** [Vía OpenRouter]*` });
       } else {
         console.log("Serving local analytic fallback.");
         res.json({
@@ -271,8 +263,9 @@ Reglas:
     try {
       const { text, product, stats, model } = req.body;
 
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(500).json({ error: "La API Key de Gemini no está configurada." });
+      const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "La API Key de OpenRouter no está configurada. Configure su API Key en el panel de Configuración para continuar." });
       }
 
       const prompt = `
@@ -295,20 +288,17 @@ REGLAS CRÍTICAS DE REDACCIÓN:
 `;
 
       if (model === "glm") {
-        const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-        if (apiKey) {
-          try {
-            const orResult = await callOpenRouter(prompt);
-            if (orResult && orResult.text) {
-              return res.json({ refined: orResult.text.trim().replace(/^["']|["']$/g, '') });
-            }
-          } catch (orErr) {
-            console.error("OpenRouter Refinement failed, falling back to Gemini:", orErr);
+        try {
+          const orResult = await callOpenRouter(prompt);
+          if (orResult && orResult.text) {
+            return res.json({ refined: orResult.text.trim().replace(/^["']|["']$/g, '') });
           }
+        } catch (orErr) {
+          console.error("OpenRouter Refinement failed, falling back to Gemini via OpenRouter:", orErr);
         }
       }
 
-      // Default to Gemini
+      // Default to Gemini (now secure via OpenRouter!)
       const geminiText = await callGemini(prompt);
       if (geminiText) {
         return res.json({ refined: geminiText.trim().replace(/^["']|["']$/g, '') });

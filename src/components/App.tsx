@@ -560,7 +560,13 @@ const App: React.FC = () => {
         onBack={() => setView('menu')}
       />
     );
-    if (view === 'galeria') return <ImageGallery onBack={() => setView('menu')} />;
+    if (view === 'galeria') return (
+      <ImageGallery 
+        onBack={() => setView('menu')} 
+        rawData={rawData}
+        selectedDate={selectedDate}
+      />
+    );
     if (view === 'cambioTurno') return <CambioDeTurno onBack={() => setView('menu')} />;
     if (view === 'lce') return <LCEModule currentUser={currentUser} onBack={() => setView('menu')} />;
 
