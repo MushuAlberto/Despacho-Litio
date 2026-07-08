@@ -80,6 +80,20 @@
     outline: none !important;
 }
 
+/* Reglas de simulación de impresión durante la exportación a PDF (html2canvas) */
+.is-exporting .no-print,
+.is-exporting .no-pdf {
+    display: none !important;
+}
+
+.is-exporting .print\:block {
+    display: block !important;
+}
+
+.is-exporting .print\:flex {
+    display: flex !important;
+}
+
 
 @layer base {
   html {
