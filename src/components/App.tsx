@@ -927,11 +927,11 @@ const App: React.FC = () => {
                                   </span>
                                 </div>
                                 <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none">vs día anterior</span>
+                                  <span className="text-[8px] font-black text-black uppercase tracking-widest leading-none">vs día anterior</span>
                                   {kpi.comparison ? (
                                     <span className={`text-[10px] font-black flex items-center gap-0.5 select-none leading-none ${
                                       !kpi.comparison.isChange
-                                        ? 'text-slate-400'
+                                        ? 'text-black'
                                         : kpi.comparison.isPositive
                                           ? 'text-emerald-600'
                                           : 'text-rose-600'
@@ -940,7 +940,7 @@ const App: React.FC = () => {
                                       <span>{kpi.comparison.text}</span>
                                     </span>
                                   ) : (
-                                    <span className="text-[9px] text-slate-400 italic font-medium">S/D anterior</span>
+                                    <span className="text-[9px] text-black italic font-black">S/D anterior</span>
                                   )}
                                 </div>
                               </div>
