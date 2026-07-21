@@ -241,7 +241,7 @@ const ProductIndividualCard: React.FC<ProductCardProps> = ({ productName, data }
                     <span className={`inline-block px-2.5 py-0.5 rounded-full font-mono font-bold text-[10px] ${
                       row.compliance >= 100 
                         ? 'bg-emerald-50 text-emerald-700' 
-                        : row.compliance >= 85 
+                        : row.compliance >= 90 
                         ? 'bg-amber-50 text-amber-700' 
                         : 'bg-rose-50 text-rose-700'
                     }`}>

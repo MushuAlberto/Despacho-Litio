@@ -148,7 +148,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
             tonReal: totalR,
             avgSda: avgSda,
             avgPang: avgPang,
-            desviaciones: tableRows.filter(r => r.cumplif < 85 || r.realFaena > r.kpiFaena).length
+            desviaciones: tableRows.filter(r => r.cumplif < 90 || r.realFaena > r.kpiFaena).length
         };
     }, [dayData, tableRows]);
 
@@ -202,7 +202,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                             contentStyle={{ borderRadius: '15px', border: 'none', fontSize: '10px', fontWeight: 'bold' }}
                             formatter={(v: number) => [v.toFixed(1), ""]}
                         />
-                        <ReferenceLine yAxisId="left" y={85} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} />
+                        <ReferenceLine yAxisId="left" y={90} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} />
                         <Bar yAxisId="left" dataKey="cumplimiento" fill={color} opacity={0.6} radius={[4, 4, 0, 0]} name="% Cumpl.">
                             <LabelList 
                                 dataKey="cumplimiento" 
@@ -409,12 +409,12 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                                 <td className="p-6 text-slate-500 group-hover:text-slate-800 transition-colors uppercase tracking-tight font-black text-sm">{row.producto}</td>
                                                 <td className="p-6 text-center">
                                                     <div className="flex flex-col items-center gap-2">
-                                                        <span className={`px-5 py-2 rounded-xl font-black text-base ${row.cumplif < 85 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                                        <span className={`px-5 py-2 rounded-xl font-black text-base ${row.cumplif < 90 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
                                                             {row.cumplif.toFixed(1)}%
                                                         </span>
                                                         <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                                                             <div 
-                                                                className={`h-full rounded-full transition-all duration-1000 ${row.cumplif < 85 ? 'bg-nucleo' : 'bg-ionizado'}`}
+                                                                className={`h-full rounded-full transition-all duration-1000 ${row.cumplif < 90 ? 'bg-nucleo' : 'bg-ionizado'}`}
                                                                 style={{ width: `${Math.min(row.cumplif, 100)}%` }}
                                                             />
                                                         </div>
@@ -595,7 +595,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                 <Line yAxisId="right" type="stepAfter" dataKey="promTonReal" stroke="#3FAA88" strokeWidth={4} dot={{ r: 6, fill: '#3FAA88', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} name="Eficiencia Tms/Eq">
                                     <LabelList dataKey="promTonReal" position="top" formatter={(val: number) => val.toFixed(1)} style={{ fill: '#3FAA88', fontSize: 10, fontWeight: 'black' }} offset={10} />
                                 </Line>
-                                <ReferenceLine yAxisId="left" y={85} stroke="#4FD1C5" strokeDasharray="5 5" strokeWidth={2} label={{ position: 'insideTopLeft', value: 'META CARGA 85%', fill: '#4FD1C5', fontSize: 10, fontWeight: 'black' }} />
+                                <ReferenceLine yAxisId="left" y={90} stroke="#4FD1C5" strokeDasharray="5 5" strokeWidth={2} label={{ position: 'insideTopLeft', value: 'META CARGA 90%', fill: '#4FD1C5', fontSize: 10, fontWeight: 'black' }} />
                             </ComposedChart>
                         </ResponsiveContainer>
                     </div>

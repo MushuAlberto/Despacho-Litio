@@ -601,7 +601,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           
           if (pctCumplimiento >= 100) {
             text += `La operación superó la meta definida con un excelente flujo de carguío y tránsito libre en boleterías y pesajes.\n\n`;
-          } else if (pctCumplimiento >= 85) {
+          } else if (pctCumplimiento >= 90) {
             text += `Se registra un ritmo constante dentro de los límites aceptables de la tolerancia operativa ordinaria, alcanzando un progreso cercano al óptimo.\n\n`;
           } else {
             text += `Se evidencia una desviación operativa con un cumplimiento inferior a la meta programada. Se recomienda revisar tiempos de de demora no identificados y cuellos de botella.\n\n`;
@@ -687,7 +687,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
                   // Reglas de negocio estrictas:
                   // 1. Alerta Naranja (Gobernanza) si Tonelaje > 0 pero Tiempo es igual a 0:00 (Inconsistencia)
-                  // 2. Alerta Roja si realTon < progTon * 0.85 (inferior al 85% de lo planificado)
+                  // 2. Alerta Roja si realTon < progTon * 0.90 (inferior al 90% de lo planificado)
                   // 3. Alerta Roja si realTime > metaTime + 10 min (mayor por más de 10 minutos respecto a meta)
                   let alertType: 'red' | 'orange' | 'green' = 'green';
                   let alertMessage = '🟢 Dentro de Rango';
@@ -695,9 +695,9 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
                   if (realTon > 0 && realTime <= 0) {
                     alertType = 'orange';
                     alertMessage = '🔶 Inconsistencia Fiel';
-                  } else if (progTon > 0 && realTon < (progTon * 0.85)) {
+                  } else if (progTon > 0 && realTon < (progTon * 0.90)) {
                     alertType = 'red';
-                    alertMessage = '🔴 Bajo Ton. (<85%)';
+                    alertMessage = '🔴 Bajo Ton. (<90%)';
                   } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
                     alertType = 'red';
                     alertMessage = '🔴 Exc. Tiempo (>10m)';

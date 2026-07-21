@@ -449,7 +449,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
     const eqProg = data.reduce((a, b) => a + (Number(b.Eq_Prog) || 0), 0);
     const eqReal = data.reduce((a, b) => a + (Number(b.Eq_Real) || 0), 0);
     const compliance = tonProg > 0 ? (tonReal / tonProg) * 100 : 0;
-    const isTonDeviation = compliance < 85;
+    const isTonDeviation = compliance < 90;
     const regAvg = data.length > 0 ? data.reduce((a, b) => a + (Number(b.Regulacion_Real) || 0), 0) / data.length : 0;
 
     const faenaRealHoursList = data.map(d => Number(d.faenaRealHours) || 0).filter(v => v > 0);

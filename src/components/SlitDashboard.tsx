@@ -1312,8 +1312,8 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
 
           {/* Centered compliance status pill */}
           <div className="flex flex-col items-center pt-1">
-            <div className={`px-8 py-2 rounded-full ${stats.compliance < 85 ? 'bg-rose-500 text-white animate-pulse' : 'bg-[#3FAA88]/10 text-[#3FAA88]'} text-[10px] font-black tracking-[0.25em] shadow-sm uppercase`}>
-              {stats.compliance < 85 ? 'REQUIERE JUSTIFICACIÓN TÉCNICA' : 'CUMPLIMIENTO OPERATIVO EXITOSO'}
+            <div className={`px-8 py-2 rounded-full ${stats.compliance < 90 ? 'bg-rose-500 text-white animate-pulse' : 'bg-[#3FAA88]/10 text-[#3FAA88]'} text-[10px] font-black tracking-[0.25em] shadow-sm uppercase`}>
+              {stats.compliance < 90 ? 'REQUIERE JUSTIFICACIÓN TÉCNICA' : 'CUMPLIMIENTO OPERATIVO EXITOSO'}
             </div>
           </div>
 
@@ -1965,7 +1965,7 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                             <span className={`inline-block px-3 py-1 rounded-xl text-[9px] font-black border ${
                               devPct >= 100 
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                                : devPct >= 85 
+                                : devPct >= 90 
                                   ? 'bg-amber-50 text-amber-600 border-amber-100' 
                                   : 'bg-rose-50 text-rose-600 border-rose-100'
                             }`}>

@@ -224,7 +224,7 @@ export async function analyzeProductData(
   // Comentar sobre progreso / desviaciones
   if (pctCumplimiento >= 100) {
     text += `La operación superó la meta definida con un excelente flujo de carguío y tránsito libre en boleterías y pesajes.\n\n`;
-  } else if (pctCumplimiento >= 85) {
+  } else if (pctCumplimiento >= 90) {
     text += `Se registra un ritmo constante dentro de los límites aceptables de la tolerancia operativa ordinaria, alcanzando un progreso cercano al óptimo.\n\n`;
   } else {
     text += `Se evidencia una desviación operativa con un cumplimiento inferior a la meta programada. Se recomienda revisar tiempos de demora no identificados y cuellos de botella.\n\n`;

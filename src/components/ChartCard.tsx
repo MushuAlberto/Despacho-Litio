@@ -217,7 +217,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
 
                 // Reglas de negocio estrictas:
                 // 1. Alerta Naranja (Gobernanza) si Tonelaje > 0 pero Tiempo es igual a 0:00 (Inconsistencia)
-                // 2. Alerta Roja si realTon < progTon * 0.85 (inferior al 85% de lo planificado)
+                // 2. Alerta Roja si realTon < progTon * 0.90 (inferior al 90% de lo planificado)
                 // 3. Alerta Roja si realTime > metaTime + 10 min (mayor por más de 10 minutos respecto a meta)
                 let alertType: 'red' | 'orange' | 'green' = 'green';
                 let alertMessage = '🟢 Dentro de Rango';
@@ -225,15 +225,15 @@ const ChartCard: React.FC<ChartCardProps> = ({
                 if (realTon > 0 && realTime <= 0) {
                   alertType = 'orange';
                   alertMessage = '🔶 Inconsistencia Fiel';
-                } else if (progTon > 0 && realTon < (progTon * 0.85)) {
+                } else if (progTon > 0 && realTon < (progTon * 0.90)) {
                   alertType = 'red';
-                  alertMessage = '🔴 Bajo Ton. (<85%)';
+                  alertMessage = '🔴 Bajo Ton. (<90%)';
                 } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
                   alertType = 'red';
                   alertMessage = '🔴 Exc. Tiempo (>10m)';
                 }
 
-                const isUnderperformingTon = progTon > 0 && realTon < (progTon * 0.85);
+                const isUnderperformingTon = progTon > 0 && realTon < (progTon * 0.90);
                 const isTimeDeviated = realTime > 0 && metaTime > 0 && (realTime - metaTime) >= (10 / 60);
 
                 let badgeStyle = "bg-emerald-50 text-emerald-700 border border-emerald-200";
