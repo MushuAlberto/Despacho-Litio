@@ -26,7 +26,7 @@ import { NovandinoLogo } from './BrandLogo';
 import { PasswordPrompt } from './PasswordPrompt';
 
 interface MainMenuProps {
-  onSelectView: (view: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit') => void;
+  onSelectView: (view: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit') => void;
   isJefeTurnoUnlocked: boolean;
   onUnlockJefeTurno: () => void;
   currentUser: any;
@@ -166,7 +166,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
   };
 
   const cardsData: Array<{
-    id: 'llegada' | 'informe' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit';
+    id: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit';
     title: string;
     subtitle: string;
     description: string;
@@ -180,9 +180,23 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
     group: 'supervision' | 'jefe_turno';
   }> = [
     {
-      id: 'informe',
-      title: 'Informe Operativo',
+      id: 'informe-novandino',
+      title: 'Informe Operativo Novandino',
       subtitle: 'Dashboard Principal',
+      description: 'Informe diario consolidado de turnos, estadísticas de despachos de litio en tiempo real y exportación profesional automatizada a reportes PDF o formato de imagen de alta resolución.',
+      icon: FileBarChart,
+      color: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10 border-[#461D77]/20',
+      iconBg: 'bg-[#461D77]/10 text-[#461D77]',
+      accentColor: '#461D77',
+      isFeature: true, // Takes more grid columns on desktop for visual weight
+      badge: 'MÓDULO DESPACHO',
+      status: 'ACTIVO',
+      group: 'supervision' as const
+    },
+    {
+      id: 'informe-sqm',
+      title: 'Informe Operativo SQM NY',
+      subtitle: 'Dashboard SQM NY',
       description: 'Informe diario consolidado de turnos, estadísticas de despachos de litio en tiempo real y exportación profesional automatizada a reportes PDF o formato de imagen de alta resolución.',
       icon: FileBarChart,
       color: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10 border-[#461D77]/20',
@@ -454,12 +468,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-                {cardsData.filter(c => c.group === 'supervision').map((card) => {
+                {cardsData.filter(c => c.group === 'supervision').map((card, idx) => {
                   const IconComponent = card.icon;
                   const isFeature = card.isFeature && activeTab === 'todos';
                   return (
                      <motion.button
-                       key={card.id}
+                       key={`${card.id}-${idx}`}
                        variants={itemVariants}
                        onClick={() => onSelectView(card.id)}
                        className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${
@@ -477,7 +491,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                         
                         {/* Status bubble */}
                         <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
-                          card.id === 'informe' || card.id === 'llegada'
+                          card.id === 'informe-novandino' || card.id === 'informe-sqm' || card.id === 'llegada'
                             ? 'bg-emerald-500/10 text-emerald-600'
                             : 'bg-slate-400/10 text-slate-600'
                         }`}>
@@ -527,11 +541,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-                {cardsData.filter(c => c.group === 'jefe_turno').map((card) => {
+                {cardsData.filter(c => c.group === 'jefe_turno').map((card, idx) => {
                   const IconComponent = card.icon;
                   return (
                      <motion.button
-                       key={card.id}
+                       key={`${card.id}-${idx}`}
                        variants={itemVariants}
                        onClick={() => onSelectView(card.id)}
                        className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${card.color}`}

@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useState } from "react";
-import { Upload, RefreshCw, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Image, Loader2 } from "lucide-react";
+import { Upload, RefreshCw, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Image, Loader2, ShieldCheck } from "lucide-react";
 import { formatFullDateSpanish } from "../data";
 
 interface DashboardHeaderProps {
@@ -17,6 +17,8 @@ interface DashboardHeaderProps {
   isCustomFileLoaded: boolean;
   fileName: string | null;
   isCapturing?: boolean;
+  isEditingLce: boolean;
+  onToggleEditingLce: () => void;
 }
 
 export function DashboardHeader({
@@ -29,6 +31,8 @@ export function DashboardHeader({
   isCustomFileLoaded,
   fileName,
   isCapturing = false,
+  isEditingLce,
+  onToggleEditingLce,
 }: DashboardHeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -169,38 +173,53 @@ export function DashboardHeader({
             Cargar Matriz de Datos (Excel / XLSM / CSV)
           </label>
           
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`relative flex items-center justify-center gap-3 border border-dashed rounded-lg px-4 py-2 cursor-pointer transition-all duration-200 h-11 ${
-              isDragOver
-                ? "border-nucleo bg-[#F5F2F9] text-nucleo"
-                : isCustomFileLoaded
-                ? "border-ionizado bg-[#FAFDFD] hover:bg-[#EBF7F3] text-ionizado"
-                : "border-[#DFD5E7] bg-[#FDFCF9] hover:bg-[#FAF5E6] text-[#525252]"
-            }`}
-            id="excel-drop-zone"
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept=".xlsx,.xls,.xlsm,.csv"
-              className="hidden"
-            />
-            
-            <Upload className={`w-4 h-4 ${isCustomFileLoaded ? "text-ionizado" : "text-nucleo"}`} />
-            <span className="text-xs truncate max-w-[200px] font-medium">
-              {isCustomFileLoaded ? fileName : "Arrastre o seleccione su archivo Excel (.xlsx, .xlsm) o CSV"}
-            </span>
-
-            {isCustomFileLoaded && (
-              <span className="text-[9px] bg-[#EBF7F3] text-ionizado border border-[#CBE9DE] px-1 py-0.5 rounded font-mono uppercase">
-                Activo
+          <div className="flex gap-2">
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`relative flex-1 flex items-center justify-center gap-2 border border-dashed rounded-lg px-3 py-2 cursor-pointer transition-all duration-200 h-11 ${
+                isDragOver
+                  ? "border-nucleo bg-[#F5F2F9] text-nucleo"
+                  : isCustomFileLoaded
+                  ? "border-ionizado bg-[#FAFDFD] hover:bg-[#EBF7F3] text-ionizado"
+                  : "border-[#DFD5E7] bg-[#FDFCF9] hover:bg-[#FAF5E6] text-[#525252]"
+              }`}
+              id="excel-drop-zone"
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".xlsx,.xls,.xlsm,.csv"
+                className="hidden"
+              />
+              
+              <Upload className={`w-4 h-4 ${isCustomFileLoaded ? "text-ionizado" : "text-nucleo"} shrink-0`} />
+              <span className="text-xs truncate max-w-[130px] font-medium">
+                {isCustomFileLoaded ? fileName : "Cargar Excel/CSV"}
               </span>
-            )}
+
+              {isCustomFileLoaded && (
+                <span className="text-[9px] bg-[#EBF7F3] text-ionizado border border-[#CBE9DE] px-1 py-0.5 rounded font-mono uppercase shrink-0">
+                  Activo
+                </span>
+              )}
+            </div>
+
+            <button
+              onClick={onToggleEditingLce}
+              className={`h-11 px-3.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all duration-300 flex items-center justify-center gap-1.5 border shrink-0 ${
+                isEditingLce 
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md active:scale-95' 
+                  : 'bg-[#F5F2F9] text-[#461D77] border-[#D6CADF] hover:bg-[#461D77] hover:text-white hover:border-[#461D77] active:scale-95'
+              }`}
+              title={isEditingLce ? "Guardar cambios de reprogramaciones LCE" : "Habilitar reprogramaciones y edición LCE"}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>{isEditingLce ? 'Guardar' : 'Modo Edición'}</span>
+            </button>
           </div>
 
           {/* Feedback message overlay inside UI */}

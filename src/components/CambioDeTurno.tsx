@@ -667,7 +667,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
             <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">RESUMEN POR PRODUCTO</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[500px]">
+            <table className="w-full text-left border-collapse min-w-[750px]">
               <thead>
                 <tr className="bg-slate-50/50">
                   <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Prod.</th>
@@ -675,29 +675,67 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
                   <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Ton</th>
                   <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Meta Hrs</th>
                   <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Hrs</th>
+                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Estado / Semáforo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data.map((item) => (
-                  <tr key={item.name} className="hover:bg-slate-50/30 transition-colors">
-                    <td className="px-4 py-3 text-[11px] font-bold text-slate-700">{item.name}</td>
-                    <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
-                      {Math.round(item.Ton_Prog).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-[11px] font-bold text-right">
-                      <span className="text-violeta">{Math.round(item.Ton_Real).toLocaleString()}</span>
-                    </td>
-                    <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
-                      {formatDecimalToHHMM(item.faenaMetaHours)}
-                    </td>
-                    <td className="px-4 py-3 text-[11px] font-bold text-right text-mineral">
-                      {formatDecimalToHHMM(item.faenaRealHours)}
-                    </td>
-                  </tr>
-                ))}
+                {data.map((item) => {
+                  const progTon = item.Ton_Prog || 0;
+                  const realTon = item.Ton_Real || 0;
+                  const metaTime = item.faenaMetaHours || 0;
+                  const realTime = item.faenaRealHours || 0;
+
+                  // Reglas de negocio estrictas:
+                  // 1. Alerta Naranja (Gobernanza) si Tonelaje > 0 pero Tiempo es igual a 0:00 (Inconsistencia)
+                  // 2. Alerta Roja si realTon < progTon * 0.85 (inferior al 85% de lo planificado)
+                  // 3. Alerta Roja si realTime > metaTime + 10 min (mayor por más de 10 minutos respecto a meta)
+                  let alertType: 'red' | 'orange' | 'green' = 'green';
+                  let alertMessage = '🟢 Dentro de Rango';
+
+                  if (realTon > 0 && realTime <= 0) {
+                    alertType = 'orange';
+                    alertMessage = '🔶 Inconsistencia Fiel';
+                  } else if (progTon > 0 && realTon < (progTon * 0.85)) {
+                    alertType = 'red';
+                    alertMessage = '🔴 Bajo Ton. (<85%)';
+                  } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
+                    alertType = 'red';
+                    alertMessage = '🔴 Exc. Tiempo (>10m)';
+                  }
+
+                  let badgeStyle = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+                  if (alertType === 'red') {
+                    badgeStyle = "bg-rose-50 text-rose-700 border border-rose-200 animate-pulse";
+                  } else if (alertType === 'orange') {
+                    badgeStyle = "bg-amber-50 text-amber-700 border border-amber-200 font-extrabold";
+                  }
+
+                  return (
+                    <tr key={item.name} className="hover:bg-slate-50/30 transition-colors">
+                      <td className="px-4 py-3 text-[11px] font-bold text-slate-700">{item.name}</td>
+                      <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
+                        {Math.round(progTon).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-[11px] font-bold text-right">
+                        <span className="text-violeta">{Math.round(realTon).toLocaleString()}</span>
+                      </td>
+                      <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
+                        {formatDecimalToHHMM(metaTime)}
+                      </td>
+                      <td className="px-4 py-3 text-[11px] font-bold text-right text-mineral">
+                        {formatDecimalToHHMM(realTime)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap ${badgeStyle}`}>
+                          {alertMessage}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {data.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400 font-medium italic text-xs">Sin datos</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-400 font-medium italic text-xs">Sin datos</td>
                   </tr>
                 )}
               </tbody>

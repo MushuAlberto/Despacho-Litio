@@ -3,18 +3,71 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import { TrendingUp, Truck, Route, CalendarCheck, Percent, Layers, ShieldCheck } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { DailyLog, MonthSummary } from "../types";
 import { formatShortDateSpanish } from "../data";
 
+function CircularProgress({ percentage, color, trackColor = "#F5F2F9", size = 70 }: { percentage: number; color: string; trackColor?: string; size?: number }) {
+  const strokeWidth = 6.5;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (Math.min(100, Math.max(0, percentage)) / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90" width={size} height={size}>
+        {/* Background Track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={trackColor}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        {/* Progress Arc */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-500 ease-out"
+        />
+      </svg>
+      {/* Center Percentage Text */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-sm font-black font-mono tracking-tighter" style={{ color }}>
+          {new Intl.NumberFormat("es-CL", { maximumFractionDigits: 0 }).format(percentage)}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface KPICardsProps {
   currentLog: DailyLog;
   summary: MonthSummary;
+  lceConfig: {
+    inicioMes: number;
+    reprogramaciones: Array<{ fecha: string; tonelaje: number }>;
+  };
+  onUpdateLceConfig: (config: {
+    inicioMes: number;
+    reprogramaciones: Array<{ fecha: string; tonelaje: number }>;
+  }) => void;
+  selectedDate: string;
+  isEditingLce: boolean;
 }
 
-export function KPICards({ currentLog, summary }: KPICardsProps) {
+export function KPICards({ currentLog, summary, lceConfig, onUpdateLceConfig, selectedDate, isEditingLce }: KPICardsProps) {
   // Safe calculation helper of percentages
   const tonCompliance = currentLog.toneladasProgramadas > 0 
     ? (currentLog.toneladasDespachadas / currentLog.toneladasProgramadas) * 100 
@@ -46,8 +99,52 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
     return "bg-rose-500";
   };
 
+  const handleInicioMesChange = (val: number) => {
+    onUpdateLceConfig({
+      ...lceConfig,
+      inicioMes: val
+    });
+  };
+
+  const handleReproChange = (index: number, key: 'fecha' | 'tonelaje', val: any) => {
+    const updatedRepro = [...lceConfig.reprogramaciones];
+    if (!updatedRepro[index]) {
+      updatedRepro[index] = { fecha: "", tonelaje: 0 };
+    }
+    updatedRepro[index] = {
+      ...updatedRepro[index],
+      [key]: val
+    };
+    onUpdateLceConfig({
+      ...lceConfig,
+      reprogramaciones: updatedRepro
+    });
+  };
+
+  const handleRemoveRepro = (index: number) => {
+    const updatedRepro = [...lceConfig.reprogramaciones];
+    updatedRepro.splice(index, 1);
+    onUpdateLceConfig({
+      ...lceConfig,
+      reprogramaciones: updatedRepro
+    });
+  };
+
+  const dateObj = new Date(selectedDate + "T00:00:00");
+  const months = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+  const currentMonthName = months[dateObj.getMonth()];
+
+  function formatDateDMY(dateStr: string): string {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    if (!year || !month || !day) return dateStr;
+    return `${day}-${month}-${year}`;
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 select-none">
+    <div className="space-y-4">
+      {/* Top Row: Prog. Despacho (Toneladas) & (Viajes) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 select-none">
       
       {/* CARD 1: Programa Despacho (Toneladas) */}
       <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
@@ -266,9 +363,12 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
           />
         </div>
       </div>
+      </div>
 
-      {/* CARD 3: Cumplimiento Mes en Curso (MTD Accums) */}
-      <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group xl:col-span-1">
+      {/* Bottom Row: Cumplimiento MTD & LCE - Salar de Atacama */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* CARD 3: Cumplimiento Mes en Curso (MTD Accums) */}
+        <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
         
         <div>
           <div className="flex justify-between items-start gap-2">
@@ -280,53 +380,41 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
             </span>
           </div>
 
-          <div className="my-2.5 space-y-2">
+          <div className="my-3 space-y-3">
             {/* Tonelaje Row */}
-            <div className="bg-calido p-2 rounded-lg border border-transparent">
-              <div className="flex justify-between text-[10px] text-[#525252] font-semibold">
-                <span>Tonelaje Acumulado</span>
-                <span className="text-tecnico font-mono font-bold">
-                  {numFmt(summary.cumplimientoTonelaje, 0)}%
+            <div className="bg-[#FCFBF9] p-4 rounded-xl border border-[#D6CADF]/40 shadow-sm flex items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <span className="text-xs md:text-[13px] text-[#404040] font-black tracking-tight block">
+                  Tonelaje Acumulado
                 </span>
+                <div className="space-y-0.5">
+                  <div className="text-[11px] text-[#737373] font-semibold font-mono">
+                    Prog: <span className="font-bold text-[#525252]">{numFmt(summary.tonelajeProgramadoAcumulado, 0)} t</span>
+                  </div>
+                  <div className="text-[13px] font-bold font-mono text-[#461D77]">
+                    Real: <span className="font-black text-nucleo">{numFmt(summary.tonelajeDespachadoAcumulado, 2)} t</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between items-baseline mt-0.5">
-                <span className="text-[10px] text-[#8e8e8e] font-mono">
-                  {numFmt(summary.tonelajeProgramadoAcumulado, 0)} t
-                </span>
-                <span className="text-xs font-bold font-mono text-nucleo">
-                  {numFmt(summary.tonelajeDespachadoAcumulado, 2)} t
-                </span>
-              </div>
-              <div className="w-full bg-white h-1 rounded-full mt-1 overflow-hidden border border-[#F0EBF5]">
-                <div
-                  className="h-full bg-nucleo rounded-full"
-                  style={{ width: `${Math.min(100, summary.cumplimientoTonelaje)}%` }}
-                />
-              </div>
+              <CircularProgress percentage={summary.cumplimientoTonelaje} color="#461D77" />
             </div>
 
             {/* Viajes Row */}
-            <div className="bg-calido p-2 rounded-lg border border-transparent">
-              <div className="flex justify-between text-[10px] text-[#525252] font-semibold">
-                <span>Viajes Acumulados</span>
-                <span className="text-tecnico font-mono font-bold">
-                  {numFmt(summary.cumplimientoViajes, 0)}%
+            <div className="bg-[#FCFBF9] p-4 rounded-xl border border-[#D6CADF]/40 shadow-sm flex items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <span className="text-xs md:text-[13px] text-[#404040] font-black tracking-tight block">
+                  Viajes Acumulados
                 </span>
+                <div className="space-y-0.5">
+                  <div className="text-[11px] text-[#737373] font-semibold font-mono">
+                    Prog: <span className="font-bold text-[#525252]">{intFmt(summary.viajesProgramadosAcumulados)} viajes</span>
+                  </div>
+                  <div className="text-[13px] font-bold font-mono text-[#3FAA88]">
+                    Real: <span className="font-black text-ionizado">{intFmt(summary.viajesDespachadosAcumulados)} viajes</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between items-baseline mt-0.5">
-                <span className="text-[10px] text-[#7c7c7c] font-mono">
-                  {intFmt(summary.viajesProgramadosAcumulados)} viajes
-                </span>
-                <span className="text-xs font-bold font-mono text-ionizado">
-                  {intFmt(summary.viajesDespachadosAcumulados)} viajes
-                </span>
-              </div>
-              <div className="w-full bg-white h-1 rounded-full mt-1 overflow-hidden border border-[#F0EBF5]">
-                <div
-                  className="h-full bg-ionizado rounded-full"
-                  style={{ width: `${Math.min(100, summary.cumplimientoViajes)}%` }}
-                />
-              </div>
+              <CircularProgress percentage={summary.cumplimientoViajes} color="#3FAA88" />
             </div>
           </div>
         </div>
@@ -342,106 +430,201 @@ export function KPICards({ currentLog, summary }: KPICardsProps) {
         </div>
       </div>
 
-      {/* CARD 4: LCE - Salar de Atacama (Circular Progress donut representation) */}
-      <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
-        
-        <div>
-          {/* Card Header */}
-          <div className="flex justify-between items-start gap-2">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1 h-3 bg-gradient-to-b from-[#461D77] to-[#3FAA88] rounded-full" />
-              <span className="text-[10px] font-bold tracking-widest text-[#461D77] uppercase">
-                LCE - Salar de Atacama
-              </span>
-            </div>
-            <span className="text-[9px] font-bold font-mono text-[#461D77] px-2 py-0.5 bg-[#F5F2F9] rounded-full border border-[#D6CADF] shadow-sm">
-              Acum. Mes
-            </span>
-          </div>
-
-          {/* Combined Visual Centerpiece Gauge */}
-          <div className="flex flex-col items-center justify-center relative my-2 h-24">
-            
-            <div className="relative w-22 h-22 flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-full h-full rotate-270 drop-shadow-sm">
-                <defs>
-                  <linearGradient id="donut-grad-premium" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#461D77" />
-                    <stop offset="40%" stopColor="#7177EC" />
-                    <stop offset="100%" stopColor="#3FAA88" />
-                  </linearGradient>
-                </defs>
-                {/* Secondary track for glow depth */}
-                <circle cx="50" cy="50" r="41" fill="transparent" stroke="rgba(70, 29, 119, 0.03)" strokeWidth="10" />
-                {/* Background Ring */}
-                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#FAF5E6" strokeWidth="10" />
-                {/* Colored Dynamic Value Ring */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                  stroke="url(#donut-grad-premium)"
-                  strokeWidth="10"
-                  strokeDasharray={`${2 * Math.PI * 40}`}
-                  strokeDashoffset={`${2 * Math.PI * 40 * (1 - Math.min(100, summary.lceCumplimiento) / 100)}`}
-                  strokeLinecap="round"
-                  className="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              {/* Inner compliance text label in donut center */}
-              <div className="absolute inset-0 flex flex-col justify-center items-center">
-                <span className="text-xl font-extrabold font-mono text-tecnico leading-none select-none tracking-tight">
-                  {numFmt(summary.lceCumplimiento, 0)}%
-                </span>
-                <span className="text-[7px] text-[#7c7c7c] uppercase font-bold tracking-widest mt-0.5">
-                  Meta LCE
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Premium Modular Bento Sub-Cards for detailed values */}
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <div className="bg-[#FCFBF9] p-2 rounded-lg border border-[#F0EBF5] shadow-[0_1px_2px_rgba(70,29,119,0.02)] relative overflow-hidden">
-              <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-[#C2B2D6]" />
-              <p className="text-[9px] text-[#8e8e8e] font-bold uppercase tracking-wider">Actual SdA</p>
-              <div className="flex items-baseline gap-0.5 mt-0.5">
-                <span className="text-xs font-extrabold font-mono text-nucleo">
-                  {numFmt(summary.lceActualTotal, 2)}
-                </span>
-                <span className="text-[9px] text-[#7C5FA6] font-semibold font-mono">t</span>
-              </div>
-            </div>
-            
-            <div className="bg-[#FCFBF9] p-2 rounded-lg border border-[#F0EBF5] shadow-[0_1px_2px_rgba(70,29,119,0.02)] relative overflow-hidden">
-              <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-[#cccccc]" />
-              <p className="text-[9px] text-[#8e8e8e] font-bold uppercase tracking-wider">Programado</p>
-              <div className="flex items-baseline gap-0.5 mt-0.5">
-                <span className="text-xs font-extrabold font-mono text-[#525252]">
-                  {intFmt(summary.lceProgramadoTotal)}
-                </span>
-                <span className="text-[9px] text-[#7c7c7c] font-semibold font-mono">t</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* POZAS MONITOR & FOOTER STATUS */}
-        <div className="mt-3 pt-2 border-t border-[#F0EBF5] flex items-center justify-between">
-          <span className="text-[9px] text-[#737373] font-semibold uppercase flex items-center gap-1.5 font-sans">
-            <Layers className="w-3.5 h-3.5 text-nucleo" /> Nivel Pozas PQLC:
+      {/* CARD 4: LCE - Salar de Atacama */}
+      <div className="bg-white rounded-xl p-6 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
+      {/* Card Header */}
+      <div className="flex justify-between items-center gap-2 mb-6 pb-4 border-b border-[#F0EBF5]">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-5 bg-[#461D77] rounded-full" />
+          <span className="text-xs font-black tracking-wider text-[#461D77] uppercase">
+            LCE - Salar de Atacama
           </span>
-          <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded border transition-colors ${
-            currentLog.nivelPozasPqlc === "S/D" 
-              ? "bg-[#FAF5E6] text-[#8e8e8e] border-[#D6CADF]" 
-              : "bg-ionizado/10 text-ionizado border-ionizado/15 shadow-sm"
-          }`}>
-            {currentLog.nivelPozasPqlc}
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <span className="text-[9px] font-bold font-mono text-[#461D77] px-3 py-1 bg-[#F5F2F9] rounded-full border border-[#D6CADF] shadow-sm">
+            Acum. Mes
           </span>
         </div>
       </div>
 
+      {/* Card Body */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-center">
+        {/* Left Column: Metric Cards */}
+        <div className="lg:col-span-3 space-y-3">
+          {isEditingLce ? (
+            // Edit Mode Fields
+            <div className="space-y-4 bg-slate-50/60 p-4 rounded-xl border border-[#D6CADF]">
+              <div>
+                <label className="block text-[10px] font-bold text-[#461D77] uppercase tracking-wider mb-1">
+                  Producción {currentMonthName} LCE : Inicio Mes (t)
+                </label>
+                <input
+                  type="number"
+                  value={lceConfig.inicioMes}
+                  onChange={(e) => handleInicioMesChange(Number(e.target.value))}
+                  className="w-full bg-white text-sm font-semibold text-[#171717] px-3 py-2 rounded-lg border border-[#D6CADF] focus:outline-none focus:ring-1 focus:ring-[#461D77] font-mono"
+                  placeholder="Ej. 18500"
+                />
+              </div>
+
+              <div className="space-y-3 pt-2 border-t border-[#D6CADF]/50">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-[#461D77] uppercase tracking-wider">
+                    Reprogramaciones Manuales (Máx 3)
+                  </span>
+                </div>
+
+                {[0, 1, 2].map((index) => {
+                  const repro = lceConfig.reprogramaciones[index] || { fecha: "", tonelaje: 0 };
+                  return (
+                    <div key={index} className="flex gap-2 items-center bg-white p-2.5 rounded-lg border border-[#D6CADF]/60">
+                      <div className="flex-1">
+                        <span className="block text-[8px] font-black text-[#737373] uppercase mb-0.5">Fecha</span>
+                        <input
+                          type="date"
+                          value={repro.fecha}
+                          onChange={(e) => handleReproChange(index, 'fecha', e.target.value)}
+                          className="w-full text-xs font-semibold text-[#171717] p-1 bg-slate-50 rounded border border-[#D6CADF]/40 focus:outline-none font-mono"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <span className="block text-[8px] font-black text-[#737373] uppercase mb-0.5">Toneladas (t)</span>
+                        <input
+                          type="number"
+                          value={repro.tonelaje || ""}
+                          onChange={(e) => handleReproChange(index, 'tonelaje', Number(e.target.value))}
+                          className="w-full text-xs font-semibold text-[#171717] p-1 bg-slate-50 rounded border border-[#D6CADF]/40 focus:outline-none font-mono"
+                          placeholder="Ej. 20500"
+                        />
+                      </div>
+                      {repro.fecha || repro.tonelaje > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRepro(index)}
+                          className="mt-3 text-red-600 hover:text-red-800 text-[10px] font-bold uppercase tracking-wider px-1.5 py-1 rounded hover:bg-red-50"
+                        >
+                          X
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            // Display Mode
+            <>
+              {/* 1. Inicio Mes */}
+              <div className="bg-[#FCFBF9] p-3 rounded-xl border border-[#D6CADF]/50 flex justify-between items-center">
+                <div>
+                  <p className="text-[9px] text-[#8e8e8e] font-bold uppercase tracking-wider">
+                    PRODUCCION {currentMonthName} LCE : INICIO MES
+                  </p>
+                  <p className="text-lg font-extrabold text-[#171717] mt-0.5 font-mono">
+                    {numFmt(lceConfig.inicioMes, 0)} <span className="text-xs text-[#8e8e8e] font-medium font-sans">t</span>
+                  </p>
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#D6CADF]" />
+              </div>
+
+              {/* 2. Reprogramaciones list */}
+              {lceConfig.reprogramaciones && lceConfig.reprogramaciones.filter(r => r.fecha && r.tonelaje > 0).map((repro, idx) => (
+                <div key={idx} className="bg-[#FCFBF9] p-3 rounded-xl border border-[#D6CADF]/50 flex justify-between items-center">
+                  <div>
+                    <p className="text-[9px] text-[#8e8e8e] font-bold uppercase tracking-wider">
+                      REPROGRAMACION PRODUCCION {currentMonthName} LCE : {formatDateDMY(repro.fecha)}
+                    </p>
+                    <p className="text-lg font-extrabold text-[#171717] mt-0.5 font-mono">
+                      {numFmt(repro.tonelaje, 0)} <span className="text-xs text-[#8e8e8e] font-medium font-sans">t</span>
+                    </p>
+                  </div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#461D77]" />
+                </div>
+              ))}
+
+              {/* 3. Actual SDA */}
+              <div className="bg-[#FCFBF9] p-3 rounded-xl border border-[#D6CADF]/50 flex justify-between items-center">
+                <div>
+                  <p className="text-[9px] text-[#8e8e8e] font-bold uppercase tracking-wider">
+                    ACTUAL SDA
+                  </p>
+                  <p className="text-lg font-extrabold text-nucleo mt-0.5 font-mono">
+                    {numFmt(summary.lceActualTotal, 2)} <span className="text-xs text-[#8e8e8e] font-medium font-sans">t</span>
+                  </p>
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-nucleo" />
+              </div>
+
+              {/* 4. Programado */}
+              <div className="bg-[#FCFBF9] p-3 rounded-xl border border-[#D6CADF]/50 flex justify-between items-center">
+                <div>
+                  <p className="text-[9px] text-[#8e8e8e] font-bold uppercase tracking-wider">
+                    PROGRAMADO
+                  </p>
+                  <p className="text-lg font-extrabold text-[#525252] mt-0.5 font-mono">
+                    {numFmt(summary.lceProgramadoTotal, 0)} <span className="text-xs text-[#8e8e8e] font-medium font-sans">t</span>
+                  </p>
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#94a3b8]" />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right Column: Donut Chart Gauge */}
+        <div className="lg:col-span-2 flex flex-col items-center justify-center p-2">
+          <div className="relative w-36 h-36 flex items-center justify-center">
+            <svg viewBox="0 0 100 100" className="w-full h-full rotate-270 drop-shadow-sm">
+              <defs>
+                <linearGradient id="donut-grad-premium-large" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#461D77" />
+                  <stop offset="40%" stopColor="#7177EC" />
+                  <stop offset="100%" stopColor="#3FAA88" />
+                </linearGradient>
+              </defs>
+              <circle cx="50" cy="50" r="41" fill="transparent" stroke="rgba(70, 29, 119, 0.03)" strokeWidth="8" />
+              <circle cx="50" cy="50" r="40" fill="transparent" stroke="#FAF5E6" strokeWidth="8" />
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="transparent"
+                stroke="url(#donut-grad-premium-large)"
+                strokeWidth="8"
+                strokeDasharray={`${2 * Math.PI * 40}`}
+                strokeDashoffset={`${2 * Math.PI * 40 * (1 - Math.min(100, summary.lceCumplimiento) / 100)}`}
+                strokeLinecap="round"
+                className="transition-all duration-1000 ease-out"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col justify-center items-center">
+              <span className="text-2xl font-black font-mono text-tecnico leading-none select-none tracking-tight">
+                {numFmt(summary.lceCumplimiento, 0)}%
+              </span>
+              <span className="text-[7px] text-[#8e8e8e] uppercase font-black tracking-widest mt-1">
+                Meta LCE
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* POZAS MONITOR & FOOTER STATUS */}
+      <div className="mt-6 pt-4 border-t border-[#F0EBF5] flex items-center justify-between">
+        <span className="text-[10px] text-[#737373] font-bold uppercase tracking-wider flex items-center gap-1.5">
+          <Layers className="w-4 h-4 text-[#461D77]" /> NIVEL POZAS PQLC:
+        </span>
+        <span className={`text-[10px] font-bold font-mono px-3 py-1 rounded-full border transition-colors ${
+          currentLog.nivelPozasPqlc === "S/D" 
+            ? "bg-[#FAF5E6] text-[#8e8e8e] border-[#D6CADF]" 
+            : "bg-[#ecfdf5] text-[#059669] border-[#a7f3d0] shadow-sm"
+        }`}>
+          {currentLog.nivelPozasPqlc}
+        </span>
+      </div>
     </div>
+    </div>
+  </div>
   );
 }

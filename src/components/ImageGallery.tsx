@@ -118,8 +118,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     const compliance = totalTonProg > 0 ? (totalTonReal / totalTonProg) * 100 : 0;
     const avgLoad = totalEqReal > 0 ? totalTonReal / totalEqReal : 0;
     return [
-      { label: "Tiempo Gral. Faena (SdA)", value: formatHoursToTime(avgSda), icon: <Clock className="w-3.5 h-3.5" /> },
-      { label: "TIEMPO GRAL: FAENA (NY)", value: formatHoursToTime(avgPang), icon: <Clock className="w-3.5 h-3.5" /> },
+      { label: "Tiempo Gral. Faena (SdA) (2:00)", value: formatHoursToTime(avgSda), icon: <Clock className="w-3.5 h-3.5" /> },
+      { label: "Tiempo Gral. Faena (NY) (2:00)", value: formatHoursToTime(avgPang), icon: <Clock className="w-3.5 h-3.5" /> },
       { label: "Productividad Diaria", value: `${productivity.toFixed(1)} T/H`, icon: <TrendingUp className="w-3.5 h-3.5" /> },
       { label: "Carga Real Despachada", value: `${formatNumberWithDecimals(totalTonReal, 2)} Ton`, icon: <Truck className="w-3.5 h-3.5" /> },
       { label: "Cumplimiento Programa", value: `${compliance.toFixed(1)}%`, icon: <Target className="w-3.5 h-3.5" />, status: compliance < 85 ? 'danger' : 'normal' },
@@ -901,9 +901,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                 <p className="text-violeta font-bold text-[9px] tracking-[0.4em] uppercase">Subgerencia Logística Litio - Despacho Litio</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <p className="text-violeta font-bold text-[9px] tracking-[0.3em] uppercase mb-1">FECHA JORNADA</p>
-              <p className="text-3xl font-[900] text-ionizado tracking-tighter">{formatDateToCL(selectedDate)}</p>
+              <p className="text-2xl font-[900] text-ionizado tracking-tighter whitespace-nowrap">{formatDateToCL(selectedDate)}</p>
             </div>
           </div>
           
@@ -960,6 +960,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
             <ProductDetailSection 
               product={prod} 
               data={filteredData.filter(d => d.Producto === prod)} 
+              allData={rawData}
               date={selectedDate || ''} 
               index={idx + 1} 
               total={productList.length} 

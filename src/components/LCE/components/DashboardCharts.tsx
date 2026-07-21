@@ -28,8 +28,8 @@ const renderBar1Label = (props: any) => {
       x={cx}
       y={cy}
       fill="#461D77"
-      fontSize={10}
-      fontWeight="bold"
+      fontSize={12.5}
+      fontWeight="black"
       fontFamily="JetBrains Mono"
       textAnchor="start"
       transform={`rotate(-45, ${cx}, ${cy})`}
@@ -51,8 +51,8 @@ const renderBar2Label = (props: any) => {
       x={cx}
       y={cy}
       fill="#3FAA88"
-      fontSize={10}
-      fontWeight="bold"
+      fontSize={12.5}
+      fontWeight="black"
       fontFamily="JetBrains Mono"
       textAnchor="start"
       transform={`rotate(-45, ${cx}, ${cy})`}

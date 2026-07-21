@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
-  Legend, LabelList
+  Legend, LabelList, LineChart, Line, Tooltip
 } from 'recharts';
 import {
   Package, Truck, Target, MapPin, TrendingDown, TrendingUp,
@@ -18,6 +18,7 @@ interface ProductDetailSectionProps {
   index: number;
   total: number;
   date: string;
+  allData?: any[];
 }
 
 const MetricCard = ({ icon, label, value, diff, unit = '', isPerc = false }: any) => {
@@ -51,13 +52,116 @@ const IndicatorRow = ({ label, value, color = 'text-nucleo' }: any) => (
   </div>
 );
 
+const ProductTrendChart = ({ product, date, allData }: { product: string; date: string; allData: any[] }) => {
+  const trendData = useMemo(() => {
+    if (!allData || allData.length === 0 || !date) return [];
+    
+    // Get unique dates sorted
+    const uniqueDates = [...new Set(allData.map((r: any) => r.Fecha as string))]
+      .filter(Boolean)
+      .sort();
+      
+    const currentIndex = uniqueDates.indexOf(date);
+    if (currentIndex === -1) return [];
+    
+    // Slice up to 7 dates ending on the current date
+    const last7Dates = uniqueDates.slice(Math.max(0, currentIndex - 6), currentIndex + 1);
+    
+    const getComplianceForDate = (d: string) => {
+      const dayRows = allData.filter((r: any) => r.Fecha === d && r.Producto === product);
+      const tonProg = dayRows.reduce((sum: number, r: any) => sum + (Number(r.Ton_Prog) || 0), 0);
+      const tonReal = dayRows.reduce((sum: number, r: any) => sum + (Number(r.Ton_Real) || 0), 0);
+      return tonProg > 0 ? (tonReal / tonProg) * 100 : 0;
+    };
+    
+    return last7Dates.map(d => {
+      const compliance = getComplianceForDate(d);
+      
+      // format date to DD/MM
+      let shortLabel = d;
+      try {
+        const parts = d.split('-');
+        if (parts.length === 3) {
+          shortLabel = `${parts[2]}/${parts[1]}`;
+        }
+      } catch (e) {}
+      
+      return {
+        date: d,
+        label: shortLabel,
+        'Cumplimiento': Number(compliance.toFixed(1))
+      };
+    });
+  }, [product, date, allData]);
+
+  if (trendData.length === 0) return null;
+
+  return (
+    <div className="mt-4 p-4 bg-slate-50 border border-slate-150 rounded-2xl space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <p className="text-[8px] font-black text-violeta uppercase tracking-widest">Análisis de Tendencia (Últimas 7 Jornadas)</p>
+          <h4 className="text-xs font-black text-slate-700 uppercase tracking-tight">Evolución de Cumplimiento</h4>
+        </div>
+        <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-wider">
+          <span className="flex items-center gap-1.5 text-[#461D77]">
+            <span className="w-2 h-2 rounded-full bg-[#461D77]"></span>
+            Cumplimiento
+          </span>
+        </div>
+      </div>
+      
+      <div className="h-[120px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={trendData} margin={{ top: 5, right: 15, left: -25, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <XAxis 
+              dataKey="label" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} 
+            />
+            <YAxis 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+              domain={[0, 110]}
+              tickFormatter={(v) => `${v}%`}
+            />
+            <Tooltip 
+              contentStyle={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '10px', fontWeight: 'bold' }}
+              formatter={(value: any, name: string) => [`${value}%`, name]}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="Cumplimiento" 
+              stroke="#461D77" 
+              strokeWidth={2.5} 
+              dot={{ r: 3, fill: '#461D77', strokeWidth: 0 }}
+              activeDot={{ r: 5 }} 
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({ 
-  product, data, index, total, date 
+  product, data, index, total, date, allData = []
 }) => {
   const storageKey = `sqm_justification_${date}_${product}`;
   const [justification, setJustification] = useState(() => localStorage.getItem(storageKey) || "");
 
   const initialJustificationRef = useRef(justification);
+
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [assistantStep, setAssistantStep] = useState<1 | 2>(1);
+  const [causeText, setCauseText] = useState("");
+  const [actionText, setActionText] = useState("");
+  const [skipAssistantOnce, setSkipAssistantOnce] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [isRefining, setIsRefining] = useState(false);
   const [refineError, setRefineError] = useState<string | null>(null);
@@ -239,24 +343,24 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
     initialJustificationRef.current = saved;
   }, [storageKey]);
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setJustification(e.target.value);
-  };
-
-  const deleteStaleImage = async () => {
-    try {
-      const prodId = `auto_prod_${product.replace(/\s+/g, '_')}_${date}`;
-      const imgDocRef = doc(db, 'gallery_images', prodId);
-      await deleteDoc(imgDocRef);
-    } catch (err) {
-      console.error('Error deleting stale image:', err);
+  // Auto-resize justification textarea to fit its content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight + 4}px`; // Add small padding/offset to prevent minor scrollbars
     }
-  };
+  }, [justification]);
 
-  const handleBlur = async () => {
-    const textToRefine = justification;
-    if (textToRefine !== initialJustificationRef.current) {
-      initialJustificationRef.current = textToRefine;
+  const saveAndRefineJustification = async (newVal: string) => {
+    setJustification(newVal);
+    localStorage.setItem(storageKey, newVal);
+    window.dispatchEvent(new CustomEvent('sqm-justification-updated', {
+      detail: { date, product, value: newVal }
+    }));
+    
+    if (newVal !== initialJustificationRef.current) {
+      initialJustificationRef.current = newVal;
       await deleteStaleImage();
       try {
         const savedUser = localStorage.getItem('sqm_current_user');
@@ -273,11 +377,69 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
         console.error('Error logging justification edit:', err);
       }
 
-      // Automatically trigger AI refinement if text is not empty (permissions are enforced in handleRefineWithAI)
-      if (textToRefine.trim()) {
-        await handleRefineWithAI(textToRefine);
+      // Automatically trigger AI refinement if text is not empty
+      if (newVal.trim()) {
+        await handleRefineWithAI(newVal);
       }
     }
+  };
+
+  const handleTextareaClick = () => {
+    const currentText = justification.trim();
+    let initialCause = "";
+    let initialAction = "";
+    
+    if (currentText) {
+      const causeRegex = /Causa:\s*([\s\S]*?)(?=\.?\s*Acción requerida:|$)/i;
+      const actionRegex = /Acción requerida:\s*([\s\S]*?)(?=\.?\s*$)/i;
+      
+      const causeMatch = currentText.match(causeRegex);
+      const actionMatch = currentText.match(actionRegex);
+      
+      if (causeMatch) {
+        initialCause = causeMatch[1].trim();
+      }
+      if (actionMatch) {
+        initialAction = actionMatch[1].trim();
+      }
+      
+      if (!causeMatch && !actionMatch) {
+        initialCause = currentText;
+      }
+    }
+    
+    setCauseText(initialCause);
+    setActionText(initialAction);
+    setAssistantStep(1);
+    setIsAssistantOpen(true);
+  };
+
+  const closeAssistantAndFocus = () => {
+    setIsAssistantOpen(false);
+    setSkipAssistantOnce(true);
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, 50);
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setJustification(e.target.value);
+  };
+
+  const deleteStaleImage = async () => {
+    try {
+      const prodId = `auto_prod_${product.replace(/\s+/g, '_')}_${date}`;
+      const imgDocRef = doc(db, 'gallery_images', prodId);
+      await deleteDoc(imgDocRef);
+    } catch (err) {
+      console.error('Error deleting stale image:', err);
+    }
+  };
+
+  const handleBlur = async () => {
+    await saveAndRefineJustification(justification);
   };
 
   const stats = useMemo(() => {
@@ -419,10 +581,25 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
 
           <div className="relative">
             <textarea
+              ref={textareaRef}
               value={justification}
               onChange={handleTextChange}
-              onBlur={handleBlur}
-              className="w-full h-[110px] p-4 text-xs font-semibold text-slate-800 bg-white rounded-xl border border-slate-200/80 shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-violeta/20 focus:border-violeta transition-all leading-relaxed"
+              onClick={() => {
+                if (!skipAssistantOnce) {
+                  handleTextareaClick();
+                }
+              }}
+              onFocus={() => {
+                if (!skipAssistantOnce) {
+                  handleTextareaClick();
+                }
+              }}
+              onBlur={() => {
+                handleBlur();
+                setSkipAssistantOnce(false);
+              }}
+              style={{ overflow: 'hidden' }}
+              className="w-full min-h-[110px] p-4 text-xs font-semibold text-slate-800 bg-white rounded-xl border border-slate-200/80 shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-violeta/20 focus:border-violeta transition-colors leading-relaxed cursor-pointer"
               placeholder={
                 hasAnyDeviation
                   ? "Escriba aquí la justificación técnica de la desviación de tonelaje/tiempo detectada..."
@@ -470,7 +647,130 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
       {justification.trim() && (
         <div className="hidden print:block mt-6 p-5 border border-slate-200 rounded-xl bg-slate-50">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Justificación Técnica Registrada:</p>
-          <p className="text-xs text-slate-800 leading-relaxed font-semibold italic">"{justification}"</p>
+          <p className="text-xs text-slate-800 leading-relaxed font-semibold italic whitespace-pre-wrap break-all break-words">"{justification}"</p>
+        </div>
+      )}
+
+      {/* Mini-gráfico de tendencia - Siempre visible si hay datos históricos */}
+      <ProductTrendChart product={product} date={date} allData={allData} />
+
+      {/* Asistente guiado de Justificación */}
+      {isAssistantOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm no-print">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all flex flex-col">
+            {/* Cabezal */}
+            <div className="bg-gradient-to-r from-violeta to-violeta/90 px-6 py-5 text-white flex justify-between items-center">
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <ClipboardEdit className="w-4 h-4 text-emerald-400" />
+                  Asistente de Justificación
+                </h3>
+                <p className="text-[10px] text-white/80 font-bold uppercase tracking-wider mt-0.5">{product}</p>
+              </div>
+              <button 
+                onClick={closeAssistantAndFocus}
+                className="p-1 rounded-full hover:bg-white/15 text-white/80 hover:text-white transition-colors"
+                title="Cerrar asistente"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Barra de progreso */}
+            <div className="bg-slate-50 px-6 py-2.5 border-b border-slate-100 flex items-center justify-between">
+              <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider">
+                Paso {assistantStep} de 2: {assistantStep === 1 ? "Identificación de Causa" : "Acción Correctiva"}
+              </span>
+              <div className="flex gap-1">
+                <div className={`w-8 h-1.5 rounded-full transition-all duration-300 ${assistantStep >= 1 ? 'bg-[#3FAA88]' : 'bg-slate-200'}`} />
+                <div className={`w-8 h-1.5 rounded-full transition-all duration-300 ${assistantStep >= 2 ? 'bg-[#3FAA88]' : 'bg-slate-200'}`} />
+              </div>
+            </div>
+
+            {/* Cuerpo del Asistente */}
+            <div className="p-6 space-y-4 flex-1">
+              {assistantStep === 1 ? (
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                    Causa:
+                  </label>
+                  <textarea
+                    className="w-full h-[120px] p-4 text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violeta/20 focus:border-violeta transition-all leading-relaxed placeholder:text-slate-400/85"
+                    placeholder="Ej: Falla mecánica en tolva de SQM, lo que generó detención en la faena..."
+                    value={causeText}
+                    onChange={(e) => setCauseText(e.target.value)}
+                    autoFocus
+                  />
+                  <p className="text-[9px] font-bold text-slate-400 uppercase leading-normal">
+                    * Explique brevemente qué originó la diferencia de tonelaje o tiempo en la jornada.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                    Acción requerida:
+                  </label>
+                  <textarea
+                    className="w-full h-[120px] p-4 text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violeta/20 focus:border-violeta transition-all leading-relaxed placeholder:text-slate-400/85"
+                    placeholder="Ej: Se coordinó equipo de respaldo y se ajustaron los tiempos de tránsito del turno entrante..."
+                    value={actionText}
+                    onChange={(e) => setActionText(e.target.value)}
+                    autoFocus
+                  />
+                  <p className="text-[9px] font-bold text-slate-400 uppercase leading-normal">
+                    * Defina qué acción se tomó o se requiere implementar para corregir o mitigar este desvío.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Pie del Asistente */}
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+              <div>
+                <button
+                  onClick={closeAssistantAndFocus}
+                  className="text-[10px] font-black text-slate-500 hover:text-slate-700 uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Editar directamente
+                </button>
+              </div>
+              
+              <div className="flex gap-2">
+                {assistantStep === 2 && (
+                  <button
+                    onClick={() => setAssistantStep(1)}
+                    className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    Atrás
+                  </button>
+                )}
+                
+                {assistantStep === 1 ? (
+                  <button
+                    onClick={() => setAssistantStep(2)}
+                    disabled={!causeText.trim()}
+                    className="px-5 py-2 bg-violeta hover:bg-violeta/90 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    Continuar
+                  </button>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      const combined = `Causa: ${causeText.trim()}. Acción requerida: ${actionText.trim()}.`;
+                      await saveAndRefineJustification(combined);
+                      setIsAssistantOpen(false);
+                    }}
+                    disabled={!actionText.trim()}
+                    className="px-5 py-2 bg-[#3FAA88] hover:bg-[#349676] disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    Finalizar
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

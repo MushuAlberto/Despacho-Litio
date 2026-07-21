@@ -26,6 +26,74 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
   const [excelOverrides, setExcelOverrides] = useState<ExcelOverrides | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isEditingLce, setIsEditingLce] = useState(false);
+
+  // For LCE Reprogramaciones
+  const [lceConfigByMonth, setLceConfigByMonth] = useState<Record<string, {
+    inicioMes: number;
+    reprogramaciones: Array<{ fecha: string; tonelaje: number }>;
+  }>>(() => {
+    const saved = localStorage.getItem("novandino_lce_config_by_month");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing lce config", e);
+      }
+    }
+    // Seed default for July 2026 and May 2026
+    return {
+      "2026-7": {
+        inicioMes: 18500,
+        reprogramaciones: [
+          { fecha: "2026-07-02", tonelaje: 20500 }
+        ]
+      },
+      "2026-5": {
+        inicioMes: 18500,
+        reprogramaciones: [
+          { fecha: "2026-05-02", tonelaje: 20500 }
+        ]
+      }
+    };
+  });
+
+  const saveLceConfig = (monthKey: string, config: { inicioMes: number; reprogramaciones: Array<{ fecha: string; tonelaje: number }> }) => {
+    const updated = {
+      ...lceConfigByMonth,
+      [monthKey]: config
+    };
+    setLceConfigByMonth(updated);
+    localStorage.setItem("novandino_lce_config_by_month", JSON.stringify(updated));
+  };
+
+  const currentMonthKey = useMemo(() => {
+    const d = new Date(selectedDate + "T00:00:00");
+    return `${d.getFullYear()}-${d.getMonth() + 1}`;
+  }, [selectedDate]);
+
+  const currentLceConfig = useMemo(() => {
+    const config = lceConfigByMonth[currentMonthKey];
+    if (config) return config;
+    
+    // Default fallback
+    return {
+      inicioMes: 18500,
+      reprogramaciones: []
+    };
+  }, [lceConfigByMonth, currentMonthKey]);
+
+  const computedLceProgramadoTotal = useMemo(() => {
+    if (currentLceConfig.reprogramaciones && currentLceConfig.reprogramaciones.length > 0) {
+      const sorted = [...currentLceConfig.reprogramaciones]
+        .filter(r => r.fecha && r.tonelaje > 0)
+        .sort((a, b) => a.fecha.localeCompare(b.fecha));
+      if (sorted.length > 0) {
+        return sorted[sorted.length - 1].tonelaje;
+      }
+    }
+    return currentLceConfig.inicioMes;
+  }, [currentLceConfig]);
 
   // Derive unique absolute dates available in logs (sorted chronologically)
   const allDates = useMemo(() => {
@@ -42,10 +110,16 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
   // Compute month summary statistics accumulated up to selected date
   const summary = useMemo(() => {
     const baseSummary = computeSummaryForDate(logs, selectedDate);
+    
+    // Default manual configuration values
+    const manualLceProgramadoTotal = computedLceProgramadoTotal;
+    const manualLceActualTotal = baseSummary.lceActualTotal;
+    const manualLceCumplimiento = manualLceProgramadoTotal > 0 ? (manualLceActualTotal / manualLceProgramadoTotal) * 100 : 0;
+
     if (isCustomFileLoaded && excelOverrides) {
       const overridenLceActualTotal = excelOverrides.lceActualTotal !== undefined ? excelOverrides.lceActualTotal : baseSummary.lceActualTotal;
-      const overridenLceProgramadoTotal = excelOverrides.lceProgramadoTotal !== undefined ? excelOverrides.lceProgramadoTotal : baseSummary.lceProgramadoTotal;
-      const overridenLceCumplimiento = overridenLceProgramadoTotal > 0 ? (overridenLceActualTotal / overridenLceProgramadoTotal) * 100 : 0;
+      const finalLceProgramadoTotal = manualLceProgramadoTotal > 0 ? manualLceProgramadoTotal : (excelOverrides.lceProgramadoTotal !== undefined ? excelOverrides.lceProgramadoTotal : baseSummary.lceProgramadoTotal);
+      const finalLceCumplimiento = finalLceProgramadoTotal > 0 ? (overridenLceActualTotal / finalLceProgramadoTotal) * 100 : 0;
 
       const overridenTonelajeDespachadoAcumulado = excelOverrides.tonelajeAcumulado !== undefined ? excelOverrides.tonelajeAcumulado : baseSummary.tonelajeDespachadoAcumulado;
       const overridenTonelajeProgramadoAcumulado = excelOverrides.tonelajeProgramadoAcumulado !== undefined ? excelOverrides.tonelajeProgramadoAcumulado : baseSummary.tonelajeProgramadoAcumulado;
@@ -72,13 +146,18 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
         viajesProgramadosAcumulados: overridenViajesProgramadosAcumulados,
         cumplimientoViajes: overridenCumplimientoViajes,
         productividadMes: excelOverrides.productividadMes !== undefined ? excelOverrides.productividadMes : baseSummary.productividadMes,
-        lceProgramadoTotal: overridenLceProgramadoTotal,
+        lceProgramadoTotal: finalLceProgramadoTotal,
         lceActualTotal: overridenLceActualTotal,
-        lceCumplimiento: overridenLceCumplimiento,
+        lceCumplimiento: finalLceCumplimiento,
       };
     }
-    return baseSummary;
-  }, [logs, selectedDate, excelOverrides, isCustomFileLoaded]);
+    
+    return {
+      ...baseSummary,
+      lceProgramadoTotal: manualLceProgramadoTotal,
+      lceCumplimiento: manualLceCumplimiento,
+    };
+  }, [logs, selectedDate, excelOverrides, isCustomFileLoaded, computedLceProgramadoTotal]);
 
   // Handlers
   const handleFileUpload = async (file: File) => {
@@ -235,6 +314,8 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
           useCORS: true,
           logging: false,
           allowTaint: false, // Must be false or canvas.toDataURL fails with SecurityError
+          scrollX: 0,
+          scrollY: 0,
           onclone: (clonedDoc) => {
             // Apply getComputedStyle interceptor proxy within the cloned document's frame
             if (clonedDoc.defaultView) {
@@ -324,7 +405,7 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
         window.getComputedStyle = originalGetComputedStyle;
         setIsCapturing(false);
       }
-    }, 250);
+    }, 400);
   };
 
   const handleResetData = () => {
@@ -394,6 +475,8 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
           isCustomFileLoaded={isCustomFileLoaded}
           fileName={fileName}
           isCapturing={isCapturing}
+          isEditingLce={isEditingLce}
+          onToggleEditingLce={() => setIsEditingLce(!isEditingLce)}
         />
 
         {/* Captured Content Wrapper representing everything requested in the attached image */}
@@ -434,7 +517,14 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
           </div>
 
           {/* High-Fidelity KPI Despatch & Compliance Cards */}
-          <KPICards currentLog={currentLog} summary={summary} />
+          <KPICards
+            currentLog={currentLog}
+            summary={summary}
+            lceConfig={currentLceConfig}
+            onUpdateLceConfig={(cfg) => saveLceConfig(currentMonthKey, cfg)}
+            selectedDate={selectedDate}
+            isEditingLce={isEditingLce}
+          />
 
           {/* "Otros Datos" Widget Table */}
           <OtrosDatosTable summary={summary} />
