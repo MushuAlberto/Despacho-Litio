@@ -98,22 +98,42 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   }, [hasLoaded, images]);
 
   // Data calculations for report generation
-  const filteredData = useMemo(() => {
+  const novandinoData = useMemo(() => {
     if (!rawData || !selectedDate) return [];
-    return rawData.filter(r => r.Fecha === selectedDate);
+    const base = rawData.filter(r => r.Fecha === selectedDate);
+    const novandinoAllowed = ['SLIT', 'LSI', 'BISCHOFITA', 'SAL 27/15'];
+    return base.filter(r => {
+      const prod = (r.Producto as string || '').toUpperCase().trim();
+      return novandinoAllowed.some(allowed => prod === allowed || prod.startsWith('LSI'));
+    });
   }, [rawData, selectedDate]);
 
-  const operationalKPIs = useMemo(() => {
-    if (filteredData.length === 0) return null;
-    const totalTonReal = filteredData.reduce((a, b) => a + b.Ton_Real, 0);
-    const totalTonProg = filteredData.reduce((a, b) => a + b.Ton_Prog, 0);
-    const totalEqReal = filteredData.reduce((a, b) => a + b.Eq_Real, 0);
-    const avgReg = filteredData.length > 0 ? filteredData.reduce((acc, d) => acc + (Number(d.Regulacion_Real) || 0), 0) / filteredData.length : 0;
-    const validSdaTimes = filteredData.map(d => d.sdaHours).filter(v => v > 0);
+  const sqmData = useMemo(() => {
+    if (!rawData || !selectedDate) return [];
+    const base = rawData.filter(r => r.Fecha === selectedDate);
+    const sqmAllowed = [
+      'MOP 70', 'MOP TALCO', 'MOP TALCO MAXIS', 'MOP-G', 'MOP-G (ROJO)', 'MOP-G 59', 
+      'MOP-G O', 'MOP-G PLUS', 'MOP-G R 59', 'MOP-GR PLUS', 'MOP-H-AL', 'MOP-H-BL', 
+      'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SILVINITA', 
+      'SOP-G', 'SOP-H', 'SOP-O', 'SOP-S TALCO', 'USOP52', 'MOP 50', 'SOP FINO'
+    ].map(p => p.toUpperCase().trim());
+    return base.filter(r => {
+      const prod = (r.Producto as string || '').toUpperCase().trim();
+      return sqmAllowed.includes(prod);
+    });
+  }, [rawData, selectedDate]);
+
+  const getKPIsForData = useCallback((data: any[]) => {
+    if (data.length === 0) return null;
+    const totalTonReal = data.reduce((a, b) => a + b.Ton_Real, 0);
+    const totalTonProg = data.reduce((a, b) => a + b.Ton_Prog, 0);
+    const totalEqReal = data.reduce((a, b) => a + b.Eq_Real, 0);
+    const avgReg = data.length > 0 ? data.reduce((acc, d) => acc + (Number(d.Regulacion_Real) || 0), 0) / data.length : 0;
+    const validSdaTimes = data.map(d => d.sdaHours).filter(v => v > 0);
     const avgSda = validSdaTimes.length > 0 ? validSdaTimes.reduce((a, b) => a + b, 0) / validSdaTimes.length : 0;
-    const validPangTimes = filteredData.map(d => d.pangHours).filter(v => v > 0);
+    const validPangTimes = data.map(d => d.pangHours).filter(v => v > 0);
     const avgPang = validPangTimes.length > 0 ? validPangTimes.reduce((a, b) => a + b, 0) / validPangTimes.length : 0;
-    const totalHoursInFaena = filteredData.reduce((a, b) => a + b.faenaRealHours, 0);
+    const totalHoursInFaena = data.reduce((a, b) => a + b.faenaRealHours, 0);
     const productivity = totalHoursInFaena > 0 ? totalTonReal / totalHoursInFaena : 0;
     const compliance = totalTonProg > 0 ? (totalTonReal / totalTonProg) * 100 : 0;
     const avgLoad = totalEqReal > 0 ? totalTonReal / totalEqReal : 0;
@@ -127,10 +147,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       { label: "Factor de Carga (Eficiencia)", value: `${avgLoad.toFixed(1)} T/EQ`, icon: <Scale className="w-3.5 h-3.5" /> },
       { label: "PROMEDIO DE % DE REGULACIÓN", value: `${Math.round(avgReg)}%`, icon: <ClipboardCheck className="w-3.5 h-3.5" /> },
     ];
-  }, [filteredData]);
+  }, []);
 
-  const productList = useMemo(() => {
-    const products = [...new Set(filteredData.map(r => r.Producto as string))] as string[];
+  const novandinoKPIs = useMemo(() => getKPIsForData(novandinoData), [novandinoData, getKPIsForData]);
+  const sqmKPIs = useMemo(() => getKPIsForData(sqmData), [sqmData, getKPIsForData]);
+
+  const getProductListForData = useCallback((data: any[]) => {
+    const products = [...new Set(data.map(r => r.Producto as string))] as string[];
     return products.sort((a: string, b: string) => {
       const priority: Record<string, number> = { 'SLIT': 1, 'LSI (S)': 2 };
       const aPrio = priority[a] || 99;
@@ -138,7 +161,10 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       if (aPrio !== bPrio) return aPrio - bPrio;
       return a.localeCompare(b);
     });
-  }, [filteredData]);
+  }, []);
+
+  const novandinoProductList = useMemo(() => getProductListForData(novandinoData), [novandinoData, getProductListForData]);
+  const sqmProductList = useMemo(() => getProductListForData(sqmData), [sqmData, getProductListForData]);
 
   const sortedImages = useMemo(() => {
     // Only keep manual uploads and automatic images of the CURRENT selected date
@@ -153,20 +179,42 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     if (sortBy === 'report-order') {
       sortedList = list.sort((a, b) => {
         const getPriority = (img: GalleryImage) => {
-          if (img.id.startsWith('auto_kpi_')) return 1;
-          if (img.id.startsWith('auto_chart_')) return 2;
-          if (img.id.startsWith('auto_prod_')) {
-            // Find product index
-            const match = img.id.match(/^auto_prod_(.+?)_\d{4}-\d{2}-\d{2}$/);
+          // --- NOVANDINO PRIORITIES ---
+          if (img.id === `auto_kpi_novandino_${selectedDate}`) return 1;
+          if (img.id === `auto_chart_novandino_${selectedDate}`) return 2;
+          if (img.id.startsWith('auto_prod_novandino_')) {
+            const match = img.id.match(new RegExp(`^auto_prod_novandino_(.+?)_${selectedDate}$`));
             if (match) {
               const prodNameUnderscored = match[1];
-              const idx = productList.findIndex(p => p.replace(/\s+/g, '_') === prodNameUnderscored);
+              const idx = novandinoProductList.findIndex(p => p.replace(/\s+/g, '_') === prodNameUnderscored);
               if (idx !== -1) {
                 return 3 + idx;
               }
             }
-            return 3 + productList.length;
+            return 3 + novandinoProductList.length;
           }
+
+          // --- SQM NY PRIORITIES ---
+          const sqmOffset = 100;
+          if (img.id === `auto_kpi_sqm_${selectedDate}`) return sqmOffset + 1;
+          if (img.id === `auto_chart_sqm_${selectedDate}`) return sqmOffset + 2;
+          if (img.id.startsWith('auto_prod_sqm_')) {
+            const match = img.id.match(new RegExp(`^auto_prod_sqm_(.+?)_${selectedDate}$`));
+            if (match) {
+              const prodNameUnderscored = match[1];
+              const idx = sqmProductList.findIndex(p => p.replace(/\s+/g, '_') === prodNameUnderscored);
+              if (idx !== -1) {
+                return sqmOffset + 3 + idx;
+              }
+            }
+            return sqmOffset + 3 + sqmProductList.length;
+          }
+
+          // Legacy auto IDs fallback
+          if (img.id === `auto_kpi_${selectedDate}`) return 500;
+          if (img.id === `auto_chart_${selectedDate}`) return 501;
+          if (img.id.startsWith('auto_prod_')) return 502;
+
           return 1000; // Manual images
         };
 
@@ -258,22 +306,36 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     }
 
     return weavedList;
-  }, [images, sortBy, productList, selectedDate]);
+  }, [images, sortBy, novandinoProductList, sqmProductList, selectedDate]);
 
   // Automatic report image generation effect
   useEffect(() => {
     if (!hasLoaded || !rawData || rawData.length === 0 || !selectedDate) return;
 
     const runAutomaticCapture = async () => {
-      const prefixKpiId = `auto_kpi_${selectedDate}`;
-      const prefixChartId = `auto_chart_${selectedDate}`;
-      const prefixProductsIds = productList.map(p => `auto_prod_${p.replace(/\s+/g, '_')}_${selectedDate}`);
+      // Novandino IDs
+      const novKpiId = `auto_kpi_novandino_${selectedDate}`;
+      const novChartId = `auto_chart_novandino_${selectedDate}`;
+      const novProdIds = novandinoProductList.map(p => `auto_prod_novandino_${p.replace(/\s+/g, '_')}_${selectedDate}`);
 
-      const hasKpis = images.some(img => img.id === prefixKpiId);
-      const hasChart = images.some(img => img.id === prefixChartId);
-      const hasProducts = prefixProductsIds.every(id => images.some(img => img.id === id));
+      // SQM NY IDs
+      const sqmKpiId = `auto_kpi_sqm_${selectedDate}`;
+      const sqmChartId = `auto_chart_sqm_${selectedDate}`;
+      const sqmProdIds = sqmProductList.map(p => `auto_prod_sqm_${p.replace(/\s+/g, '_')}_${selectedDate}`);
 
-      if (hasKpis && hasChart && hasProducts) {
+      const hasNovKpis = images.some(img => img.id === novKpiId);
+      const hasNovChart = images.some(img => img.id === novChartId);
+      const hasNovProducts = novProdIds.every(id => images.some(img => img.id === id));
+
+      const hasSqmKpis = images.some(img => img.id === sqmKpiId);
+      const hasSqmChart = images.some(img => img.id === sqmChartId);
+      const hasSqmProducts = sqmProdIds.every(id => images.some(img => img.id === id));
+
+      // Check if all needed captures exist
+      const allExist = (novandinoData.length === 0 || (hasNovKpis && hasNovChart && hasNovProducts)) &&
+                       (sqmData.length === 0 || (hasSqmKpis && hasSqmChart && hasSqmProducts));
+
+      if (allExist) {
         return; // Already exists, don't regenerate
       }
 
@@ -289,49 +351,102 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         // Let layout styles apply
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        // 1. Capture KPIs
-        if (!hasKpis) {
-          const kpiEl = document.getElementById('capture-kpis-executive');
-          if (kpiEl) {
-            const canvas = await html2canvas(kpiEl, { scale: 1.5, useCORS: true });
-            generatedList.push({
-              id: prefixKpiId,
-              url: canvas.toDataURL('image/jpeg', 0.9),
-              name: `INFORME OPERATIVO - CUMPLIMIENTO GLOBAL (${formatDateToCL(selectedDate)})`,
-              date: formatDateToCL(selectedDate)
-            });
-          }
-        }
-
-        // 2. Capture Composed Chart
-        if (!hasChart) {
-          const chartEl = document.getElementById('capture-composed-chart');
-          if (chartEl) {
-            const canvas = await html2canvas(chartEl, { scale: 1.5, useCORS: true });
-            generatedList.push({
-              id: prefixChartId,
-              url: canvas.toDataURL('image/jpeg', 0.9),
-              name: `ANÁLISIS COMPARATIVO (${formatDateToCL(selectedDate)})`,
-              date: formatDateToCL(selectedDate)
-            });
-          }
-        }
-
-        // 3. Capture Products
-        for (let i = 0; i < productList.length; i++) {
-          const prod = productList[i];
-          const prodId = prefixProductsIds[i];
-          const hasProd = images.some(img => img.id === prodId);
-          if (!hasProd) {
-            const prodEl = document.getElementById(`capture-product-${i}`);
-            if (prodEl) {
-              const canvas = await html2canvas(prodEl, { scale: 1.5, useCORS: true });
+        // --- 1. CAPTURE NOVANDINO REPORT ---
+        if (novandinoData.length > 0) {
+          // KPIs
+          if (!hasNovKpis) {
+            const kpiEl = document.getElementById('capture-kpis-novandino');
+            if (kpiEl) {
+              const canvas = await html2canvas(kpiEl, { scale: 1.5, useCORS: true });
               generatedList.push({
-                id: prodId,
+                id: novKpiId,
                 url: canvas.toDataURL('image/jpeg', 0.9),
-                name: `AUDITORÍA DE DESEMPEÑO - ${prod} (${formatDateToCL(selectedDate)})`,
+                name: `NOVANDINO - INFORME OPERATIVO - CUMPLIMIENTO GLOBAL (${formatDateToCL(selectedDate)})`,
                 date: formatDateToCL(selectedDate)
               });
+            }
+          }
+
+          // Composed Chart
+          if (!hasNovChart) {
+            const chartEl = document.getElementById('capture-chart-novandino');
+            if (chartEl) {
+              const canvas = await html2canvas(chartEl, { scale: 1.5, useCORS: true });
+              generatedList.push({
+                id: novChartId,
+                url: canvas.toDataURL('image/jpeg', 0.9),
+                name: `NOVANDINO - ANÁLISIS COMPARATIVO (${formatDateToCL(selectedDate)})`,
+                date: formatDateToCL(selectedDate)
+              });
+            }
+          }
+
+          // Product details
+          for (let i = 0; i < novandinoProductList.length; i++) {
+            const prod = novandinoProductList[i];
+            const prodId = novProdIds[i];
+            const hasProd = images.some(img => img.id === prodId);
+            if (!hasProd) {
+              const prodEl = document.getElementById(`capture-product-novandino-${i}`);
+              if (prodEl) {
+                const canvas = await html2canvas(prodEl, { scale: 1.5, useCORS: true });
+                generatedList.push({
+                  id: prodId,
+                  url: canvas.toDataURL('image/jpeg', 0.9),
+                  name: `NOVANDINO - AUDITORÍA DE DESEMPEÑO - ${prod} (${formatDateToCL(selectedDate)})`,
+                  date: formatDateToCL(selectedDate)
+                });
+              }
+            }
+          }
+        }
+
+        // --- 2. CAPTURE SQM NY REPORT ---
+        if (sqmData.length > 0) {
+          // KPIs
+          if (!hasSqmKpis) {
+            const kpiEl = document.getElementById('capture-kpis-sqm');
+            if (kpiEl) {
+              const canvas = await html2canvas(kpiEl, { scale: 1.5, useCORS: true });
+              generatedList.push({
+                id: sqmKpiId,
+                url: canvas.toDataURL('image/jpeg', 0.9),
+                name: `SQM NY - INFORME OPERATIVO - CUMPLIMIENTO GLOBAL (${formatDateToCL(selectedDate)})`,
+                date: formatDateToCL(selectedDate)
+              });
+            }
+          }
+
+          // Composed Chart
+          if (!hasSqmChart) {
+            const chartEl = document.getElementById('capture-chart-sqm');
+            if (chartEl) {
+              const canvas = await html2canvas(chartEl, { scale: 1.5, useCORS: true });
+              generatedList.push({
+                id: sqmChartId,
+                url: canvas.toDataURL('image/jpeg', 0.9),
+                name: `SQM NY - ANÁLISIS COMPARATIVO (${formatDateToCL(selectedDate)})`,
+                date: formatDateToCL(selectedDate)
+              });
+            }
+          }
+
+          // Product details
+          for (let i = 0; i < sqmProductList.length; i++) {
+            const prod = sqmProductList[i];
+            const prodId = sqmProdIds[i];
+            const hasProd = images.some(img => img.id === prodId);
+            if (!hasProd) {
+              const prodEl = document.getElementById(`capture-product-sqm-${i}`);
+              if (prodEl) {
+                const canvas = await html2canvas(prodEl, { scale: 1.5, useCORS: true });
+                generatedList.push({
+                  id: prodId,
+                  url: canvas.toDataURL('image/jpeg', 0.9),
+                  name: `SQM NY - AUDITORÍA DE DESEMPEÑO - ${prod} (${formatDateToCL(selectedDate)})`,
+                  date: formatDateToCL(selectedDate)
+                });
+              }
             }
           }
         }
@@ -362,7 +477,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     };
 
     runAutomaticCapture();
-  }, [rawData, selectedDate, productList, hasLoaded, images]);
+  }, [rawData, selectedDate, novandinoProductList, sqmProductList, novandinoData.length, sqmData.length, hasLoaded, images]);
 
   const handleRegenerateAutoImages = async () => {
     if (isGeneratingAuto || !selectedDate) return;
@@ -370,11 +485,19 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     setIsGeneratingAuto(true);
     
     try {
-      const prefixKpiId = `auto_kpi_${selectedDate}`;
-      const prefixChartId = `auto_chart_${selectedDate}`;
-      const prefixProductsIds = productList.map(p => `auto_prod_${p.replace(/\s+/g, '_')}_${selectedDate}`);
+      const novKpiId = `auto_kpi_novandino_${selectedDate}`;
+      const novChartId = `auto_chart_novandino_${selectedDate}`;
+      const novProdIds = novandinoProductList.map(p => `auto_prod_novandino_${p.replace(/\s+/g, '_')}_${selectedDate}`);
+
+      const sqmKpiId = `auto_kpi_sqm_${selectedDate}`;
+      const sqmChartId = `auto_chart_sqm_${selectedDate}`;
+      const sqmProdIds = sqmProductList.map(p => `auto_prod_sqm_${p.replace(/\s+/g, '_')}_${selectedDate}`);
       
-      const idsToDelete = [prefixKpiId, prefixChartId, ...prefixProductsIds];
+      const idsToDelete = [
+        novKpiId, novChartId, ...novProdIds,
+        sqmKpiId, sqmChartId, ...sqmProdIds,
+        `auto_kpi_${selectedDate}`, `auto_chart_${selectedDate}` // Legacy IDs too
+      ];
       
       const path = 'gallery_images';
       for (const id of idsToDelete) {
@@ -891,82 +1014,165 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           pointerEvents: 'none'
         }}
       >
-        {/* 1. KPIs Executive Cover */}
-        <div id="capture-kpis-executive" style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
-          <div className="flex justify-between items-start pb-8 border-b-2 border-slate-200">
-            <div className="flex flex-col items-start gap-4">
-              <NovandinoLogo className="h-28 w-[400px] max-w-full" variant="print" />
-              <div>
-                <h1 className="text-4xl font-[900] text-nucleo tracking-tighter leading-none mb-1 uppercase">INFORME OPERATIVO</h1>
-                <p className="text-violeta font-bold text-[9px] tracking-[0.4em] uppercase">Subgerencia Logística Litio - Despacho Litio</p>
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-violeta font-bold text-[9px] tracking-[0.3em] uppercase mb-1">FECHA JORNADA</p>
-              <p className="text-2xl font-[900] text-ionizado tracking-tighter whitespace-nowrap">{formatDateToCL(selectedDate)}</p>
-            </div>
-          </div>
-          
-          {filteredData.length > 0 && (
-            <div className="bg-white rounded-[2rem] p-8 border-2 border-ionizado/10 border-l-[12px] border-l-ionizado space-y-6 shadow-sm mt-8">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-ionizado">
-                  <span className="font-black uppercase tracking-[0.3em] text-[9px]">KPIs OPERATIVOS</span>
-                </div>
-                <h2 className="text-3xl font-[900] text-nucleo tracking-tighter uppercase">Cumplimiento Global</h2>
-              </div>
-              <div className="grid grid-cols-4 gap-3 pt-4">
-                {operationalKPIs?.map((kpi, idx) => (
-                  <div key={idx} className="bg-white p-4 rounded-2xl border border-calido flex flex-col gap-1 shadow-sm border-b-4 border-b-levanda">
-                    <div className="flex items-center gap-1.5 text-black">
-                      {kpi.icon}
-                      <span className="text-[9px] font-black text-black uppercase tracking-widest">{kpi.label}</span>
-                    </div>
-                    <span className={`text-xl font-[900] ${kpi.status === 'danger' ? 'text-rose-600' : 'text-black'} tracking-tighter`}>
-                      {kpi.value}
-                    </span>
+        {/* ========================================================================= */}
+        {/* ======================= NOVANDINO CAPTURE NODES ========================= */}
+        {/* ========================================================================= */}
+        {novandinoData.length > 0 && (
+          <>
+            {/* 1. KPIs Executive Cover - NOVANDINO */}
+            <div id="capture-kpis-novandino" style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
+              <div className="flex justify-between items-start pb-8 border-b-2 border-slate-200">
+                <div className="flex flex-col items-start gap-4">
+                  <NovandinoLogo className="h-28 w-[400px] max-w-full" variant="print" />
+                  <div>
+                    <h1 className="text-4xl font-[900] text-nucleo tracking-tighter leading-none mb-1 uppercase">INFORME OPERATIVO NOVANDINO</h1>
+                    <p className="text-violeta font-bold text-[9px] tracking-[0.4em] uppercase">Subgerencia Logística Litio - Despacho Litio</p>
                   </div>
-                ))}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-violeta font-bold text-[9px] tracking-[0.3em] uppercase mb-1">FECHA JORNADA</p>
+                  <p className="text-2xl font-[900] text-ionizado tracking-tighter whitespace-nowrap">{formatDateToCL(selectedDate)}</p>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-[2rem] p-8 border-2 border-ionizado/10 border-l-[12px] border-l-ionizado space-y-6 shadow-sm mt-8">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-ionizado">
+                    <span className="font-black uppercase tracking-[0.3em] text-[9px]">KPIs OPERATIVOS</span>
+                  </div>
+                  <h2 className="text-3xl font-[900] text-nucleo tracking-tighter uppercase">Cumplimiento Global Novandino</h2>
+                </div>
+                <div className="grid grid-cols-4 gap-3 pt-4">
+                  {novandinoKPIs?.map((kpi, idx) => (
+                    <div key={idx} className="bg-white p-4 rounded-2xl border border-calido flex flex-col gap-1 shadow-sm border-b-4 border-b-levanda">
+                      <div className="flex items-center gap-1.5 text-black">
+                        {kpi.icon}
+                        <span className="text-[9px] font-black text-black uppercase tracking-widest">{kpi.label}</span>
+                      </div>
+                      <span className={`text-xl font-[900] ${kpi.status === 'danger' ? 'text-rose-600' : 'text-black'} tracking-tighter`}>
+                        {kpi.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* 2. Composed Chart */}
-        <div id="capture-composed-chart" style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
-          <div className="flex justify-between items-start pb-4 border-b border-slate-100">
-            <div className="flex flex-col">
-              <p className="text-[9px] font-black text-ionizado uppercase tracking-[0.3em]">Análisis Gráfico</p>
-              <h2 className="text-3xl font-[950] text-nucleo uppercase tracking-tight">Comparación de Despacho</h2>
+            {/* 2. Composed Chart - NOVANDINO */}
+            <div id="capture-chart-novandino" style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
+              <div className="flex justify-between items-start pb-4 border-b border-slate-100">
+                <div className="flex flex-col">
+                  <p className="text-[9px] font-black text-ionizado uppercase tracking-[0.3em]">Análisis Gráfico Novandino</p>
+                  <h2 className="text-3xl font-[950] text-nucleo uppercase tracking-tight">Comparación de Despacho</h2>
+                </div>
+                <p className="text-xs font-black text-violeta uppercase tracking-widest">{formatDateToCL(selectedDate)}</p>
+              </div>
+              <div className="pt-6">
+                <ChartCard 
+                  type="composed" 
+                  xAxis="Producto" 
+                  yAxis={['Ton_Prog', 'Ton_Real', 'faenaMetaHours', 'faenaRealHours']} 
+                  title="Análisis Comparativo Novandino" 
+                  data={novandinoData} 
+                />
+              </div>
             </div>
-            <p className="text-xs font-black text-violeta uppercase tracking-widest">{formatDateToCL(selectedDate)}</p>
-          </div>
-          <div className="pt-6">
-            {filteredData.length > 0 && (
-              <ChartCard 
-                type="composed" 
-                xAxis="Producto" 
-                yAxis={['Ton_Prog', 'Ton_Real', 'faenaMetaHours', 'faenaRealHours']} 
-                title="Análisis Comparativo" 
-                data={filteredData} 
-              />
-            )}
-          </div>
-        </div>
 
-        {/* 3. Products Details */}
-        {productList.map((prod, idx) => (
-          <div key={`${selectedDate}-${prod}`} id={`capture-product-${idx}`} style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
-            <ProductDetailSection 
-              product={prod} 
-              data={filteredData.filter(d => d.Producto === prod)} 
-              allData={rawData}
-              date={selectedDate || ''} 
-              index={idx + 1} 
-              total={productList.length} 
-            />
-          </div>
-        ))}
+            {/* 3. Products Details - NOVANDINO */}
+            {novandinoProductList.map((prod, idx) => (
+              <div key={`nov-${selectedDate}-${prod}`} id={`capture-product-novandino-${idx}`} style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
+                <ProductDetailSection 
+                  product={prod} 
+                  data={novandinoData.filter(d => d.Producto === prod)} 
+                  allData={rawData}
+                  date={selectedDate || ''} 
+                  index={idx + 1} 
+                  total={novandinoProductList.length} 
+                />
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* ========================================================================= */}
+        {/* ========================= SQM NY CAPTURE NODES ========================== */}
+        {/* ========================================================================= */}
+        {sqmData.length > 0 && (
+          <>
+            {/* 1. KPIs Executive Cover - SQM NY */}
+            <div id="capture-kpis-sqm" style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
+              <div className="flex justify-between items-start pb-8 border-b-2 border-slate-200">
+                <div className="flex flex-col items-start gap-4">
+                  <NovandinoLogo className="h-28 w-[400px] max-w-full" variant="print" />
+                  <div>
+                    <h1 className="text-4xl font-[900] text-nucleo tracking-tighter leading-none mb-1 uppercase">INFORME OPERATIVO SQM NY</h1>
+                    <p className="text-violeta font-bold text-[9px] tracking-[0.4em] uppercase">Subgerencia Logística Litio</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-violeta font-bold text-[9px] tracking-[0.3em] uppercase mb-1">FECHA JORNADA</p>
+                  <p className="text-2xl font-[900] text-ionizado tracking-tighter whitespace-nowrap">{formatDateToCL(selectedDate)}</p>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-[2rem] p-8 border-2 border-ionizado/10 border-l-[12px] border-l-ionizado space-y-6 shadow-sm mt-8">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-ionizado">
+                    <span className="font-black uppercase tracking-[0.3em] text-[9px]">KPIs OPERATIVOS</span>
+                  </div>
+                  <h2 className="text-3xl font-[900] text-nucleo tracking-tighter uppercase">Cumplimiento Global SQM NY</h2>
+                </div>
+                <div className="grid grid-cols-4 gap-3 pt-4">
+                  {sqmKPIs?.map((kpi, idx) => (
+                    <div key={idx} className="bg-white p-4 rounded-2xl border border-calido flex flex-col gap-1 shadow-sm border-b-4 border-b-levanda">
+                      <div className="flex items-center gap-1.5 text-black">
+                        {kpi.icon}
+                        <span className="text-[9px] font-black text-black uppercase tracking-widest">{kpi.label}</span>
+                      </div>
+                      <span className={`text-xl font-[900] ${kpi.status === 'danger' ? 'text-rose-600' : 'text-black'} tracking-tighter`}>
+                        {kpi.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Composed Chart - SQM NY */}
+            <div id="capture-chart-sqm" style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
+              <div className="flex justify-between items-start pb-4 border-b border-slate-100">
+                <div className="flex flex-col">
+                  <p className="text-[9px] font-black text-ionizado uppercase tracking-[0.3em]">Análisis Gráfico SQM NY</p>
+                  <h2 className="text-3xl font-[950] text-nucleo uppercase tracking-tight">Comparación de Despacho</h2>
+                </div>
+                <p className="text-xs font-black text-violeta uppercase tracking-widest">{formatDateToCL(selectedDate)}</p>
+              </div>
+              <div className="pt-6">
+                <ChartCard 
+                  type="composed" 
+                  xAxis="Producto" 
+                  yAxis={['Ton_Prog', 'Ton_Real', 'faenaMetaHours', 'faenaRealHours']} 
+                  title="Análisis Comparativo SQM NY" 
+                  data={sqmData} 
+                />
+              </div>
+            </div>
+
+            {/* 3. Products Details - SQM NY */}
+            {sqmProductList.map((prod, idx) => (
+              <div key={`sqm-${selectedDate}-${prod}`} id={`capture-product-sqm-${idx}`} style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
+                <ProductDetailSection 
+                  product={prod} 
+                  data={sqmData.filter(d => d.Producto === prod)} 
+                  allData={rawData}
+                  date={selectedDate || ''} 
+                  index={idx + 1} 
+                  total={sqmProductList.length} 
+                />
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );

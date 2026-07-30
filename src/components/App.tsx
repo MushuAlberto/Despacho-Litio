@@ -455,7 +455,7 @@ const App: React.FC = () => {
   const filteredData = useMemo(() => {
     const base = rawData.filter(r => r.Fecha === selectedDate);
     if (view === 'informe-novandino') {
-      const novandinoAllowed = ['SLIT', 'LSI', 'BISCHOFITA'];
+      const novandinoAllowed = ['SLIT', 'LSI', 'BISCHOFITA', 'SAL 27/15'];
       return base.filter(r => {
         const prod = (r.Producto as string || '').toUpperCase().trim();
         return novandinoAllowed.some(allowed => prod === allowed || prod.startsWith('LSI'));
@@ -465,7 +465,7 @@ const App: React.FC = () => {
       const sqmAllowed = [
         'MOP 70', 'MOP TALCO', 'MOP TALCO MAXIS', 'MOP-G', 'MOP-G (ROJO)', 'MOP-G 59', 
         'MOP-G O', 'MOP-G PLUS', 'MOP-G R 59', 'MOP-GR PLUS', 'MOP-H-AL', 'MOP-H-BL', 
-        'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SAL 27/15', 'SILVINITA', 
+        'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SILVINITA', 
         'SOP-G', 'SOP-H', 'SOP-O', 'SOP-S TALCO', 'USOP52', 'MOP 50', 'SOP FINO'
       ].map(p => p.toUpperCase().trim());
       return base.filter(r => {
@@ -494,7 +494,7 @@ const App: React.FC = () => {
     const base = rawData.filter(r => r.Fecha === date);
     let filtered;
     if (view === 'informe-novandino') {
-      const novandinoAllowed = ['SLIT', 'LSI', 'BISCHOFITA'];
+      const novandinoAllowed = ['SLIT', 'LSI', 'BISCHOFITA', 'SAL 27/15'];
       filtered = base.filter(r => {
         const prod = (r.Producto as string || '').toUpperCase().trim();
         return novandinoAllowed.some(allowed => prod === allowed || prod.startsWith('LSI'));
@@ -503,7 +503,7 @@ const App: React.FC = () => {
       const sqmAllowed = [
         'MOP 70', 'MOP TALCO', 'MOP TALCO MAXIS', 'MOP-G', 'MOP-G (ROJO)', 'MOP-G 59', 
         'MOP-G O', 'MOP-G PLUS', 'MOP-G R 59', 'MOP-GR PLUS', 'MOP-H-AL', 'MOP-H-BL', 
-        'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SAL 27/15', 'SILVINITA', 
+        'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SILVINITA', 
         'SOP-G', 'SOP-H', 'SOP-O', 'SOP-S TALCO', 'USOP52', 'MOP 50', 'SOP FINO'
       ].map(p => p.toUpperCase().trim());
       filtered = base.filter(r => {

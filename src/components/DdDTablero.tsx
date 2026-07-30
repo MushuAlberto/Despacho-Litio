@@ -148,7 +148,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
             tonReal: totalR,
             avgSda: avgSda,
             avgPang: avgPang,
-            desviaciones: tableRows.filter(r => r.cumplif < 90 || r.realFaena > r.kpiFaena).length
+            desviaciones: tableRows.filter(r => r.cumplif < 90 || (r.realFaena > 0 && r.kpiFaena > 0 && (r.realFaena - r.kpiFaena) > (10 / 60))).length
         };
     }, [dayData, tableRows]);
 
@@ -421,7 +421,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                                     </div>
                                                 </td>
                                                 <td className="p-6 text-center">
-                                                    <div className={`flex items-center justify-center gap-2 text-base font-black ${row.realFaena > row.kpiFaena ? 'text-rose-500' : 'text-slate-700'}`}>
+                                                    <div className={`flex items-center justify-center gap-2 text-base font-black ${(row.realFaena > 0 && row.kpiFaena > 0 && (row.realFaena - row.kpiFaena) > (10 / 60)) ? 'text-rose-500' : 'text-slate-700'}`}>
                                                         {formatHoursToTime(row.realFaena)}
                                                     </div>
                                                 </td>

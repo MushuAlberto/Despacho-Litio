@@ -234,7 +234,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
                 }
 
                 const isUnderperformingTon = progTon > 0 && realTon < (progTon * 0.90);
-                const isTimeDeviated = realTime > 0 && metaTime > 0 && (realTime - metaTime) >= (10 / 60);
+                const isTimeDeviated = realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60);
 
                 let badgeStyle = "bg-emerald-50 text-emerald-700 border border-emerald-200";
                 if (alertType === 'red') {

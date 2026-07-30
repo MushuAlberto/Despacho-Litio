@@ -563,6 +563,10 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
       ? (faenaMetaHoursList.reduce((a, b) => a + b, 0) / faenaMetaHoursList.length) 
       : 0;
 
+    const isTonDeviation = compliance < 90;
+    const isTimeDeviation = avgFaenaReal > 0 && avgFaenaMeta > 0 && (avgFaenaReal - avgFaenaMeta) >= (10 / 60);
+    const hasAnyDeviation = isTonDeviation || isTimeDeviation;
+
     return {
       count,
       progTon,
@@ -577,7 +581,10 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
       avgReg,
       avgLoad,
       avgFaenaReal,
-      avgFaenaMeta
+      avgFaenaMeta,
+      isTonDeviation,
+      isTimeDeviation,
+      hasAnyDeviation
     };
   }, [filteredSlitRows]);
 
@@ -1312,8 +1319,8 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
 
           {/* Centered compliance status pill */}
           <div className="flex flex-col items-center pt-1">
-            <div className={`px-8 py-2 rounded-full ${stats.compliance < 90 ? 'bg-rose-500 text-white animate-pulse' : 'bg-[#3FAA88]/10 text-[#3FAA88]'} text-[10px] font-black tracking-[0.25em] shadow-sm uppercase`}>
-              {stats.compliance < 90 ? 'REQUIERE JUSTIFICACIÓN TÉCNICA' : 'CUMPLIMIENTO OPERATIVO EXITOSO'}
+            <div className={`px-8 py-2 rounded-full ${stats.hasAnyDeviation ? 'bg-rose-500 text-white animate-pulse' : 'bg-[#3FAA88]/10 text-[#3FAA88]'} text-[10px] font-black tracking-[0.25em] shadow-sm uppercase`}>
+              {stats.hasAnyDeviation ? 'REQUIERE JUSTIFICACIÓN TÉCNICA' : 'CUMPLIMIENTO OPERATIVO EXITOSO'}
             </div>
           </div>
 
@@ -1358,7 +1365,13 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                 <div className="p-2.5 bg-slate-50 text-slate-500 group-hover:text-[#461D77] rounded-xl transition-colors">
                   <Target className="w-5 h-5" />
                 </div>
-                <div className={`text-[10px] font-black px-3 py-1 rounded-full ${(stats.compliance - 100) >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} uppercase tracking-tight`}>
+                <div className={`text-[10px] font-black px-3 py-1 rounded-full border ${
+                  stats.compliance >= 100 
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                    : stats.compliance >= 90 
+                      ? 'bg-amber-50 text-amber-600 border-amber-100' 
+                      : 'bg-rose-50 text-rose-600 border-rose-100'
+                } uppercase tracking-tight`}>
                   {(stats.compliance - 100) >= 0 ? '+' : ''}{(stats.compliance - 100).toFixed(1)} %
                 </div>
               </div>
@@ -1747,21 +1760,37 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 
                 {/* Time Inside Faena */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tiempo Interior Faena</span>
-                      <h4 className="text-xl font-black text-slate-800 font-mono">
-                        {customColumnsData.summary.timeReal.toFixed(2)}h
-                      </h4>
+                {(() => {
+                  const isTimeOver = customColumnsData.summary.timeReal > 0 && 
+                    customColumnsData.summary.timeMeta > 0 && 
+                    (customColumnsData.summary.timeReal - customColumnsData.summary.timeMeta) >= (10 / 60);
+                  return (
+                    <div className={`p-6 rounded-3xl border shadow-sm relative overflow-hidden flex flex-col justify-between ${isTimeOver ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-slate-100'}`}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tiempo Interior Faena</span>
+                          <h4 className={`text-xl font-black font-mono ${isTimeOver ? 'text-rose-600' : 'text-slate-800'}`}>
+                            {customColumnsData.summary.timeReal.toFixed(2)}h
+                          </h4>
+                        </div>
+                        <span className={`p-2 rounded-xl text-xs ${isTimeOver ? 'text-rose-600 bg-rose-100' : 'text-purple-600 bg-purple-50'}`}>
+                          <Clock size={16} />
+                        </span>
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-slate-50 text-[10px] font-bold text-slate-500 flex justify-between items-center">
+                        <span>Meta Planificada (AX):</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono text-slate-700 font-black">{customColumnsData.summary.timeMeta.toFixed(2)}h</span>
+                          {isTimeOver && (
+                            <span className="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200 uppercase">
+                              +10m
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-purple-600 bg-purple-50 p-2 rounded-xl text-xs"><Clock size={16} /></span>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-50 text-[10px] font-bold text-slate-500 flex justify-between items-center">
-                    <span>Meta Planificada (AX):</span>
-                    <span className="font-mono text-slate-700 font-black">{customColumnsData.summary.timeMeta.toFixed(2)}h</span>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* Average Load Factor */}
                 <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
@@ -1952,6 +1981,10 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                     {filteredSlitRows.map((row, rIdx) => {
                       const tonDiff = row.Ton_Real - row.Ton_Prog;
                       const devPct = row.Ton_Prog > 0 ? (row.Ton_Real / row.Ton_Prog) * 100 : 0;
+                      const timeReal = Number(row.col_TiempoInteriorFaenaReal) || 0;
+                      const timeMeta = Number(row.col_TiempoInteriorFaenaProdMeta) || 0;
+                      const isTimeDev = timeReal > 0 && timeMeta > 0 && (timeReal - timeMeta) >= (10 / 60);
+
                       return (
                         <tr key={rIdx} className="border-b border-slate-50 hover:bg-slate-50/50 transition-all font-sans">
                           <td className="p-4 text-xs font-black text-slate-500 font-mono">{formatDateToCL(row.Fecha)}</td>
@@ -1962,15 +1995,22 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                           <td className="p-4 text-xs font-bold text-slate-500 text-right font-mono">{row.Eq_Prog}</td>
                           <td className="p-4 text-xs font-bold text-slate-800 text-right font-mono">{row.Eq_Real}</td>
                           <td className="p-4 text-center">
-                            <span className={`inline-block px-3 py-1 rounded-xl text-[9px] font-black border ${
-                              devPct >= 100 
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                                : devPct >= 90 
-                                  ? 'bg-amber-50 text-amber-600 border-amber-100' 
-                                  : 'bg-rose-50 text-rose-600 border-rose-100'
-                            }`}>
-                              {devPct.toFixed(0)}%
-                            </span>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={`inline-block px-3 py-1 rounded-xl text-[9px] font-black border ${
+                                devPct >= 100 
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                  : devPct >= 90 
+                                    ? 'bg-amber-50 text-amber-600 border-amber-100' 
+                                    : 'bg-rose-50 text-rose-600 border-rose-100 font-bold'
+                              }`}>
+                                {devPct.toFixed(0)}%
+                              </span>
+                              {isTimeDev && (
+                                <span className="inline-block px-2 py-0.5 rounded-md text-[8px] font-black bg-rose-100 text-rose-700 border border-rose-200 uppercase">
+                                  +10m tpo
+                                </span>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
