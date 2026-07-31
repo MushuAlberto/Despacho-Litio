@@ -18,7 +18,7 @@ import { ImageGallery } from './ImageGallery';
 import { PasswordPrompt } from './PasswordPrompt';
 import CambioDeTurno from './CambioDeTurno';
 import LCEModule from './LCE/LCEModule';
-import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, normalizeHeader, formatNumberWithDecimals } from '../utils/dataProcessor';
+import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, normalizeHeader, formatNumberWithDecimals, separateBischofitaByDest, isProductNovandino, isProductSQM, formatCLB } from '../utils/dataProcessor';
 import { NovandinoLogo } from './BrandLogo';
 
 // Firebase imports
@@ -376,13 +376,13 @@ const App: React.FC = () => {
           const valAF = row[31] !== undefined && row[31] !== null ? String(row[31]).trim().toUpperCase() : '';
           const isSlit = valAF === 'SLIT' || valAF.includes('SLIT');
 
-          const finalProduct = isSlit ? valAF : (idx.producto !== -1 ? String(row[idx.producto]).trim().toUpperCase() : 'DESCONOCIDO');
+          const finalProduct = formatCLB(isSlit ? valAF : (idx.producto !== -1 ? String(row[idx.producto]).trim().toUpperCase() : 'DESCONOCIDO'));
 
           return {
             Fecha: dateStr,
             Producto: finalProduct,
-            Destino: idx.destino !== -1 ? String(row[idx.destino]).trim().toUpperCase() : 'S/D',
-            EmpresaMapped: idx.empresa !== -1 ? String(row[idx.empresa] || '').trim().toUpperCase() : '',
+            Destino: idx.destino !== -1 ? formatCLB(String(row[idx.destino]).trim()).toUpperCase() : 'S/D',
+            EmpresaMapped: idx.empresa !== -1 ? formatCLB(String(row[idx.empresa] || '').trim()).toUpperCase() : '',
             Ton_Prog: isSlit ? cleanNumeric(row[33]) : (idx.tonProg !== -1 ? cleanNumeric(row[idx.tonProg]) : 0), // AH
             Ton_Real: isSlit ? cleanNumeric(row[34]) : (idx.tonReal !== -1 ? cleanNumeric(row[idx.tonReal]) : 0), // AI
             Eq_Prog: isSlit ? cleanNumeric(row[35]) : (idx.eqProg !== -1 ? cleanNumeric(row[idx.eqProg]) : 0),   // AJ
@@ -452,29 +452,20 @@ const App: React.FC = () => {
     reader.readAsBinaryString(file);
   }, [currentUser]);
 
+  const separatedRawData = useMemo(() => {
+    return separateBischofitaByDest(rawData);
+  }, [rawData]);
+
   const filteredData = useMemo(() => {
-    const base = rawData.filter(r => r.Fecha === selectedDate);
+    const base = separatedRawData.filter(r => r.Fecha === selectedDate);
     if (view === 'informe-novandino') {
-      const novandinoAllowed = ['SLIT', 'LSI', 'BISCHOFITA', 'SAL 27/15'];
-      return base.filter(r => {
-        const prod = (r.Producto as string || '').toUpperCase().trim();
-        return novandinoAllowed.some(allowed => prod === allowed || prod.startsWith('LSI'));
-      });
+      return base.filter(r => isProductNovandino(r));
     }
     if (view === 'informe-sqm') {
-      const sqmAllowed = [
-        'MOP 70', 'MOP TALCO', 'MOP TALCO MAXIS', 'MOP-G', 'MOP-G (ROJO)', 'MOP-G 59', 
-        'MOP-G O', 'MOP-G PLUS', 'MOP-G R 59', 'MOP-GR PLUS', 'MOP-H-AL', 'MOP-H-BL', 
-        'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SILVINITA', 
-        'SOP-G', 'SOP-H', 'SOP-O', 'SOP-S TALCO', 'USOP52', 'MOP 50', 'SOP FINO'
-      ].map(p => p.toUpperCase().trim());
-      return base.filter(r => {
-        const prod = (r.Producto as string || '').toUpperCase().trim();
-        return sqmAllowed.includes(prod);
-      });
+      return base.filter(r => isProductSQM(r));
     }
     return base;
-  }, [rawData, selectedDate, view]);
+  }, [separatedRawData, selectedDate, view]);
 
   const availableDates = useMemo(() => {
     return [...new Set(rawData.map(r => r.Fecha))].sort();
@@ -491,25 +482,12 @@ const App: React.FC = () => {
 
   const calculateMetricsForDate = useCallback((date: string | null) => {
     if (!date) return null;
-    const base = rawData.filter(r => r.Fecha === date);
+    const base = separatedRawData.filter(r => r.Fecha === date);
     let filtered;
     if (view === 'informe-novandino') {
-      const novandinoAllowed = ['SLIT', 'LSI', 'BISCHOFITA', 'SAL 27/15'];
-      filtered = base.filter(r => {
-        const prod = (r.Producto as string || '').toUpperCase().trim();
-        return novandinoAllowed.some(allowed => prod === allowed || prod.startsWith('LSI'));
-      });
+      filtered = base.filter(r => isProductNovandino(r));
     } else if (view === 'informe-sqm') {
-      const sqmAllowed = [
-        'MOP 70', 'MOP TALCO', 'MOP TALCO MAXIS', 'MOP-G', 'MOP-G (ROJO)', 'MOP-G 59', 
-        'MOP-G O', 'MOP-G PLUS', 'MOP-G R 59', 'MOP-GR PLUS', 'MOP-H-AL', 'MOP-H-BL', 
-        'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SILVINITA', 
-        'SOP-G', 'SOP-H', 'SOP-O', 'SOP-S TALCO', 'USOP52', 'MOP 50', 'SOP FINO'
-      ].map(p => p.toUpperCase().trim());
-      filtered = base.filter(r => {
-        const prod = (r.Producto as string || '').toUpperCase().trim();
-        return sqmAllowed.includes(prod);
-      });
+      filtered = base.filter(r => isProductSQM(r));
     } else {
       filtered = base;
     }
@@ -540,7 +518,7 @@ const App: React.FC = () => {
       avgLoad,
       avgReg
     };
-  }, [rawData, view]);
+  }, [separatedRawData, view]);
 
   const currentMetrics = useMemo(() => {
     return calculateMetricsForDate(selectedDate);
@@ -958,7 +936,7 @@ const App: React.FC = () => {
                 {productList.map((prod, idx) => (
                   <div key={`${selectedDate}-${prod}`} id={`product-section-${idx}`} className="page-break-before bg-white block w-full pt-4" style={{ minHeight: '330mm' }}>
                     <div className="px-4">
-                      <ProductDetailSection product={prod} data={filteredData.filter(d => d.Producto === prod)} allData={rawData} date={selectedDate} index={idx + 1} total={productList.length} />
+                      <ProductDetailSection product={prod} data={filteredData.filter(d => d.Producto === prod)} allData={separatedRawData} date={selectedDate} index={idx + 1} total={productList.length} />
                     </div>
                     <div className="px-4 pb-6 mt-8"><ReportFooter /></div>
                   </div>

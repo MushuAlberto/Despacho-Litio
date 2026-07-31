@@ -171,3 +171,91 @@ export const downloadBackupJSON = (selectedDate?: string) => {
     console.error('Error auto-logging download activity:', error);
   }
 };
+
+export const formatCLB = (str: any): string => {
+  if (!str) return '';
+  return String(str)
+    .replace(/CENTRO\s+LOG[IÍ]STICO\s+BAQUEDANO/gi, 'CLB')
+    .replace(/C\.?\s*LOG[IÍ]STICO\s+BAQUEDANO/gi, 'CLB');
+};
+
+export const separateBischofitaByDest = (rows: any[]): any[] => {
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => {
+    const destRaw = formatCLB(String(r?.Destino || 'S/D').trim());
+    const dest = destRaw ? destRaw.toUpperCase() : 'S/D';
+    const prodRaw = formatCLB(String(r?.Producto || '').trim());
+    const prod = prodRaw ? prodRaw.toUpperCase() : '';
+    const empRaw = formatCLB(String(r?.EmpresaMapped || '').trim());
+    const emp = empRaw ? empRaw.toUpperCase() : '';
+
+    if (prod === 'BISCHOFITA' || prod.startsWith('BISCHOFITA')) {
+      const finalProd = prod === 'BISCHOFITA' ? `BISCHOFITA - ${dest}` : prod;
+      return {
+        ...r,
+        Destino: dest,
+        Producto: finalProd,
+        ProductoOrig: 'BISCHOFITA',
+        EmpresaMapped: emp
+      };
+    }
+    return {
+      ...r,
+      Destino: dest,
+      Producto: prod,
+      EmpresaMapped: emp
+    };
+  });
+};
+
+export const isBischofitaSQM = (row: any): boolean => {
+  const prod = String(row?.Producto || '').toUpperCase().trim();
+  const prodOrig = String(row?.ProductoOrig || '').toUpperCase().trim();
+  if (!prod.startsWith('BISCHOFITA') && prodOrig !== 'BISCHOFITA') return false;
+
+  const dest = String(row?.Destino || '').toUpperCase().trim();
+  const combined = `${dest} ${prod}`;
+
+  const sqmPatterns = [
+    /\bTAS\b/i,
+    /PLANTA\s+TAS/i,
+    /TAS,\s*ME/i,
+    /\bMURIATO\b/i,
+    /NPT\s*[-._]?\s*0?2/i,
+    /NPT\s*[-._]?\s*0?3/i,
+    /NPT\s*[-._]?\s*0?4/i,
+    /\bPRILADO\b/i,
+    /\bPTS\b/i,
+    /MARIA\s+ELENA|MARÍA\s+ELENA|M\.?\s*ELENA|\bME\b|\bM\.E\.\b/i,
+    /NUEVA\s+VICTORIA|N\.?\s*VICTORIA|\bVICTORIA\b/i
+  ];
+
+  return sqmPatterns.some(regex => regex.test(combined));
+};
+
+export const isProductNovandino = (row: any): boolean => {
+  const prod = String(row?.Producto || '').toUpperCase().trim();
+  const prodOrig = String(row?.ProductoOrig || '').toUpperCase().trim();
+  if (prod.startsWith('LSI')) return true;
+  if (prod.startsWith('BISCHOFITA') || prodOrig === 'BISCHOFITA') {
+    return !isBischofitaSQM(row);
+  }
+  const novandinoAllowed = ['SLIT', 'SAL 27/15'];
+  return novandinoAllowed.includes(prod);
+};
+
+export const isProductSQM = (row: any): boolean => {
+  const prod = String(row?.Producto || '').toUpperCase().trim();
+  const prodOrig = String(row?.ProductoOrig || '').toUpperCase().trim();
+  if (prod.startsWith('BISCHOFITA') || prodOrig === 'BISCHOFITA') {
+    return isBischofitaSQM(row);
+  }
+  const sqmAllowed = [
+    'MOP 70', 'MOP TALCO', 'MOP TALCO MAXIS', 'MOP-G', 'MOP-G (ROJO)', 'MOP-G 59', 
+    'MOP-G O', 'MOP-G PLUS', 'MOP-G R 59', 'MOP-GR PLUS', 'MOP-H-AL', 'MOP-H-BL', 
+    'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SILVINITA', 
+    'SOP-G', 'SOP-H', 'SOP-O', 'SOP-S TALCO', 'USOP52', 'MOP 50', 'SOP FINO'
+  ].map(p => p.toUpperCase().trim());
+  return sqmAllowed.includes(prod);
+};
+

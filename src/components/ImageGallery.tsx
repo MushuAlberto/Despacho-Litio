@@ -11,7 +11,7 @@ import { db, handleFirestoreError, OperationType, logActivity } from '../service
 import ChartCard from './ChartCard';
 import { ProductDetailSection } from './ProductDetailSection';
 import { NovandinoLogo } from './BrandLogo';
-import { formatDateToCL, formatNumberWithDecimals, formatHoursToTime } from '../utils/dataProcessor';
+import { formatDateToCL, formatNumberWithDecimals, formatHoursToTime, separateBischofitaByDest, isProductNovandino, isProductSQM } from '../utils/dataProcessor';
 
 declare const html2canvas: any;
 
@@ -97,31 +97,22 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     deleteStale();
   }, [hasLoaded, images]);
 
+  const separatedRawData = useMemo(() => {
+    return separateBischofitaByDest(rawData);
+  }, [rawData]);
+
   // Data calculations for report generation
   const novandinoData = useMemo(() => {
     if (!rawData || !selectedDate) return [];
-    const base = rawData.filter(r => r.Fecha === selectedDate);
-    const novandinoAllowed = ['SLIT', 'LSI', 'BISCHOFITA', 'SAL 27/15'];
-    return base.filter(r => {
-      const prod = (r.Producto as string || '').toUpperCase().trim();
-      return novandinoAllowed.some(allowed => prod === allowed || prod.startsWith('LSI'));
-    });
-  }, [rawData, selectedDate]);
+    const base = separatedRawData.filter(r => r.Fecha === selectedDate);
+    return base.filter(r => isProductNovandino(r));
+  }, [rawData, separatedRawData, selectedDate]);
 
   const sqmData = useMemo(() => {
     if (!rawData || !selectedDate) return [];
-    const base = rawData.filter(r => r.Fecha === selectedDate);
-    const sqmAllowed = [
-      'MOP 70', 'MOP TALCO', 'MOP TALCO MAXIS', 'MOP-G', 'MOP-G (ROJO)', 'MOP-G 59', 
-      'MOP-G O', 'MOP-G PLUS', 'MOP-G R 59', 'MOP-GR PLUS', 'MOP-H-AL', 'MOP-H-BL', 
-      'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SILVINITA', 
-      'SOP-G', 'SOP-H', 'SOP-O', 'SOP-S TALCO', 'USOP52', 'MOP 50', 'SOP FINO'
-    ].map(p => p.toUpperCase().trim());
-    return base.filter(r => {
-      const prod = (r.Producto as string || '').toUpperCase().trim();
-      return sqmAllowed.includes(prod);
-    });
-  }, [rawData, selectedDate]);
+    const base = separatedRawData.filter(r => r.Fecha === selectedDate);
+    return base.filter(r => isProductSQM(r));
+  }, [rawData, separatedRawData, selectedDate]);
 
   const getKPIsForData = useCallback((data: any[]) => {
     if (data.length === 0) return null;
@@ -1084,7 +1075,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                 <ProductDetailSection 
                   product={prod} 
                   data={novandinoData.filter(d => d.Producto === prod)} 
-                  allData={rawData}
+                  allData={separatedRawData}
                   date={selectedDate || ''} 
                   index={idx + 1} 
                   total={novandinoProductList.length} 
@@ -1164,7 +1155,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                 <ProductDetailSection 
                   product={prod} 
                   data={sqmData.filter(d => d.Producto === prod)} 
-                  allData={rawData}
+                  allData={separatedRawData}
                   date={selectedDate || ''} 
                   index={idx + 1} 
                   total={sqmProductList.length} 
