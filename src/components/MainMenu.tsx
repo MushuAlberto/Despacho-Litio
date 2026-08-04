@@ -20,7 +20,13 @@ import {
   Lock,
   X,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Building2,
+  ArrowLeft,
+  Layers,
+  Factory,
+  Warehouse,
+  MapPin
 } from 'lucide-react';
 import { NovandinoLogo } from './BrandLogo';
 import { PasswordPrompt } from './PasswordPrompt';
@@ -38,6 +44,66 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
   const [dateStr, setDateStr] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'supervision' | 'jefe_turno'>('supervision');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [openedLocation, setOpenedLocation] = useState<string | null>(null);
+
+  const locationModules = [
+    {
+      id: 'SdA',
+      title: 'SdA',
+      fullName: 'SALAR DE ATACAMA',
+      subtitle: 'SALAR DE ATACAMA',
+      badge: 'OPERACIÓN DE CAMPO',
+      status: '5 MÓDULOS ACTIVOS',
+      description: 'Módulo integral Salar de Atacama. Acceso a Informes de Despacho Novandino y SQM NY, Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.',
+      icon: Building2,
+      gradient: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10',
+      borderColor: 'border-[#461D77]/30',
+      iconBg: 'bg-[#461D77] text-white',
+      badgeBg: 'bg-[#461D77]/10 text-[#461D77]',
+    },
+    {
+      id: 'PQL',
+      title: 'PQL',
+      fullName: 'PLANTA QUÍMICA LITIO',
+      subtitle: 'PLANTA QUÍMICA LITIO',
+      badge: 'PLANTA QUÍMICA',
+      status: 'MÓDULO EN BLANCO',
+      description: 'Módulo integral Planta Química Litio. Espacio en blanco listo para la asignación de nuevos componentes.',
+      icon: Factory,
+      gradient: 'from-blue-500/10 via-indigo-500/5 to-indigo-600/10',
+      borderColor: 'border-indigo-500/30',
+      iconBg: 'bg-indigo-600 text-white',
+      badgeBg: 'bg-indigo-500/10 text-indigo-700',
+    },
+    {
+      id: 'CLB',
+      title: 'CLB',
+      fullName: 'CENTRO LOGÍSTICO BAQUEDANO',
+      subtitle: 'CENTRO LOGÍSTICO BAQUEDANO',
+      badge: 'CENTRO LOGÍSTICO',
+      status: 'MÓDULO EN BLANCO',
+      description: 'Módulo integral Centro Logístico Baquedano. Espacio en blanco listo para la asignación de nuevos componentes.',
+      icon: Warehouse,
+      gradient: 'from-emerald-500/10 via-teal-500/5 to-teal-600/10',
+      borderColor: 'border-teal-500/30',
+      iconBg: 'bg-teal-700 text-white',
+      badgeBg: 'bg-teal-500/10 text-teal-800',
+    },
+    {
+      id: 'PANG',
+      title: 'PANG',
+      fullName: 'PUERTO ANGAMOS',
+      subtitle: 'PUERTO ANGAMOS',
+      badge: 'BASE OPERATIVA',
+      status: 'MÓDULO EN BLANCO',
+      description: 'Módulo integral Puerto Angamos. Espacio en blanco listo para la asignación de nuevos componentes.',
+      icon: MapPin,
+      gradient: 'from-amber-500/10 via-orange-500/5 to-amber-600/10',
+      borderColor: 'border-amber-500/30',
+      iconBg: 'bg-amber-600 text-white',
+      badgeBg: 'bg-amber-500/10 text-amber-800',
+    },
+  ];
 
   // Force active tab to supervision on load if supervisor
   useEffect(() => {
@@ -460,73 +526,165 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
           {/* SECTION I: SUPERVISIÓN */}
           {activeTab === 'supervision' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-3 pb-2 border-b border-slate-300/40">
-                <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
-                <div>
-                  <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">Módulo Supervisión</h3>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-                {cardsData.filter(c => c.group === 'supervision').map((card, idx) => {
-                  const IconComponent = card.icon;
-                  const isFeature = card.isFeature && activeTab === 'todos';
-                  return (
-                     <motion.button
-                       key={`${card.id}-${idx}`}
-                       variants={itemVariants}
-                       onClick={() => onSelectView(card.id)}
-                       className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${
-                         isFeature ? 'lg:col-span-2' : ''
-                       } ${card.color}`}
-                     >
-                      {/* Background light gradient spot reflecting on hover */}
-                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+              {!openedLocation ? (
+                <>
+                  <div className="flex items-center gap-3 pb-2 border-b border-slate-300/40">
+                    <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
+                    <div>
+                      <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">Módulo Supervisión</h3>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                    {locationModules.map((loc) => {
+                      const IconComponent = loc.icon;
+                      return (
+                        <motion.button
+                          key={loc.id}
+                          variants={itemVariants}
+                          onClick={() => setOpenedLocation(loc.id)}
+                          className={`group relative bg-white/70 hover:bg-white border-2 ${loc.borderColor} rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[20rem] lg:h-[22rem] bg-gradient-to-br ${loc.gradient}`}
+                        >
+                          <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                          
+                          <div className="space-y-4 my-auto relative z-10">
+                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-md ${loc.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                              <IconComponent size={32} strokeWidth={1.5} />
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <p className="text-slate-500 text-[10px] font-extrabold uppercase tracking-widest">{loc.subtitle}</p>
+                              <h2 className="text-3xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
+                                {loc.title}
+                              </h2>
+                              <p className="text-slate-600 text-[11px] leading-relaxed line-clamp-3 font-medium">
+                                {loc.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="w-full pt-4 border-t border-slate-200/80 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
+                            <span className="text-slate-600 group-hover:text-nucleo transition-colors">INGRESAR AL MÓDULO {loc.title}</span>
+                            <div className={`w-8 h-8 rounded-full ${loc.iconBg} group-hover:bg-nucleo flex items-center justify-center transition-all duration-300 shadow-md`}>
+                              <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                            </div>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-300/40">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
+                      <div>
+                        <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">MÓDULO SUPERVISIÓN</h3>
+                        <p className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest mt-1">
+                          {locationModules.find(l => l.id === openedLocation)?.id} - {locationModules.find(l => l.id === openedLocation)?.fullName}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setOpenedLocation(null)}
+                      className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white border border-slate-300/80 rounded-2xl text-[10px] font-black text-slate-700 uppercase tracking-wider transition-all duration-200 hover:shadow-md cursor-pointer active:scale-95"
+                    >
+                      <ArrowLeft size={14} /> Volver a Módulos
+                    </button>
+                  </div>
+
+                  {openedLocation === 'SdA' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                      {cardsData.filter(c => c.group === 'supervision').map((card, idx) => {
+                        const IconComponent = card.icon;
+                        return (
+                          <motion.button
+                            key={`${card.id}-${idx}`}
+                            variants={itemVariants}
+                            onClick={() => onSelectView(card.id)}
+                            className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${card.color}`}
+                          >
+                            <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                            
+                            <div className="flex items-center justify-between w-full relative z-10">
+                              <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-tecnico transition-colors uppercase">
+                                {card.badge}
+                              </span>
+                              
+                              <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
+                                card.id === 'informe-novandino' || card.id === 'informe-sqm' || card.id === 'llegada'
+                                  ? 'bg-emerald-500/10 text-emerald-600'
+                                  : card.id === 'ddd'
+                                  ? 'bg-amber-500/10 text-amber-700'
+                                  : 'bg-purple-500/10 text-purple-700'
+                              }`}>
+                                &bull; {card.status}
+                              </span>
+                            </div>
+
+                            <div className="space-y-4 my-auto relative z-10">
+                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                                <IconComponent size={28} strokeWidth={1.5} />
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-widest">{card.subtitle}</p>
+                                <h2 className="text-2xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
+                                  {card.title}
+                                </h2>
+                                <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-3 font-medium">
+                                  {card.description}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
+                              <span className="text-slate-400 group-hover:text-tecnico transition-colors">ACCEDER AL COMPONENTE</span>
+                              <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-nucleo group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300">
+                                <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                              </div>
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <motion.div
+                      variants={itemVariants}
+                      className="w-full bg-white/80 border-2 border-dashed border-slate-300/80 rounded-[2.5rem] p-12 lg:p-16 text-center shadow-sm flex flex-col items-center justify-center space-y-5"
+                    >
+                      <div className="w-20 h-20 rounded-3xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-400 shadow-inner">
+                        <Layers size={38} strokeWidth={1.25} />
+                      </div>
                       
-                      {/* Top Badge and Indicator line */}
-                      <div className="flex items-center justify-between w-full relative z-10">
-                        <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-tecnico transition-colors uppercase">
-                          {card.badge}
+                      <div className="max-w-md space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 bg-slate-100 text-slate-500 rounded-full border border-slate-200/60">
+                          MÓDULO EN BLANCO
                         </span>
-                        
-                        {/* Status bubble */}
-                        <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
-                          card.id === 'informe-novandino' || card.id === 'informe-sqm' || card.id === 'llegada'
-                            ? 'bg-emerald-500/10 text-emerald-600'
-                            : 'bg-slate-400/10 text-slate-600'
-                        }`}>
-                          &bull; {card.status}
-                        </span>
+                        <h3 className="text-2xl font-black text-tecnico uppercase tracking-tight">
+                          {locationModules.find(l => l.id === openedLocation)?.title} - {locationModules.find(l => l.id === openedLocation)?.fullName}
+                        </h3>
+                        <p className="text-slate-500 text-xs font-medium leading-relaxed">
+                          Este módulo se encuentra actualmente en blanco y disponible para la incorporación de nuevos dashboards, informes o herramientas operativas.
+                        </p>
                       </div>
 
-                      {/* Center Content: Large Icon and Title */}
-                      <div className="space-y-4 my-auto relative z-10">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
-                          <IconComponent size={28} strokeWidth={1.5} />
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-widest">{card.subtitle}</p>
-                          <h2 className="text-2xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
-                            {card.title}
-                          </h2>
-                          <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-3 font-medium">
-                            {card.description}
-                          </p>
-                        </div>
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setOpenedLocation(null)}
+                          className="px-6 py-3 bg-nucleo text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-md hover:bg-black transition-all active:scale-95"
+                        >
+                          Volver a Módulos
+                        </button>
                       </div>
-
-                      {/* Bottom Access Arrow Line */}
-                      <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
-                        <span className="text-slate-400 group-hover:text-tecnico transition-colors">ACCEDER AL COMPONENTE</span>
-                        <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-nucleo group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300">
-                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                        </div>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
+                    </motion.div>
+                  )}
+                </>
+              )}
             </div>
           )}
 

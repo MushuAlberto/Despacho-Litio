@@ -452,8 +452,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                   onChange={(e) => setNewUser({...newUser, role: e.target.value as any})}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-2xl text-xs font-bold text-slate-700 outline-none transition-all cursor-pointer appearance-none"
                 >
-                  <option value="supervision">Supervisor (Solo Módulo Supervisión)</option>
-                  <option value="jefe_turno">Jefe Turno (Módulos de Jefe Turno y Supervisión)</option>
+                  <option value="supervision">Supervisor (Solo Módulo SdA)</option>
+                  <option value="jefe_turno">Jefe Turno (Módulos de Jefe Turno y SdA)</option>
                   <option value="admin">Administrador (Acceso y Gestión Total)</option>
                 </select>
               </div>
