@@ -97,22 +97,65 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     deleteStale();
   }, [hasLoaded, images]);
 
+  // Determine all available operational report dates across rawData, Firestore images, and prop
+  const availableDates = useMemo(() => {
+    const datesSet = new Set<string>();
+    
+    // 1. From rawData
+    if (rawData && rawData.length > 0) {
+      rawData.forEach(r => {
+        if (r.Fecha && typeof r.Fecha === 'string') {
+          datesSet.add(r.Fecha);
+        }
+      });
+    }
+
+    // 2. From Firestore gallery images (extract dates from image IDs or names)
+    if (images && images.length > 0) {
+      images.forEach(img => {
+        const match = img.id.match(/\d{4}-\d{2}-\d{2}/);
+        if (match) {
+          datesSet.add(match[0]);
+        }
+      });
+    }
+
+    // 3. From prop
+    if (selectedDate) {
+      datesSet.add(selectedDate);
+    }
+
+    return Array.from(datesSet).sort().reverse();
+  }, [rawData, images, selectedDate]);
+
+  const [activeDate, setActiveDate] = useState<string>('');
+
+  const effectiveDate = useMemo(() => {
+    if (activeDate && availableDates.includes(activeDate)) {
+      return activeDate;
+    }
+    if (availableDates.length > 0) {
+      return availableDates[0];
+    }
+    return selectedDate || '';
+  }, [activeDate, availableDates, selectedDate]);
+
   const separatedRawData = useMemo(() => {
     return separateBischofitaByDest(rawData);
   }, [rawData]);
 
   // Data calculations for report generation
   const novandinoData = useMemo(() => {
-    if (!rawData || !selectedDate) return [];
-    const base = separatedRawData.filter(r => r.Fecha === selectedDate);
+    if (!rawData || !effectiveDate) return [];
+    const base = separatedRawData.filter(r => r.Fecha === effectiveDate);
     return base.filter(r => isProductNovandino(r));
-  }, [rawData, separatedRawData, selectedDate]);
+  }, [rawData, separatedRawData, effectiveDate]);
 
   const sqmData = useMemo(() => {
-    if (!rawData || !selectedDate) return [];
-    const base = separatedRawData.filter(r => r.Fecha === selectedDate);
+    if (!rawData || !effectiveDate) return [];
+    const base = separatedRawData.filter(r => r.Fecha === effectiveDate);
     return base.filter(r => isProductSQM(r));
-  }, [rawData, separatedRawData, selectedDate]);
+  }, [rawData, separatedRawData, effectiveDate]);
 
   const getKPIsForData = useCallback((data: any[]) => {
     if (data.length === 0) return null;
@@ -158,10 +201,10 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   const sqmProductList = useMemo(() => getProductListForData(sqmData), [sqmData, getProductListForData]);
 
   const sortedImages = useMemo(() => {
-    // Only keep manual uploads and automatic images of the CURRENT selected date
+    // Only keep manual uploads and automatic images of the CURRENT effective date
     const list = images.filter(img => {
       if (img.id.startsWith('auto_')) {
-        return img.id.includes(selectedDate);
+        return img.id.includes(effectiveDate);
       }
       return true;
     });
@@ -171,13 +214,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       sortedList = list.sort((a, b) => {
         const getPriority = (img: GalleryImage) => {
           // --- NOVANDINO PRIORITIES ---
-          if (img.id === `auto_kpi_novandino_${selectedDate}`) return 1;
-          if (img.id === `auto_chart_novandino_${selectedDate}`) return 2;
+          if (img.id === `auto_kpi_novandino_${effectiveDate}`) return 1;
+          if (img.id === `auto_chart_novandino_${effectiveDate}`) return 2;
           if (img.id.startsWith('auto_prod_novandino_')) {
-            const match = img.id.match(new RegExp(`^auto_prod_novandino_(.+?)_${selectedDate}$`));
+            const match = img.id.match(new RegExp(`^auto_prod_novandino_(.+?)_${effectiveDate}$`));
             if (match) {
               const prodNameUnderscored = match[1];
-              const idx = novandinoProductList.findIndex(p => p.replace(/\s+/g, '_') === prodNameUnderscored);
+              const idx = novandinoProductList.findIndex(p => p.replace(/[\s/]+/g, '_') === prodNameUnderscored);
               if (idx !== -1) {
                 return 3 + idx;
               }
@@ -187,13 +230,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
           // --- SQM NY PRIORITIES ---
           const sqmOffset = 100;
-          if (img.id === `auto_kpi_sqm_${selectedDate}`) return sqmOffset + 1;
-          if (img.id === `auto_chart_sqm_${selectedDate}`) return sqmOffset + 2;
+          if (img.id === `auto_kpi_sqm_${effectiveDate}`) return sqmOffset + 1;
+          if (img.id === `auto_chart_sqm_${effectiveDate}`) return sqmOffset + 2;
           if (img.id.startsWith('auto_prod_sqm_')) {
-            const match = img.id.match(new RegExp(`^auto_prod_sqm_(.+?)_${selectedDate}$`));
+            const match = img.id.match(new RegExp(`^auto_prod_sqm_(.+?)_${effectiveDate}$`));
             if (match) {
               const prodNameUnderscored = match[1];
-              const idx = sqmProductList.findIndex(p => p.replace(/\s+/g, '_') === prodNameUnderscored);
+              const idx = sqmProductList.findIndex(p => p.replace(/[\s/]+/g, '_') === prodNameUnderscored);
               if (idx !== -1) {
                 return sqmOffset + 3 + idx;
               }
@@ -202,8 +245,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           }
 
           // Legacy auto IDs fallback
-          if (img.id === `auto_kpi_${selectedDate}`) return 500;
-          if (img.id === `auto_chart_${selectedDate}`) return 501;
+          if (img.id === `auto_kpi_${effectiveDate}`) return 500;
+          if (img.id === `auto_chart_${effectiveDate}`) return 501;
           if (img.id.startsWith('auto_prod_')) return 502;
 
           return 1000; // Manual images
@@ -297,22 +340,22 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     }
 
     return weavedList;
-  }, [images, sortBy, novandinoProductList, sqmProductList, selectedDate]);
+  }, [images, sortBy, novandinoProductList, sqmProductList, effectiveDate]);
 
   // Automatic report image generation effect
   useEffect(() => {
-    if (!hasLoaded || !rawData || rawData.length === 0 || !selectedDate) return;
+    if (!hasLoaded || !rawData || rawData.length === 0 || !effectiveDate) return;
 
     const runAutomaticCapture = async () => {
       // Novandino IDs
-      const novKpiId = `auto_kpi_novandino_${selectedDate}`;
-      const novChartId = `auto_chart_novandino_${selectedDate}`;
-      const novProdIds = novandinoProductList.map(p => `auto_prod_novandino_${p.replace(/\s+/g, '_')}_${selectedDate}`);
+      const novKpiId = `auto_kpi_novandino_${effectiveDate}`;
+      const novChartId = `auto_chart_novandino_${effectiveDate}`;
+      const novProdIds = novandinoProductList.map(p => `auto_prod_novandino_${p.replace(/[\s/]+/g, '_')}_${effectiveDate}`);
 
       // SQM NY IDs
-      const sqmKpiId = `auto_kpi_sqm_${selectedDate}`;
-      const sqmChartId = `auto_chart_sqm_${selectedDate}`;
-      const sqmProdIds = sqmProductList.map(p => `auto_prod_sqm_${p.replace(/\s+/g, '_')}_${selectedDate}`);
+      const sqmKpiId = `auto_kpi_sqm_${effectiveDate}`;
+      const sqmChartId = `auto_chart_sqm_${effectiveDate}`;
+      const sqmProdIds = sqmProductList.map(p => `auto_prod_sqm_${p.replace(/[\s/]+/g, '_')}_${effectiveDate}`);
 
       const hasNovKpis = images.some(img => img.id === novKpiId);
       const hasNovChart = images.some(img => img.id === novChartId);
@@ -352,8 +395,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
               generatedList.push({
                 id: novKpiId,
                 url: canvas.toDataURL('image/jpeg', 0.9),
-                name: `NOVANDINO - INFORME OPERATIVO - CUMPLIMIENTO GLOBAL (${formatDateToCL(selectedDate)})`,
-                date: formatDateToCL(selectedDate)
+                name: `NOVANDINO - INFORME OPERATIVO - CUMPLIMIENTO GLOBAL (${formatDateToCL(effectiveDate)})`,
+                date: formatDateToCL(effectiveDate)
               });
             }
           }
@@ -366,8 +409,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
               generatedList.push({
                 id: novChartId,
                 url: canvas.toDataURL('image/jpeg', 0.9),
-                name: `NOVANDINO - ANÁLISIS COMPARATIVO (${formatDateToCL(selectedDate)})`,
-                date: formatDateToCL(selectedDate)
+                name: `NOVANDINO - ANÁLISIS COMPARATIVO (${formatDateToCL(effectiveDate)})`,
+                date: formatDateToCL(effectiveDate)
               });
             }
           }
@@ -384,8 +427,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                 generatedList.push({
                   id: prodId,
                   url: canvas.toDataURL('image/jpeg', 0.9),
-                  name: `NOVANDINO - AUDITORÍA DE DESEMPEÑO - ${prod} (${formatDateToCL(selectedDate)})`,
-                  date: formatDateToCL(selectedDate)
+                  name: `NOVANDINO - AUDITORÍA DE DESEMPEÑO - ${prod} (${formatDateToCL(effectiveDate)})`,
+                  date: formatDateToCL(effectiveDate)
                 });
               }
             }
@@ -402,8 +445,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
               generatedList.push({
                 id: sqmKpiId,
                 url: canvas.toDataURL('image/jpeg', 0.9),
-                name: `SQM NY - INFORME OPERATIVO - CUMPLIMIENTO GLOBAL (${formatDateToCL(selectedDate)})`,
-                date: formatDateToCL(selectedDate)
+                name: `SQM NY - INFORME OPERATIVO - CUMPLIMIENTO GLOBAL (${formatDateToCL(effectiveDate)})`,
+                date: formatDateToCL(effectiveDate)
               });
             }
           }
@@ -416,8 +459,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
               generatedList.push({
                 id: sqmChartId,
                 url: canvas.toDataURL('image/jpeg', 0.9),
-                name: `SQM NY - ANÁLISIS COMPARATIVO (${formatDateToCL(selectedDate)})`,
-                date: formatDateToCL(selectedDate)
+                name: `SQM NY - ANÁLISIS COMPARATIVO (${formatDateToCL(effectiveDate)})`,
+                date: formatDateToCL(effectiveDate)
               });
             }
           }
@@ -434,8 +477,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                 generatedList.push({
                   id: prodId,
                   url: canvas.toDataURL('image/jpeg', 0.9),
-                  name: `SQM NY - AUDITORÍA DE DESEMPEÑO - ${prod} (${formatDateToCL(selectedDate)})`,
-                  date: formatDateToCL(selectedDate)
+                  name: `SQM NY - AUDITORÍA DE DESEMPEÑO - ${prod} (${formatDateToCL(effectiveDate)})`,
+                  date: formatDateToCL(effectiveDate)
                 });
               }
             }
@@ -447,7 +490,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           for (const newImg of generatedList) {
             try {
               const path = 'gallery_images';
-              const docRef = doc(db, path, newImg.id);
+              const cleanId = newImg.id.replace(/\//g, '_');
+              const docRef = doc(db, path, cleanId);
               await setDoc(docRef, {
                 url: newImg.url,
                 name: newImg.name,
@@ -468,26 +512,26 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     };
 
     runAutomaticCapture();
-  }, [rawData, selectedDate, novandinoProductList, sqmProductList, novandinoData.length, sqmData.length, hasLoaded, images]);
+  }, [rawData, effectiveDate, novandinoProductList, sqmProductList, novandinoData.length, sqmData.length, hasLoaded, images]);
 
   const handleRegenerateAutoImages = async () => {
-    if (isGeneratingAuto || !selectedDate) return;
+    if (isGeneratingAuto || !effectiveDate) return;
     
     setIsGeneratingAuto(true);
     
     try {
-      const novKpiId = `auto_kpi_novandino_${selectedDate}`;
-      const novChartId = `auto_chart_novandino_${selectedDate}`;
-      const novProdIds = novandinoProductList.map(p => `auto_prod_novandino_${p.replace(/\s+/g, '_')}_${selectedDate}`);
+      const novKpiId = `auto_kpi_novandino_${effectiveDate}`;
+      const novChartId = `auto_chart_novandino_${effectiveDate}`;
+      const novProdIds = novandinoProductList.map(p => `auto_prod_novandino_${p.replace(/[\s/]+/g, '_')}_${effectiveDate}`);
 
-      const sqmKpiId = `auto_kpi_sqm_${selectedDate}`;
-      const sqmChartId = `auto_chart_sqm_${selectedDate}`;
-      const sqmProdIds = sqmProductList.map(p => `auto_prod_sqm_${p.replace(/\s+/g, '_')}_${selectedDate}`);
+      const sqmKpiId = `auto_kpi_sqm_${effectiveDate}`;
+      const sqmChartId = `auto_chart_sqm_${effectiveDate}`;
+      const sqmProdIds = sqmProductList.map(p => `auto_prod_sqm_${p.replace(/[\s/]+/g, '_')}_${effectiveDate}`);
       
       const idsToDelete = [
         novKpiId, novChartId, ...novProdIds,
         sqmKpiId, sqmChartId, ...sqmProdIds,
-        `auto_kpi_${selectedDate}`, `auto_chart_${selectedDate}` // Legacy IDs too
+        `auto_kpi_${effectiveDate}`, `auto_chart_${effectiveDate}` // Legacy IDs too
       ];
       
       const path = 'gallery_images';
@@ -503,7 +547,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         await logActivity(
           parsedUser,
           'Regeneró Reportes',
-          `Solicitó regenerar las capturas automáticas para la jornada ${formatDateToCL(selectedDate)}.`
+          `Solicitó regenerar las capturas automáticas para la jornada ${formatDateToCL(effectiveDate)}.`
         );
       }
     } catch (err) {
@@ -718,7 +762,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
               <span className="text-[9px] font-black text-ionizado uppercase tracking-wider">Sincronizando reportes automáticos...</span>
             </div>
           ) : (
-            rawData.length > 0 && selectedDate && (
+            rawData.length > 0 && effectiveDate && (
               <button
                 onClick={handleRegenerateAutoImages}
                 className="flex items-center gap-1.5 bg-violeta/5 hover:bg-violeta/10 border border-violeta/15 hover:border-violeta/30 text-violeta font-black text-[9px] uppercase tracking-wider px-3 py-2 rounded-xl transition-all cursor-pointer"
@@ -732,6 +776,27 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Date Selector */}
+          {availableDates.length > 0 && (
+            <div className="bg-calido/50 rounded-2xl p-1.5 flex items-center gap-1.5 border border-violeta/10 px-3">
+              <span className="text-[9px] font-black uppercase text-violeta/50 tracking-wider">Jornada:</span>
+              <select
+                value={effectiveDate}
+                onChange={(e) => {
+                  setActiveDate(e.target.value);
+                  setCurrentIndex(0);
+                }}
+                className="bg-transparent text-[10px] font-black text-violeta uppercase outline-none cursor-pointer border-none p-0 focus:ring-0 font-mono"
+              >
+                {availableDates.map((d, i) => (
+                  <option key={d} value={d}>
+                    {formatDateToCL(d)}{i === 0 ? ' (Última)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Sorting Option */}
           {sortedImages.length > 0 && (
             <div className="bg-calido/50 rounded-2xl p-1.5 flex items-center gap-1.5 border border-violeta/5 px-3">
@@ -1022,7 +1087,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-violeta font-bold text-[9px] tracking-[0.3em] uppercase mb-1">FECHA JORNADA</p>
-                  <p className="text-2xl font-[900] text-ionizado tracking-tighter whitespace-nowrap">{formatDateToCL(selectedDate)}</p>
+                  <p className="text-2xl font-[900] text-ionizado tracking-tighter whitespace-nowrap">{formatDateToCL(effectiveDate)}</p>
                 </div>
               </div>
               
@@ -1056,7 +1121,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                   <p className="text-[9px] font-black text-ionizado uppercase tracking-[0.3em]">Análisis Gráfico Novandino</p>
                   <h2 className="text-3xl font-[950] text-nucleo uppercase tracking-tight">Comparación de Despacho</h2>
                 </div>
-                <p className="text-xs font-black text-violeta uppercase tracking-widest">{formatDateToCL(selectedDate)}</p>
+                <p className="text-xs font-black text-violeta uppercase tracking-widest">{formatDateToCL(effectiveDate)}</p>
               </div>
               <div className="pt-6">
                 <ChartCard 
@@ -1071,12 +1136,12 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
             {/* 3. Products Details - NOVANDINO */}
             {novandinoProductList.map((prod, idx) => (
-              <div key={`nov-${selectedDate}-${prod}`} id={`capture-product-novandino-${idx}`} style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
+              <div key={`nov-${effectiveDate}-${prod}`} id={`capture-product-novandino-${idx}`} style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
                 <ProductDetailSection 
                   product={prod} 
                   data={novandinoData.filter(d => d.Producto === prod)} 
                   allData={separatedRawData}
-                  date={selectedDate || ''} 
+                  date={effectiveDate || ''} 
                   index={idx + 1} 
                   total={novandinoProductList.length} 
                 />
@@ -1102,7 +1167,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-violeta font-bold text-[9px] tracking-[0.3em] uppercase mb-1">FECHA JORNADA</p>
-                  <p className="text-2xl font-[900] text-ionizado tracking-tighter whitespace-nowrap">{formatDateToCL(selectedDate)}</p>
+                  <p className="text-2xl font-[900] text-ionizado tracking-tighter whitespace-nowrap">{formatDateToCL(effectiveDate)}</p>
                 </div>
               </div>
               
@@ -1136,7 +1201,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
                   <p className="text-[9px] font-black text-ionizado uppercase tracking-[0.3em]">Análisis Gráfico SQM NY</p>
                   <h2 className="text-3xl font-[950] text-nucleo uppercase tracking-tight">Comparación de Despacho</h2>
                 </div>
-                <p className="text-xs font-black text-violeta uppercase tracking-widest">{formatDateToCL(selectedDate)}</p>
+                <p className="text-xs font-black text-violeta uppercase tracking-widest">{formatDateToCL(effectiveDate)}</p>
               </div>
               <div className="pt-6">
                 <ChartCard 
@@ -1151,12 +1216,12 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
             {/* 3. Products Details - SQM NY */}
             {sqmProductList.map((prod, idx) => (
-              <div key={`sqm-${selectedDate}-${prod}`} id={`capture-product-sqm-${idx}`} style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
+              <div key={`sqm-${effectiveDate}-${prod}`} id={`capture-product-sqm-${idx}`} style={{ width: '900px', padding: '40px', background: '#ffffff' }}>
                 <ProductDetailSection 
                   product={prod} 
                   data={sqmData.filter(d => d.Producto === prod)} 
                   allData={separatedRawData}
-                  date={selectedDate || ''} 
+                  date={effectiveDate || ''} 
                   index={idx + 1} 
                   total={sqmProductList.length} 
                 />

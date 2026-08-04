@@ -430,7 +430,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
 
   const deleteStaleImage = async () => {
     try {
-      const prodId = `auto_prod_${product.replace(/\s+/g, '_')}_${date}`;
+      const prodId = `auto_prod_${product.replace(/[\s/]+/g, '_')}_${date}`;
       const imgDocRef = doc(db, 'gallery_images', prodId);
       await deleteDoc(imgDocRef);
     } catch (err) {
