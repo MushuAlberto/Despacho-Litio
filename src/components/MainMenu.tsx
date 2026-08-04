@@ -411,25 +411,6 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
               )}
             </div>
 
-            {/* Operator Live Profile */}
-            <div className="bg-white/90 border border-slate-200/60 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-sm hover:border-slate-300 transition-all duration-200">
-              <div className="relative">
-                <div className="w-8 h-8 bg-gradient-to-br from-[#461D77] to-indigo-600 rounded-xl flex items-center justify-center text-white font-extrabold text-xs shadow-inner uppercase">
-                  {currentUser?.name ? currentUser.name.substring(0, 2) : 'CT'}
-                </div>
-                {/* Live green dot to show high professional real-time synchronization */}
-                <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full live-sync-indicator" title="Sincronizado en tiempo real con Firestore" />
-              </div>
-              <div className="text-left">
-                <span className="text-[8px] font-black text-[#4e2283] tracking-widest uppercase block mb-0.5">
-                  {currentUser?.role === 'admin' ? 'ADMINISTRADOR' : currentUser?.role === 'jefe_turno' ? 'JEFE TURNO' : 'SUPERVISOR'}
-                </span>
-                <p className="text-[11px] font-extrabold text-slate-700 leading-none">
-                  {currentUser?.name || 'Analista Activo'}
-                </p>
-              </div>
-            </div>
-
             {/* Change Password modal trigger button */}
             <button
               type="button"
@@ -470,51 +451,64 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
         {/* HERO SECTION - Welcome and general operational context */}
         <section className="w-full bg-gradient-to-r from-[#1e1b4b] via-[#311042] to-[#110e2e] rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-xl border-t border-white/10">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
-          <div className="absolute top-0 right-0 w-80 h-80 bg-violeta/10 rounded-full blur-[100px] -mr-16 -mt-16 pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-litio/10 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-violeta/15 rounded-full blur-[100px] -mr-16 -mt-16 pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-litio/15 rounded-full blur-[120px] pointer-events-none" />
           
-          <div className="relative z-10 max-w-4xl space-y-4">
-            <span className="inline-flex items-center gap-1.5 bg-[#4FD1C5]/10 text-[#4FD1C5] text-[10px] font-black tracking-widest px-3 py-1.5 rounded-xl uppercase">
-              <Activity size={12} className="animate-pulse" /> CONTROL ADJUNTO DE OPERACIÓN 2026
-            </span>
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight uppercase leading-none">
-              CENTRO DE CONTROL LITIO <span className="text-[#4FD1C5]">NOVANDINO</span>
-            </h1>
-            <p className="text-slate-300 font-medium text-sm md:text-base leading-relaxed">
-              Plataforma y integral de control técnico para la Subgerencia de Logística de Litio. 
-              Por favor, seleccione un módulo operativo para registrar despachos, verificar la llegada de equipos, 
-              ejecutar diálogos de desempeño y exportar los informes oficiales de la jornada.
-            </p>
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left Content */}
+            <div className="lg:col-span-7 space-y-4">
+              <h1 className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight uppercase leading-tight">
+                <span className="block">CENTRO DE CONTROL LOGISTICA LITIO</span>
+                <span className="text-[#4FD1C5] block mt-1">NOVANDINO</span>
+              </h1>
+              <p className="text-slate-300 font-medium text-sm md:text-base leading-relaxed">
+                Plataforma integral de control técnico para la Subgerencia de Logística de Litio. 
+                Seleccione un módulo operativo para registrar despachos, verificar llegada de equipos, 
+                ejecutar diálogos de desempeño y exportar los informes oficiales de la jornada.
+              </p>
+            </div>
+
+            {/* Right Content - Operational Status Panel */}
+            <div className="lg:col-span-5 bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 -ml-5" />
+                  <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
+                    SISTEMA EN LÍNEA
+                  </span>
+                </div>
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                  TURNO ACTIVO
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-3.5 space-y-1">
+                  <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Zonas Operativas</p>
+                  <p className="text-xl font-black text-white">4 MÓDULOS</p>
+                  <p className="text-[9px] text-[#4FD1C5] font-bold">SdA &bull; PQL &bull; CLB &bull; PANG</p>
+                </div>
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-3.5 space-y-1">
+                  <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Control Técnico</p>
+                  <p className="text-xl font-black text-white">100% ACTIVO</p>
+                  <p className="text-[9px] text-emerald-400 font-bold">Reportes en Tiempo Real</p>
+                </div>
+              </div>
+
+              <div className="pt-1 flex items-center justify-between text-[10px] font-bold text-slate-300 bg-white/5 px-4 py-2.5 rounded-xl border border-white/5">
+                <span className="uppercase text-slate-400 font-extrabold">
+                  {currentUser?.role === 'admin' 
+                    ? 'ADMINISTRADOR' 
+                    : currentUser?.role === 'jefe_turno' 
+                    ? 'JEFE DE TURNO' 
+                    : 'SUPERVISOR'}:
+                </span>
+                <span className="text-white font-black">{currentUser?.name || 'Analista Activo'}</span>
+              </div>
+            </div>
           </div>
         </section>
-
-        {/* MODULE FILTER TABS */}
-        {currentUser?.role !== 'supervision' && (
-          <div className="flex items-center justify-center gap-3 bg-white/50 border border-white p-2 md:p-2.5 rounded-3xl max-w-sm mx-auto backdrop-blur-md shadow-sm z-10 relative">
-            <button 
-              type="button"
-              onClick={() => setActiveTab('supervision')}
-              className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
-                activeTab === 'supervision' 
-                  ? 'bg-[#461D77] text-white shadow-sm' 
-                  : 'text-slate-600 hover:text-[#461D77] hover:bg-white/50'
-              }`}
-            >
-              Supervisión
-            </button>
-            <button 
-              type="button"
-              onClick={handleJefeTurnoClick}
-              className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
-                activeTab === 'jefe_turno' 
-                  ? 'bg-[#7177EC] text-white shadow-sm' 
-                  : 'text-slate-600 hover:text-[#7177EC] hover:bg-white/50'
-              }`}
-            >
-              Jefe Turno
-            </button>
-          </div>
-        )}
 
         {/* BENTO GRID MODULE SELECTOR */}
         <motion.div 
@@ -523,50 +517,165 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
           animate="show"
           className="space-y-12 w-full z-10 relative"
         >
-          {/* SECTION I: SUPERVISIÓN */}
-          {activeTab === 'supervision' && (
+          {!openedLocation ? (
+            /* MAIN LEVEL: 4 OPERATIONAL ZONE MODULES */
             <div className="space-y-6">
-              {!openedLocation ? (
-                <>
-                  <div className="flex items-center gap-3 pb-2 border-b border-slate-300/40">
-                    <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
-                    <div>
-                      <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">Módulo Supervisión</h3>
-                    </div>
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-300/40">
+                <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
+                <div>
+                  <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">MÓDULOS OPERATIVOS DE CAMPO</h3>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                    SELECCIONE UNA ZONA PARA INGRESAR
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                {locationModules.map((loc) => {
+                  const IconComponent = loc.icon;
+                  return (
+                    <motion.button
+                      key={loc.id}
+                      variants={itemVariants}
+                      onClick={() => setOpenedLocation(loc.id)}
+                      className={`group relative bg-white/70 hover:bg-white border-2 ${loc.borderColor} rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[20rem] lg:h-[22rem] bg-gradient-to-br ${loc.gradient}`}
+                    >
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      
+                      <div className="space-y-4 my-auto relative z-10">
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-md ${loc.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                          <IconComponent size={32} strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-slate-500 text-[10px] font-extrabold uppercase tracking-widest">{loc.subtitle}</p>
+                          <h2 className="text-3xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
+                            {loc.title}
+                          </h2>
+                          <p className="text-slate-600 text-[11px] leading-relaxed line-clamp-3 font-medium">
+                            {loc.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="w-full pt-4 border-t border-slate-200/80 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className="text-slate-600 group-hover:text-nucleo transition-colors">INGRESAR AL MÓDULO {loc.title}</span>
+                        <div className={`w-8 h-8 rounded-full ${loc.iconBg} group-hover:bg-nucleo flex items-center justify-center transition-all duration-300 shadow-md`}>
+                          <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            /* INSIDE OPENED LOCATION MODULE */
+            <div className="space-y-6">
+              {/* LOCATION HEADER */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-300/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
+                  <div>
+                    <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">
+                      MÓDULO {locationModules.find(l => l.id === openedLocation)?.title}
+                    </h3>
+                    <p className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest mt-1">
+                      {locationModules.find(l => l.id === openedLocation)?.id} - {locationModules.find(l => l.id === openedLocation)?.fullName}
+                    </p>
                   </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-                    {locationModules.map((loc) => {
-                      const IconComponent = loc.icon;
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOpenedLocation(null)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white border border-slate-300/80 rounded-2xl text-[10px] font-black text-slate-700 uppercase tracking-wider transition-all duration-200 hover:shadow-md cursor-pointer active:scale-95"
+                >
+                  <ArrowLeft size={14} /> Volver a Módulos
+                </button>
+              </div>
+
+              {openedLocation === 'SdA' ? (
+                <>
+                  {/* TAB SWITCHER: SUPERVISIÓN / JEFE TURNO INSIDE SdA */}
+                  {currentUser?.role !== 'supervision' && (
+                    <div className="flex items-center justify-center gap-3 bg-white/60 border border-slate-200/80 p-2 rounded-3xl max-w-sm mx-auto shadow-sm my-4 backdrop-blur-md">
+                      <button 
+                        type="button"
+                        onClick={() => setActiveTab('supervision')}
+                        className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
+                          activeTab === 'supervision' 
+                            ? 'bg-[#461D77] text-white shadow-sm' 
+                            : 'text-slate-600 hover:text-[#461D77] hover:bg-white/50'
+                        }`}
+                      >
+                        Supervisión
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={handleJefeTurnoClick}
+                        className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
+                          activeTab === 'jefe_turno' 
+                            ? 'bg-[#7177EC] text-white shadow-sm' 
+                            : 'text-slate-600 hover:text-[#7177EC] hover:bg-white/50'
+                        }`}
+                      >
+                        Jefe Turno
+                      </button>
+                    </div>
+                  )}
+
+                  {/* CARDS GRID FOR SELECTED TAB INSIDE SdA */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                    {cardsData.filter(c => c.group === activeTab).map((card, idx) => {
+                      const IconComponent = card.icon;
                       return (
                         <motion.button
-                          key={loc.id}
+                          key={`${card.id}-${idx}`}
                           variants={itemVariants}
-                          onClick={() => setOpenedLocation(loc.id)}
-                          className={`group relative bg-white/70 hover:bg-white border-2 ${loc.borderColor} rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[20rem] lg:h-[22rem] bg-gradient-to-br ${loc.gradient}`}
+                          onClick={() => onSelectView(card.id)}
+                          className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${card.color}`}
                         >
                           <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
                           
+                          <div className="flex items-center justify-between w-full relative z-10">
+                            <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-tecnico transition-colors uppercase">
+                              {card.badge}
+                            </span>
+                            
+                            <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
+                              card.id === 'informe-novandino' || card.id === 'informe-sqm' || card.id === 'llegada'
+                                ? 'bg-emerald-500/10 text-emerald-600'
+                                : card.id === 'ddd'
+                                ? 'bg-amber-500/10 text-amber-700'
+                                : card.id === 'lce'
+                                ? 'bg-cyan-500/10 text-cyan-600'
+                                : 'bg-purple-500/10 text-purple-700'
+                            }`}>
+                              &bull; {card.status}
+                            </span>
+                          </div>
+
                           <div className="space-y-4 my-auto relative z-10">
-                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-md ${loc.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
-                              <IconComponent size={32} strokeWidth={1.5} />
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                              <IconComponent size={28} strokeWidth={1.5} />
                             </div>
                             
                             <div className="space-y-1">
-                              <p className="text-slate-500 text-[10px] font-extrabold uppercase tracking-widest">{loc.subtitle}</p>
-                              <h2 className="text-3xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
-                                {loc.title}
+                              <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-widest">{card.subtitle}</p>
+                              <h2 className="text-2xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
+                                {card.title}
                               </h2>
-                              <p className="text-slate-600 text-[11px] leading-relaxed line-clamp-3 font-medium">
-                                {loc.description}
+                              <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-3 font-medium">
+                                {card.description}
                               </p>
                             </div>
                           </div>
 
-                          <div className="w-full pt-4 border-t border-slate-200/80 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
-                            <span className="text-slate-600 group-hover:text-nucleo transition-colors">INGRESAR AL MÓDULO {loc.title}</span>
-                            <div className={`w-8 h-8 rounded-full ${loc.iconBg} group-hover:bg-nucleo flex items-center justify-center transition-all duration-300 shadow-md`}>
-                              <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                          <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
+                            <span className="text-slate-400 group-hover:text-tecnico transition-colors">ACCEDER AL COMPONENTE</span>
+                            <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-nucleo group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300">
+                              <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                             </div>
                           </div>
                         </motion.button>
@@ -575,186 +684,37 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                   </div>
                 </>
               ) : (
-                <>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-300/40">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
-                      <div>
-                        <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">MÓDULO SUPERVISIÓN</h3>
-                        <p className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest mt-1">
-                          {locationModules.find(l => l.id === openedLocation)?.id} - {locationModules.find(l => l.id === openedLocation)?.fullName}
-                        </p>
-                      </div>
-                    </div>
+                <motion.div
+                  variants={itemVariants}
+                  className="w-full bg-white/80 border-2 border-dashed border-slate-300/80 rounded-[2.5rem] p-12 lg:p-16 text-center shadow-sm flex flex-col items-center justify-center space-y-5"
+                >
+                  <div className="w-20 h-20 rounded-3xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-400 shadow-inner">
+                    <Layers size={38} strokeWidth={1.25} />
+                  </div>
+                  
+                  <div className="max-w-md space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 bg-slate-100 text-slate-500 rounded-full border border-slate-200/60">
+                      MÓDULO EN BLANCO
+                    </span>
+                    <h3 className="text-2xl font-black text-tecnico uppercase tracking-tight">
+                      {locationModules.find(l => l.id === openedLocation)?.title} - {locationModules.find(l => l.id === openedLocation)?.fullName}
+                    </h3>
+                    <p className="text-slate-500 text-xs font-medium leading-relaxed">
+                      Este módulo se encuentra actualmente en blanco y disponible para la incorporación de nuevos dashboards, informes o herramientas operativas.
+                    </p>
+                  </div>
 
+                  <div className="pt-2">
                     <button
                       type="button"
                       onClick={() => setOpenedLocation(null)}
-                      className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white border border-slate-300/80 rounded-2xl text-[10px] font-black text-slate-700 uppercase tracking-wider transition-all duration-200 hover:shadow-md cursor-pointer active:scale-95"
+                      className="px-6 py-3 bg-nucleo text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-md hover:bg-black transition-all active:scale-95"
                     >
-                      <ArrowLeft size={14} /> Volver a Módulos
+                      Volver a Módulos
                     </button>
                   </div>
-
-                  {openedLocation === 'SdA' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-                      {cardsData.filter(c => c.group === 'supervision').map((card, idx) => {
-                        const IconComponent = card.icon;
-                        return (
-                          <motion.button
-                            key={`${card.id}-${idx}`}
-                            variants={itemVariants}
-                            onClick={() => onSelectView(card.id)}
-                            className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${card.color}`}
-                          >
-                            <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
-                            
-                            <div className="flex items-center justify-between w-full relative z-10">
-                              <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-tecnico transition-colors uppercase">
-                                {card.badge}
-                              </span>
-                              
-                              <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
-                                card.id === 'informe-novandino' || card.id === 'informe-sqm' || card.id === 'llegada'
-                                  ? 'bg-emerald-500/10 text-emerald-600'
-                                  : card.id === 'ddd'
-                                  ? 'bg-amber-500/10 text-amber-700'
-                                  : 'bg-purple-500/10 text-purple-700'
-                              }`}>
-                                &bull; {card.status}
-                              </span>
-                            </div>
-
-                            <div className="space-y-4 my-auto relative z-10">
-                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
-                                <IconComponent size={28} strokeWidth={1.5} />
-                              </div>
-                              
-                              <div className="space-y-1">
-                                <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-widest">{card.subtitle}</p>
-                                <h2 className="text-2xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
-                                  {card.title}
-                                </h2>
-                                <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-3 font-medium">
-                                  {card.description}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
-                              <span className="text-slate-400 group-hover:text-tecnico transition-colors">ACCEDER AL COMPONENTE</span>
-                              <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-nucleo group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300">
-                                <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                              </div>
-                            </div>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <motion.div
-                      variants={itemVariants}
-                      className="w-full bg-white/80 border-2 border-dashed border-slate-300/80 rounded-[2.5rem] p-12 lg:p-16 text-center shadow-sm flex flex-col items-center justify-center space-y-5"
-                    >
-                      <div className="w-20 h-20 rounded-3xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-400 shadow-inner">
-                        <Layers size={38} strokeWidth={1.25} />
-                      </div>
-                      
-                      <div className="max-w-md space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 bg-slate-100 text-slate-500 rounded-full border border-slate-200/60">
-                          MÓDULO EN BLANCO
-                        </span>
-                        <h3 className="text-2xl font-black text-tecnico uppercase tracking-tight">
-                          {locationModules.find(l => l.id === openedLocation)?.title} - {locationModules.find(l => l.id === openedLocation)?.fullName}
-                        </h3>
-                        <p className="text-slate-500 text-xs font-medium leading-relaxed">
-                          Este módulo se encuentra actualmente en blanco y disponible para la incorporación de nuevos dashboards, informes o herramientas operativas.
-                        </p>
-                      </div>
-
-                      <div className="pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setOpenedLocation(null)}
-                          className="px-6 py-3 bg-nucleo text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-md hover:bg-black transition-all active:scale-95"
-                        >
-                          Volver a Módulos
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </>
+                </motion.div>
               )}
-            </div>
-          )}
-
-          {/* SECTION II: JEFE TURNO */}
-          {activeTab === 'jefe_turno' && currentUser?.role !== 'supervision' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-3 pb-2 border-b border-slate-300/40">
-                <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#7177EC] to-sky-400 shadow-sm" />
-                <div>
-                  <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">Módulo Jefe Turno</h3>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-                {cardsData.filter(c => c.group === 'jefe_turno').map((card, idx) => {
-                  const IconComponent = card.icon;
-                  return (
-                     <motion.button
-                       key={`${card.id}-${idx}`}
-                       variants={itemVariants}
-                       onClick={() => onSelectView(card.id)}
-                       className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${card.color}`}
-                     >
-                      {/* Background light gradient spot reflecting on hover */}
-                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
-                      
-                      {/* Top Badge and Indicator line */}
-                      <div className="flex items-center justify-between w-full relative z-10">
-                        <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-tecnico transition-colors uppercase">
-                          {card.badge}
-                        </span>
-                        
-                        {/* Status bubble */}
-                        <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
-                          card.id === 'lce'
-                            ? 'bg-cyan-500/10 text-cyan-600'
-                            : 'bg-slate-400/10 text-slate-600'
-                        }`}>
-                          &bull; {card.status}
-                        </span>
-                      </div>
-
-                      {/* Center Content: Large Icon and Title */}
-                      <div className="space-y-4 my-auto relative z-10">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
-                          <IconComponent size={28} strokeWidth={1.5} />
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-widest">{card.subtitle}</p>
-                          <h2 className="text-2xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
-                            {card.title}
-                          </h2>
-                          <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-3 font-medium">
-                            {card.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Bottom Access Arrow Line */}
-                      <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
-                        <span className="text-slate-400 group-hover:text-tecnico transition-colors">ACCEDER AL COMPONENTE</span>
-                        <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-nucleo group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300">
-                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                        </div>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
             </div>
           )}
         </motion.div>
