@@ -5,6 +5,7 @@ import {
   doc, 
   getDocs, 
   setDoc, 
+  deleteDoc,
   collection, 
   query, 
   getDocFromServer
@@ -151,4 +152,130 @@ export async function logActivity(user: SystemUser | null, action: string, detai
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `${pathForWrite}/${logId}`);
   }
+}
+
+export interface OperationalReportDoc {
+  id: string;
+  date: string;
+  backupData: string; // JSON string payload
+  updatedAt: string;
+  updatedBy?: string;
+  summary?: string;
+}
+
+/**
+ * Saves or updates an operational report backup JSON in Firebase Firestore.
+ */
+export async function saveOperationalReportToFirebase(
+  date: string,
+  backupDataObj: Record<string, any> | string,
+  user?: SystemUser | null,
+  summary?: string
+): Promise<boolean> {
+  const cleanDate = date.trim();
+  const reportId = `report_${cleanDate.replace(/[^a-zA-Z0-9_\-]/g, '_')}`;
+  const pathForWrite = `operational_reports/${reportId}`;
+
+  try {
+    const backupDataString = typeof backupDataObj === 'string' 
+      ? backupDataObj 
+      : JSON.stringify(backupDataObj);
+
+    // Limit string size if needed to avoid exceeding Firestore doc limit (1MB max, rules allow <= 1,048,500 bytes)
+    const truncatedBackupData = backupDataString.length > 1048000 
+      ? backupDataString.substring(0, 1048000) 
+      : backupDataString;
+
+    const reportDocRef = doc(db, 'operational_reports', reportId);
+    const payload = {
+      id: reportId,
+      date: cleanDate,
+      backupData: truncatedBackupData,
+      updatedAt: new Date().toISOString(),
+      updatedBy: user?.name || user?.username || 'Sistema SQM',
+      summary: summary || `Informe Operativo del ${cleanDate}`
+    };
+
+    await setDoc(reportDocRef, payload, { merge: true });
+    
+    // Log activity
+    await logActivity(
+      user || null,
+      'Guardó Informe en Firebase',
+      `Guardó exitosamente el historial .json del informe operativo (${cleanDate}) en la nube de Firebase.`
+    );
+
+    return true;
+  } catch (error) {
+    console.error(`Error saving operational report for date ${date} to Firebase:`, error);
+    handleFirestoreError(error, OperationType.WRITE, pathForWrite);
+    return false;
+  }
+}
+
+/**
+ * Retrieves all operational report backups stored in Firebase Firestore.
+ */
+export async function getOperationalReportsFromFirebase(): Promise<OperationalReportDoc[]> {
+  const pathForGet = 'operational_reports';
+  try {
+    const q = query(collection(db, pathForGet));
+    const snap = await getDocs(q);
+    const reports: OperationalReportDoc[] = [];
+
+    snap.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data && data.backupData && data.date) {
+        reports.push({
+          id: docSnap.id,
+          date: data.date,
+          backupData: data.backupData,
+          updatedAt: data.updatedAt || new Date().toISOString(),
+          updatedBy: data.updatedBy || 'Sistema SQM',
+          summary: data.summary || ''
+        });
+      }
+    });
+
+    // Sort descending by date
+    return reports.sort((a, b) => b.date.localeCompare(a.date));
+  } catch (error) {
+    console.error('Error fetching operational reports from Firebase:', error);
+    handleFirestoreError(error, OperationType.LIST, pathForGet);
+    return [];
+  }
+}
+
+/**
+ * Deletes an operational report backup document from Firebase.
+ */
+export async function deleteOperationalReportFromFirebase(reportId: string, user?: SystemUser | null): Promise<boolean> {
+  const pathForDelete = `operational_reports/${reportId}`;
+  try {
+    await deleteDoc(doc(db, 'operational_reports', reportId));
+    await logActivity(
+      user || null,
+      'Eliminó Informe en Firebase',
+      `Eliminó el registro de informe de Firebase: ${reportId}.`
+    );
+    return true;
+  } catch (error) {
+    console.error(`Error deleting operational report ${reportId} from Firebase:`, error);
+    handleFirestoreError(error, OperationType.DELETE, pathForDelete);
+    return false;
+  }
+}
+
+/**
+ * Helper to build current local backup JSON object from localStorage (all keys starting with sqm_)
+ */
+export function buildCurrentLocalBackupJSON(): Record<string, string> {
+  const backup: Record<string, string> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('sqm_')) {
+      backup[key] = localStorage.getItem(key) || '';
+    }
+  }
+  return backup;
 }

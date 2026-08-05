@@ -57,6 +57,20 @@
         "createdAt": { "type": "string", "format": "date-time", "description": "ISO timestamp when the image was added" }
       },
       "required": ["url", "name", "date", "createdAt"]
+    },
+    "OperationalReportBackup": {
+      "title": "Operational Report Backup",
+      "description": "Historical backup JSON of operational reports and justifications saved in Firestore",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique report date identifier (e.g. report_2026-08-04)" },
+        "date": { "type": "string", "description": "Report date in YYYY-MM-DD format" },
+        "backupData": { "type": "string", "description": "JSON string containing report data and justifications" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "ISO timestamp when the backup was updated" },
+        "updatedBy": { "type": "string", "description": "Name or username of the user who saved the backup" },
+        "summary": { "type": "string", "description": "Short description or stats summary of the backup" }
+      },
+      "required": ["id", "date", "backupData", "updatedAt"]
     }
   },
   "firestore": {
@@ -75,6 +89,10 @@
     "gallery_images/{imageId}": {
       "schema": "GalleryImage",
       "description": "Shared visual evidence and daily automated report screenshots"
+    },
+    "operational_reports/{reportId}": {
+      "schema": "OperationalReportBackup",
+      "description": "Historical operational reports and JSON backups shared across all devices"
     }
   }
 }

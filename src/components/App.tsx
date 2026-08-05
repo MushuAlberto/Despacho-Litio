@@ -18,7 +18,8 @@ import { ImageGallery } from './ImageGallery';
 import { PasswordPrompt } from './PasswordPrompt';
 import CambioDeTurno from './CambioDeTurno';
 import LCEModule from './LCE/LCEModule';
-import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, normalizeHeader, formatNumberWithDecimals, separateBischofitaByDest, isProductNovandino, isProductSQM, formatCLB } from '../utils/dataProcessor';
+import { CloudUpload } from 'lucide-react';
+import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, syncBackupToFirebase, normalizeHeader, formatNumberWithDecimals, separateBischofitaByDest, isProductNovandino, isProductSQM, formatCLB } from '../utils/dataProcessor';
 import { NovandinoLogo } from './BrandLogo';
 
 // Firebase imports
@@ -653,10 +654,22 @@ const App: React.FC = () => {
     });
   }, [filteredData]);
 
-  const handleBackupDownload = (date: string) => {
-    downloadBackupJSON(date);
-    if (currentUser) {
-      logActivity(currentUser, 'Descargó Historial', `Descargó base JSON estructurada del día ${formatDateToCL(date)}.`);
+  const [isSyncingFirebase, setIsSyncingFirebase] = useState(false);
+
+  const handleSyncToFirebase = async (date: string) => {
+    setIsSyncingFirebase(true);
+    try {
+      const success = await syncBackupToFirebase(date);
+      if (success) {
+        alert(`Historial .json del ${formatDateToCL(date)} guardado exitosamente en Firebase Cloud.`);
+      } else {
+        alert('No se pudo guardar el historial en Firebase. Verifique la conexión.');
+      }
+    } catch (err) {
+      console.error('Error guardando en Firebase:', err);
+      alert('Error al conectar con Firebase.');
+    } finally {
+      setIsSyncingFirebase(false);
     }
   };
 
@@ -770,8 +783,20 @@ const App: React.FC = () => {
                       <ImageIcon size={12} /> Galería Operativa
                     </button>
                   )}
-                  <button onClick={() => handleBackupDownload(selectedDate)} className="w-full bg-[#461D77] text-white py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#321159] transition-all duration-200 premium-btn-transition cursor-pointer shadow-lg shadow-nucleo/10 hover:shadow-nucleo/20">
-                    <Download size={12} /> Descargar Historial
+                  <button 
+                    onClick={() => handleSyncToFirebase(selectedDate)} 
+                    disabled={isSyncingFirebase}
+                    className="w-full bg-[#461D77] text-white py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#321159] transition-all duration-200 premium-btn-transition cursor-pointer shadow-lg shadow-nucleo/10 hover:shadow-nucleo/20 disabled:opacity-50"
+                  >
+                    {isSyncingFirebase ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" /> Guardando en Firebase...
+                      </>
+                    ) : (
+                      <>
+                        <CloudUpload size={12} /> Guardar Historial en Firebase
+                      </>
+                    )}
                   </button>
                 </div>
               </>

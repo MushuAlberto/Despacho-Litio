@@ -154,21 +154,66 @@ export const downloadBackupJSON = (selectedDate?: string) => {
   link.click();
   URL.revokeObjectURL(url);
 
-  // Auto audit log download activity
+  // Auto audit log download activity and auto sync to Firebase
   try {
     const savedUser = localStorage.getItem('sqm_current_user');
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      import('../services/firebase').then(({ logActivity }) => {
-        logActivity(
-          parsedUser, 
-          'Descargó Respaldo JSON', 
-          `Descargó archivo de respaldo local (${link.download}) para resguardar observaciones registradas.`
-        );
-      }).catch(e => console.error('Error importing logActivity:', e));
-    }
+    const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+    import('../services/firebase').then(({ logActivity, saveOperationalReportToFirebase }) => {
+      logActivity(
+        parsedUser, 
+        'Descargó Respaldo JSON', 
+        `Descargó archivo de respaldo local (${link.download}) para resguardar observaciones registradas.`
+      );
+      // Auto save to Firebase Firestore in background
+      saveOperationalReportToFirebase(dateStr, backup, parsedUser);
+    }).catch(e => console.error('Error importing firebase services:', e));
   } catch (error) {
     console.error('Error auto-logging download activity:', error);
+  }
+};
+
+/**
+ * Guarda manualmente el respaldo JSON de los informes en Firebase Firestore.
+ */
+export const syncBackupToFirebase = async (selectedDate?: string): Promise<boolean> => {
+  const backup: Record<string, string> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('sqm_')) {
+      backup[key] = localStorage.getItem(key) || '';
+    }
+  }
+
+  let dateStr = selectedDate;
+  if (!dateStr) {
+    // Try to find latest date from sqm_raw_data if available
+    try {
+      const rawDataStr = localStorage.getItem('sqm_raw_data');
+      if (rawDataStr) {
+        const parsed = JSON.parse(rawDataStr);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].Fecha) {
+          dateStr = parsed[0].Fecha;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!dateStr) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    dateStr = yesterday.toISOString().split('T')[0];
+  }
+
+  try {
+    const savedUser = localStorage.getItem('sqm_current_user');
+    const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+    const { saveOperationalReportToFirebase } = await import('../services/firebase');
+    return await saveOperationalReportToFirebase(dateStr, backup, parsedUser);
+  } catch (err) {
+    console.error('Error syncing backup to Firebase:', err);
+    return false;
   }
 };
 
