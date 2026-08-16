@@ -282,6 +282,7 @@ export const isProductNovandino = (row: any): boolean => {
   const prod = String(row?.Producto || '').toUpperCase().trim();
   const prodOrig = String(row?.ProductoOrig || '').toUpperCase().trim();
   if (prod.startsWith('LSI')) return true;
+  if (prod.startsWith('HALITA') || prod.startsWith('NACL')) return true;
   if (prod.startsWith('BISCHOFITA') || prodOrig === 'BISCHOFITA') {
     return !isBischofitaSQM(row);
   }
