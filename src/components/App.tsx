@@ -3,7 +3,8 @@ import * as XLSX from 'xlsx';
 import {
   Upload, Loader2,
   Home, Truck, Image as ImageIcon,
-  Clock, BarChart3, TrendingUp, Target, Users, Scale, ClipboardCheck, FileText, Download
+  Clock, BarChart3, TrendingUp, Target, Users, Scale, ClipboardCheck, FileText, Download,
+  Mail, Send, X, Lock
 } from 'lucide-react';
 import ChartCard from './ChartCard';
 import ProductDetailSection from './ProductDetailSection';
@@ -51,6 +52,13 @@ const App: React.FC = () => {
     missingColumns?: string[];
     foundHeaders?: string[];
   } | null>(null);
+
+  // Outlook email prefill state
+  const [isOutlookModalOpen, setIsOutlookModalOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState('cristiantapia.espinoza@gmail.com');
+  const [emailCC, setEmailCC] = useState('operaciones@novandino.cl, despacho@novandino.cl');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
 
   // Sync access state with user roles on change and save session to localStorage
   useEffect(() => {
@@ -654,6 +662,40 @@ const App: React.FC = () => {
     });
   }, [filteredData]);
 
+  // Dynamic email pre-fill calculations
+  useEffect(() => {
+    if (isOutlookModalOpen && selectedDate) {
+      const isNovandino = view === 'informe-novandino';
+      const typeStr = isNovandino ? 'NOVANDINO' : 'SQM NY';
+      const formattedDate = formatDateToCL(selectedDate);
+      setEmailSubject(`INFORME OPERATIVO ${typeStr} - JORNADA ${formattedDate}`);
+      
+      if (isNovandino) {
+        setEmailTo('claudio.siniga@novandino.com, gilbert.maldonado@novandino.com, carlo.castellaro@novandino.com');
+        setEmailCC('sebastian.parada@novandino.com, Despacho.Salar@sqm.com, carlos.diaz@novandino.com, franco.nunez@novandino.com, carlos.mardones.luna@novandino.com, tamara.cabrera@novandino.com, hugo.morgado@novandino.com, Servicio.Transporte.Litio@sqm.com, andres.salinas.ignacio@novandino.com, tomislav.cvitanic@novandino.com, CoordinacionTerrestreLitio@novandino.com, jaime.ardiles@novandino.com');
+        
+        const bodyText = `Estimados, buen día.\n\n` +
+          `Junto con saludar, comparto con ustedes el resumen de la gestión operativa correspondiente a la jornada recién pasada.\n` +
+          `A continuación, se presenta la visualización del dashboard con los KPIs principales:\n\n` +
+          `[Pegar Imagen PNG del Dashboard Aquí (Ctrl+V)]\n\n` +
+          `Adjunto encontrarán el Informe Operativo detallado en PDF, donde se desglosa el detalle de desempeño, los destinos y el registro de eventos para cada línea de producto.\n\n` +
+          `Atentamente,`;
+        setEmailBody(bodyText);
+      } else {
+        setEmailTo('claudio.siniga@novandino.com, gilbert.maldonado@novandino.com, Alejandro.Gomez@sqm.com');
+        setEmailCC('carlo.castellaro@novandino.com, sebastian.parada@novandino.com, Despacho.Salar@sqm.com, carlos.diaz@novandino.com, Servicio.Transporte.Litio@sqm.com, SupTransporteCS@sqm.com, Maria.Aguilera@sqm.com, andres.salinas.ignacio@novandino.com, jaime.ardiles@novandino.com, jessica.rivas@novandino.com, henry.cisternas@novandino.com, carlos.flores.araya@novandino.com, Allan.Duvauchelle@sqm.com');
+        
+        const bodyText = `Estimados, buen día.\n\n` +
+          `Junto con saludar, comparto con ustedes el resumen de la gestión operativa correspondiente a la jornada recién pasada.\n` +
+          `A continuación, se presenta la visualización del dashboard con los KPIs principales:\n\n` +
+          `[Pegar Imagen PNG del Dashboard Aquí (Ctrl+V)]\n\n` +
+          `Adjunto encontrarán el Informe Operativo detallado en PDF, donde se desglosa el detalle de desempeño, los destinos y el registro de eventos para cada línea de producto.\n\n` +
+          `Atentamente,`;
+        setEmailBody(bodyText);
+      }
+    }
+  }, [isOutlookModalOpen, selectedDate, view, operationalKPIs, currentUser]);
+
   const [isSyncingFirebase, setIsSyncingFirebase] = useState(false);
 
   const handleSyncToFirebase = async (date: string) => {
@@ -778,11 +820,13 @@ const App: React.FC = () => {
                   <button onClick={handleExportImage} disabled={exportingImage} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:border-violeta/40 transition-all duration-200 premium-btn-transition cursor-pointer shadow-sm hover:shadow-md">
                     {exportingImage ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />} Descargar PNG
                   </button>
-                  {currentUser?.role !== 'supervision' && (
-                    <button onClick={() => handleViewChange('galeria')} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:border-violeta/40 transition-all duration-200 premium-btn-transition cursor-pointer shadow-sm hover:shadow-md">
-                      <ImageIcon size={12} /> Galería Operativa
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => setIsOutlookModalOpen(true)} 
+                    className="w-full bg-white border-2 border-violeta text-violeta py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-violeta/5 hover:border-violeta/60 transition-all duration-200 premium-btn-transition cursor-pointer shadow-sm hover:shadow-md"
+                  >
+                    <Mail size={12} /> Compartir por Outlook
+                  </button>
+
                   <button 
                     onClick={() => handleSyncToFirebase(selectedDate)} 
                     disabled={isSyncingFirebase}
@@ -993,6 +1037,146 @@ const App: React.FC = () => {
           }}
           onCancel={() => setPasswordRequest(null)}
         />
+      )}
+
+      {/* Interactive Outlook Composer Assistant Modal */}
+      {isOutlookModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-2xl rounded-[2.2rem] shadow-2xl border border-black/[0.04] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 text-left">
+            {/* Header */}
+            <div className="bg-slate-50/80 backdrop-blur-sm px-8 py-6 border-b border-black/[0.04] flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-violeta/10 text-violeta flex items-center justify-center shadow-sm">
+                  <Mail size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-[900] text-slate-800 tracking-tight leading-none uppercase">Compartir por Outlook</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Asistente de correo corporativo</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsOutlookModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-white rounded-full shadow-sm border border-slate-100"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Form Content */}
+            <div className="p-8 space-y-4 overflow-y-auto max-h-[70vh]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Destinatarios (Para)</label>
+                    <Lock size={10} className="text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={emailTo}
+                    readOnly
+                    className="w-full bg-slate-100/70 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-500 cursor-not-allowed select-all outline-none"
+                    placeholder="ejemplo@novandino.cl"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Copia (CC)</label>
+                    <Lock size={10} className="text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={emailCC}
+                    readOnly
+                    className="w-full bg-slate-100/70 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-500 cursor-not-allowed select-all outline-none"
+                    placeholder="ejemplo@novandino.cl"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Asunto del Correo</label>
+                  <Lock size={10} className="text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  readOnly
+                  className="w-full bg-slate-100/70 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-500 cursor-not-allowed select-all outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Vista Previa del Cuerpo</label>
+                    <Lock size={10} className="text-slate-400" />
+                  </div>
+                  <span className="text-[8px] font-black bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full uppercase tracking-wider">KPIs Generados</span>
+                </div>
+                <textarea
+                  rows={8}
+                  value={emailBody}
+                  readOnly
+                  className="w-full bg-slate-100/70 border border-slate-200 rounded-xl p-4 text-xs font-mono text-slate-500 cursor-not-allowed select-all outline-none leading-relaxed resize-none"
+                />
+              </div>
+              
+              <div className="bg-[#461D77]/5 border border-[#461D77]/10 p-4 rounded-2xl flex items-start gap-3">
+                <div className="text-[#461D77] shrink-0 mt-0.5"><FileText size={16} /></div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#461D77]">Instrucciones de envío corporativo:</p>
+                  <p className="text-[10px] text-slate-600 font-bold leading-relaxed mt-1">
+                    1. Descarga el informe en PDF y PNG usando los botones del panel lateral izquierda.
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">
+                    2. Haz clic en "Abrir Outlook" para iniciar la redacción con los destinatarios, CC y asunto pre-configurados.
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">
+                    3. Pega la imagen PNG del dashboard directamente en el cuerpo del correo (Ctrl + V).
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">
+                    4. Adjunta el archivo PDF descargado antes de presionar enviar.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="bg-slate-50 px-8 py-5 border-t border-black/[0.04] flex flex-col sm:flex-row sm:justify-end gap-3 shrink-0">
+              <button
+                onClick={() => setIsOutlookModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              
+              {/* Desktop Client button (mailto) */}
+              <button
+                onClick={() => {
+                  const mailtoUrl = `mailto:${encodeURIComponent(emailTo)}?cc=${encodeURIComponent(emailCC)}&subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+                  window.open(mailtoUrl, '_self');
+                  setIsOutlookModalOpen(false);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-violeta hover:bg-violeta/90 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-violeta/10"
+              >
+                <Send size={12} /> Abrir Outlook Escritorio
+              </button>
+
+              {/* Web Client button (M365) */}
+              <button
+                onClick={() => {
+                  const owaUrl = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(emailTo)}&cc=${encodeURIComponent(emailCC)}&subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+                  window.open(owaUrl, '_blank');
+                  setIsOutlookModalOpen(false);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-sky-600/10"
+              >
+                <Mail size={12} /> Abrir Outlook Web (365)
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

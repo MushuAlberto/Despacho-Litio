@@ -190,8 +190,8 @@ const ChartCard: React.FC<ChartCardProps> = ({
   };
 
   return (
-    <div className={`bg-white p-8 rounded-[2.5rem] border border-violeta/10 shadow-sm flex flex-col ${type === 'composed' ? 'min-h-[1100px]' : 'h-[500px]'}`}>
-      <h3 className="text-[10px] font-black text-violeta uppercase tracking-[0.3em] mb-6 border-b border-calido pb-3">{title}</h3>
+    <div className={`bg-white/80 backdrop-blur-md p-8 rounded-[2.2rem] border border-black/[0.04] hover:border-black/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] transition-all duration-300 flex flex-col ${type === 'composed' ? 'min-h-[1100px]' : 'h-[500px]'}`}>
+      <h3 className="text-[10px] font-black text-[#461D77] uppercase tracking-[0.3em] mb-6 border-b border-black/[0.04] pb-3">{title}</h3>
       <div className="w-full flex-1">
         {renderChart()}
       </div>
@@ -224,7 +224,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
 
                 if (realTon > 0 && realTime <= 0) {
                   alertType = 'orange';
-                  alertMessage = '🔶 Inconsistencia Fiel';
+                  alertMessage = '🔶 Falla MIGTRA';
                 } else if (progTon > 0 && realTon < (progTon * 0.90)) {
                   alertType = 'red';
                   alertMessage = '🔴 Bajo Ton. (<90%)';

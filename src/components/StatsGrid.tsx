@@ -15,7 +15,7 @@ const StatsGrid: React.FC<StatsGridProps> = ({ data }) => {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
       {numericCols.slice(0, 6).map(col => {
         const values = data.map(d => Number(d[col])).filter(v => !isNaN(v));
         const avg = values.reduce((a, b) => a + b, 0) / values.length;
@@ -23,20 +23,20 @@ const StatsGrid: React.FC<StatsGridProps> = ({ data }) => {
         const min = Math.min(...values);
 
         return (
-          <div key={col} className="bg-white p-4 rounded-xl border border-calido shadow-sm">
-            <h4 className="text-xs font-bold text-violeta/40 uppercase mb-3 truncate" title={col}>{col}</h4>
+          <div key={col} className="bg-white/80 backdrop-blur-md p-6 rounded-[1.8rem] border border-black/[0.04] shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] hover:shadow-[0_12px_30px_rgba(70,29,119,0.04)] transition-all duration-300">
+            <h4 className="text-[10px] font-black text-[#461D77] uppercase tracking-widest mb-4 truncate" title={col}>{col}</h4>
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <p className="text-[10px] text-violeta/30 uppercase">Promedio</p>
-                <p className="font-bold text-nucleo">{avg.toLocaleString(undefined, {maximumFractionDigits: 1})}</p>
+              <div className="bg-slate-50/50 p-2 rounded-xl border border-black/[0.01]">
+                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Promedio</p>
+                <p className="font-extrabold text-[#461D77] text-sm mt-0.5">{avg.toLocaleString(undefined, {maximumFractionDigits: 1})}</p>
               </div>
-              <div>
-                <p className="text-[10px] text-violeta/30 uppercase">Máx</p>
-                <p className="font-bold text-ionizado">{max.toLocaleString()}</p>
+              <div className="bg-slate-50/50 p-2 rounded-xl border border-black/[0.01]">
+                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Máx</p>
+                <p className="font-extrabold text-[#3FAA88] text-sm mt-0.5">{max.toLocaleString()}</p>
               </div>
-              <div>
-                <p className="text-[10px] text-violeta/30 uppercase">Mín</p>
-                <p className="font-bold text-mineral">{min.toLocaleString()}</p>
+              <div className="bg-slate-50/50 p-2 rounded-xl border border-black/[0.01]">
+                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Mín</p>
+                <p className="font-extrabold text-[#C59E4D] text-sm mt-0.5">{min.toLocaleString()}</p>
               </div>
             </div>
           </div>

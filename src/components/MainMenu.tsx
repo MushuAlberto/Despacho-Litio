@@ -530,37 +530,49 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full auto-rows-fr">
                 {locationModules.map((loc) => {
                   const IconComponent = loc.icon;
+                  const isSdA = loc.id === 'SdA';
+                  
                   return (
                     <motion.button
                       key={loc.id}
                       variants={itemVariants}
                       onClick={() => setOpenedLocation(loc.id)}
-                      className={`group relative bg-white/70 hover:bg-white border-2 ${loc.borderColor} rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[20rem] lg:h-[22rem] bg-gradient-to-br ${loc.gradient}`}
+                      className="group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer col-span-1 min-h-[18rem] lg:min-h-[19.5rem]"
                     >
-                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      {/* Decorative Apple-style light reflection */}
+                      <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-white/20 to-transparent rounded-bl-[6rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
                       
-                      <div className="space-y-4 my-auto relative z-10">
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-md ${loc.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
-                          <IconComponent size={32} strokeWidth={1.5} />
+                      <div className="space-y-4 relative z-10 w-full">
+                        <div className="flex items-center justify-between w-full">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm ${loc.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                            <IconComponent size={24} strokeWidth={1.5} />
+                          </div>
+                          <span className={`text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase ${
+                            isSdA ? 'bg-[#461D77]/10 text-[#461D77]' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {loc.badge}
+                          </span>
                         </div>
                         
-                        <div className="space-y-1">
-                          <p className="text-slate-500 text-[10px] font-extrabold uppercase tracking-widest">{loc.subtitle}</p>
-                          <h2 className="text-3xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
+                        <div className="space-y-2">
+                          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">{loc.subtitle}</p>
+                          <h2 className="font-[900] text-slate-800 tracking-tighter transition-colors text-xl">
                             {loc.title}
                           </h2>
-                          <p className="text-slate-600 text-[11px] leading-relaxed line-clamp-3 font-medium">
+                          <p className="text-slate-500 text-xs leading-relaxed font-medium line-clamp-3">
                             {loc.description}
                           </p>
                         </div>
                       </div>
 
-                      <div className="w-full pt-4 border-t border-slate-200/80 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
-                        <span className="text-slate-600 group-hover:text-nucleo transition-colors">INGRESAR AL MÓDULO {loc.title}</span>
-                        <div className={`w-8 h-8 rounded-full ${loc.iconBg} group-hover:bg-nucleo flex items-center justify-center transition-all duration-300 shadow-md`}>
+                      <div className="w-full pt-4 mt-6 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className="text-slate-500 group-hover:text-[#461D77] transition-colors">
+                          {isSdA ? 'Ingresar a la Zona' : 'Módulo en Desarrollo'}
+                        </span>
+                        <div className={`w-8 h-8 rounded-full ${loc.iconBg} group-hover:bg-[#461D77] group-hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm`}>
                           <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                         </div>
                       </div>
@@ -626,24 +638,28 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                   )}
 
                   {/* CARDS GRID FOR SELECTED TAB INSIDE SdA */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full auto-rows-fr">
                     {cardsData.filter(c => c.group === activeTab).map((card, idx) => {
                       const IconComponent = card.icon;
+                      const isNovandino = card.id === 'informe-novandino';
+                      
                       return (
                         <motion.button
                           key={`${card.id}-${idx}`}
                           variants={itemVariants}
                           onClick={() => onSelectView(card.id)}
-                          className={`group relative bg-white/70 hover:bg-white border rounded-[2rem] p-7 shadow-sm premium-hover-card flex flex-col justify-between text-left overflow-hidden cursor-pointer h-[19.5rem] lg:h-[21rem] ${card.color}`}
+                          className={`group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer min-h-[19.5rem] lg:min-h-[21rem] ${
+                            isNovandino ? 'md:col-span-2 lg:col-span-2' : 'col-span-1'
+                          }`}
                         >
-                          <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                          <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/15 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
                           
                           <div className="flex items-center justify-between w-full relative z-10">
-                            <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-tecnico transition-colors uppercase">
+                            <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-[#461D77] transition-colors uppercase">
                               {card.badge}
                             </span>
                             
-                            <span className={`text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase ${
+                            <span className={`text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase ${
                               card.id === 'informe-novandino' || card.id === 'informe-sqm' || card.id === 'llegada'
                                 ? 'bg-emerald-500/10 text-emerald-600'
                                 : card.id === 'ddd'
@@ -657,24 +673,26 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnl
                           </div>
 
                           <div className="space-y-4 my-auto relative z-10">
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
-                              <IconComponent size={28} strokeWidth={1.5} />
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                              <IconComponent size={24} strokeWidth={1.5} />
                             </div>
                             
                             <div className="space-y-1">
-                              <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-widest">{card.subtitle}</p>
-                              <h2 className="text-2xl font-black text-tecnico tracking-tight group-hover:text-nucleo transition-colors">
+                              <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">{card.subtitle}</p>
+                              <h2 className={`font-[900] text-slate-800 tracking-tighter transition-colors ${
+                                isNovandino ? 'text-2xl lg:text-3xl' : 'text-xl'
+                              }`}>
                                 {card.title}
                               </h2>
-                              <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-3 font-medium">
+                              <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 font-medium">
                                 {card.description}
                               </p>
                             </div>
                           </div>
 
-                          <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between text-[9px] font-black tracking-widest uppercase transition-colors relative z-10">
-                            <span className="text-slate-400 group-hover:text-tecnico transition-colors">ACCEDER AL COMPONENTE</span>
-                            <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-nucleo group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300">
+                          <div className="w-full pt-4 mt-4 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
+                            <span className="text-slate-500 group-hover:text-[#461D77] transition-colors">ACCEDER AL COMPONENTE</span>
+                            <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-[#461D77] group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300 shadow-sm">
                               <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                             </div>
                           </div>

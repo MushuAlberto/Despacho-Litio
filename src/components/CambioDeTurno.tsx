@@ -694,7 +694,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
                   if (realTon > 0 && realTime <= 0) {
                     alertType = 'orange';
-                    alertMessage = '🔶 Inconsistencia Fiel';
+                    alertMessage = '🔶 Falla MIGTRA';
                   } else if (progTon > 0 && realTon < (progTon * 0.90)) {
                     alertType = 'red';
                     alertMessage = '🔴 Bajo Ton. (<90%)';
