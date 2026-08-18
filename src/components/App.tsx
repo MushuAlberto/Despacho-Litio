@@ -671,8 +671,8 @@ const App: React.FC = () => {
       setEmailSubject(`INFORME OPERATIVO ${typeStr} - JORNADA ${formattedDate}`);
       
       if (isNovandino) {
-        setEmailTo('claudio.siniga@novandino.com, gilbert.maldonado@novandino.com, carlo.castellaro@novandino.com');
-        setEmailCC('sebastian.parada@novandino.com, Despacho.Salar@sqm.com, carlos.diaz@novandino.com, franco.nunez@novandino.com, carlos.mardones.luna@novandino.com, tamara.cabrera@novandino.com, hugo.morgado@novandino.com, Servicio.Transporte.Litio@sqm.com, andres.salinas.ignacio@novandino.com, tomislav.cvitanic@novandino.com, CoordinacionTerrestreLitio@novandino.com, jaime.ardiles@novandino.com');
+        setEmailTo('claudio.siniga@novandino.com, carlo.castellaro@novandino.com');
+        setEmailCC('Despacho.Salar@sqm.com, carlos.diaz@novandino.com, carlos.mardones.luna@novandino.com, tamara.cabrera@novandino.com, hugo.morgado@novandino.com, Servicio.Transporte.Litio@sqm.com, tomislav.cvitanic@novandino.com, CoordinacionTerrestreLitio@novandino.com, jaime.ardiles@novandino.com');
         
         const bodyText = `Estimados, buen día.\n\n` +
           `Junto con saludar, comparto con ustedes el resumen de la gestión operativa correspondiente a la jornada recién pasada.\n` +
@@ -682,8 +682,8 @@ const App: React.FC = () => {
           `Atentamente,`;
         setEmailBody(bodyText);
       } else {
-        setEmailTo('claudio.siniga@novandino.com, gilbert.maldonado@novandino.com, Alejandro.Gomez@sqm.com');
-        setEmailCC('carlo.castellaro@novandino.com, sebastian.parada@novandino.com, Despacho.Salar@sqm.com, carlos.diaz@novandino.com, Servicio.Transporte.Litio@sqm.com, SupTransporteCS@sqm.com, Maria.Aguilera@sqm.com, andres.salinas.ignacio@novandino.com, jaime.ardiles@novandino.com, jessica.rivas@novandino.com, henry.cisternas@novandino.com, carlos.flores.araya@novandino.com, Allan.Duvauchelle@sqm.com');
+        setEmailTo('claudio.siniga@novandino.com, Allan.Duvauchelle@sqm.com');
+        setEmailCC('Alejandro.Gomez@sqm.com, gilbert.maldonado@novandino.com, carlo.castellaro@novandino.com, sebastian.parada@novandino.com, Despacho.Salar@sqm.com, carlos.diaz@novandino.com, Servicio.Transporte.Litio@sqm.com, SupTransporteCS@sqm.com, Maria.Aguilera@sqm.com, andres.salinas.ignacio@novandino.com, jaime.ardiles@novandino.com, ControlProductosSalar@novandino.com');
         
         const bodyText = `Estimados, buen día.\n\n` +
           `Junto con saludar, comparto con ustedes el resumen de la gestión operativa correspondiente a la jornada recién pasada.\n` +
