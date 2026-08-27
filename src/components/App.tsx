@@ -4,7 +4,7 @@ import {
   Upload, Loader2,
   Home, Truck, Image as ImageIcon,
   Clock, BarChart3, TrendingUp, Target, Users, Scale, ClipboardCheck, FileText, Download,
-  Mail, Send, X, Lock
+  Mail, Send, X, Lock, ArrowLeft
 } from 'lucide-react';
 import ChartCard from './ChartCard';
 import ProductDetailSection from './ProductDetailSection';
@@ -40,6 +40,7 @@ const App: React.FC = () => {
   });
 
   const [view, setView] = useState<'menu' | 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit'>('menu');
+  const [activeLocation, setActiveLocation] = useState<string | null>(null);
   const [rawData, setRawData] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -753,6 +754,8 @@ const App: React.FC = () => {
         onUnlockJefeTurno={() => setIsJefeTurnoUnlocked(true)}
         currentUser={currentUser!}
         onLogout={handleLogout}
+        initialLocation={activeLocation}
+        onLocationChange={setActiveLocation}
       />
     );
     if (view === 'llegada') return <LlegadaEquipos currentUser={currentUser} onBack={() => setView('menu')} />;
@@ -788,12 +791,28 @@ const App: React.FC = () => {
       <div className="flex h-screen bg-calido font-sans text-tecnico overflow-hidden">
         <aside className="w-[300px] bg-levanda border-r border-violeta/20 flex flex-col no-print shrink-0">
           <div className="p-6 overflow-y-auto flex-1 space-y-8">
-            <button onClick={() => setView('menu')} className="flex items-center gap-2 text-violeta hover:text-nucleo font-black text-[10px] uppercase tracking-widest transition-colors mb-4 group">
-              <Home size={14} className="group-hover:-translate-x-1 transition-transform" /> Menú Principal
-            </button>
-            <div className="bg-white p-5 rounded-3xl border border-violeta/10 flex flex-col items-center gap-2 shadow-sm">
-              <h2 className="font-black text-[10px] tracking-[0.2em] uppercase text-violeta">Management</h2>
+            <div className="flex flex-col gap-2 mb-4">
+              <button 
+                onClick={() => {
+                  setActiveLocation('SdA');
+                  setView('menu');
+                }} 
+                className="flex items-center gap-2 text-[#461D77] hover:text-nucleo font-black text-[10px] uppercase tracking-widest transition-colors group cursor-pointer"
+              >
+                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver a Módulo SdA
+              </button>
+              
+              <button 
+                onClick={() => {
+                  setActiveLocation(null);
+                  setView('menu');
+                }} 
+                className="flex items-center gap-2 text-slate-400 hover:text-slate-600 font-black text-[10px] uppercase tracking-widest transition-colors group cursor-pointer"
+              >
+                <Home size={14} className="group-hover:-translate-x-1 transition-transform" /> Menú Principal
+              </button>
             </div>
+
             <div className="space-y-2">
               <p className="text-[10px] font-black uppercase tracking-widest text-violeta">Cargar Datos</p>
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-violeta/20 rounded-3xl cursor-pointer bg-white hover:border-ionizado hover:bg-calido transition-all">

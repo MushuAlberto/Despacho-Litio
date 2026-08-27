@@ -27,14 +27,16 @@ const PRODUCTS_A = [
   "BISCHOFITA",
   "SAL 27/15",
   "SLIT",
-  "LSI (S)"
+  "LSI (S)",
+  "NACL",
+  "HALITA"
 ];
 
 const PRODUCTS_B = [
   "MOP 70", "MOP TALCO", "MOP TALCO MAXIS", "MOP-G", "MOP-G (Rojo)",
   "MOP-G 59", "MOP-G O", "MOP-G PLUS", "MOP-G R 59", "MOP-GR PLUS",
   "MOP-H-AL", "MOP-H-BL", "MOP-S", "MOP-S 59", "MOP-S PLUS",
-  "NACL", "SILVINITA", "SOP-G", "SOP-H", "SOP-O", "SOP-S Talco",
+  "SILVINITA", "SOP-G", "SOP-H", "SOP-O", "SOP-S Talco",
   "USOP52", "MOP 50", "SOP FINO"
 ];
 

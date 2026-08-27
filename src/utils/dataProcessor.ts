@@ -299,7 +299,7 @@ export const isProductSQM = (row: any): boolean => {
   const sqmAllowed = [
     'MOP 70', 'MOP TALCO', 'MOP TALCO MAXIS', 'MOP-G', 'MOP-G (ROJO)', 'MOP-G 59', 
     'MOP-G O', 'MOP-G PLUS', 'MOP-G R 59', 'MOP-GR PLUS', 'MOP-H-AL', 'MOP-H-BL', 
-    'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'NACL', 'SILVINITA', 
+    'MOP-S', 'MOP-S 59', 'MOP-S PLUS', 'SILVINITA', 
     'SOP-G', 'SOP-H', 'SOP-O', 'SOP-S TALCO', 'USOP52', 'MOP 50', 'SOP FINO'
   ].map(p => p.toUpperCase().trim());
   return sqmAllowed.includes(prod);

@@ -37,14 +37,36 @@ interface MainMenuProps {
   onUnlockJefeTurno: () => void;
   currentUser: any;
   onLogout: () => void;
+  initialLocation?: string | null;
+  onLocationChange?: (location: string | null) => void;
 }
 
-export const MainMenu: React.FC<MainMenuProps> = ({ onSelectView, isJefeTurnoUnlocked, onUnlockJefeTurno, currentUser, onLogout }) => {
+export const MainMenu: React.FC<MainMenuProps> = ({ 
+  onSelectView, 
+  isJefeTurnoUnlocked, 
+  onUnlockJefeTurno, 
+  currentUser, 
+  onLogout,
+  initialLocation = null,
+  onLocationChange
+}) => {
   const [time, setTime] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'supervision' | 'jefe_turno'>('supervision');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
-  const [openedLocation, setOpenedLocation] = useState<string | null>(null);
+  const [openedLocation, setOpenedLocation] = useState<string | null>(initialLocation);
+
+  // Sync state if initialLocation changes
+  useEffect(() => {
+    setOpenedLocation(initialLocation);
+  }, [initialLocation]);
+
+  // Sync state upward when openedLocation changes
+  useEffect(() => {
+    if (onLocationChange) {
+      onLocationChange(openedLocation);
+    }
+  }, [openedLocation, onLocationChange]);
 
   const locationModules = [
     {
