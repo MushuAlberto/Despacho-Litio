@@ -19,6 +19,7 @@ import { ImageGallery } from './ImageGallery';
 import { PasswordPrompt } from './PasswordPrompt';
 import CambioDeTurno from './CambioDeTurno';
 import LCEModule from './LCE/LCEModule';
+import { CumplimientoMQ } from './PQL/CumplimientoMQ';
 import { CloudUpload } from 'lucide-react';
 import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, syncBackupToFirebase, normalizeHeader, formatNumberWithDecimals, separateBischofitaByDest, isProductNovandino, isProductSQM, formatCLB } from '../utils/dataProcessor';
 import { NovandinoLogo } from './BrandLogo';
@@ -39,7 +40,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [view, setView] = useState<'menu' | 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit'>('menu');
+  const [view, setView] = useState<'menu' | 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'cumplimiento-mq'>('menu');
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
   const [rawData, setRawData] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -785,6 +786,7 @@ const App: React.FC = () => {
     );
     if (view === 'cambioTurno') return <CambioDeTurno onBack={() => setView('menu')} />;
     if (view === 'lce') return <LCEModule currentUser={currentUser} onBack={() => setView('menu')} />;
+    if (view === 'cumplimiento-mq') return <CumplimientoMQ onBack={() => setView('menu')} />;
 
     // fallback sidebar layout for standard dashboard view
     return (
@@ -792,15 +794,16 @@ const App: React.FC = () => {
         <aside className="w-[300px] bg-levanda border-r border-violeta/20 flex flex-col no-print shrink-0">
           <div className="p-6 overflow-y-auto flex-1 space-y-8">
             <div className="flex flex-col gap-2 mb-4">
-              <button 
-                onClick={() => {
-                  setActiveLocation('SdA');
-                  setView('menu');
-                }} 
-                className="flex items-center gap-2 text-[#461D77] hover:text-nucleo font-black text-[10px] uppercase tracking-widest transition-colors group cursor-pointer"
-              >
-                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver a Módulo SdA
-              </button>
+              {activeLocation && (
+                <button 
+                  onClick={() => {
+                    setView('menu');
+                  }} 
+                  className="flex items-center gap-2 text-[#461D77] hover:text-nucleo font-black text-[10px] uppercase tracking-widest transition-colors group cursor-pointer"
+                >
+                  <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver a Módulo {activeLocation}
+                </button>
+              )}
               
               <button 
                 onClick={() => {
