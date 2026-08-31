@@ -32,7 +32,7 @@ import { NovandinoLogo } from './BrandLogo';
 import { PasswordPrompt } from './PasswordPrompt';
 
 interface MainMenuProps {
-  onSelectView: (view: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit') => void;
+  onSelectView: (view: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'cumplimiento-mq' | 'cumplimiento-jorquera') => void;
   isJefeTurnoUnlocked: boolean;
   onUnlockJefeTurno: () => void;
   currentUser: any;
@@ -726,11 +726,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               ) : openedLocation === 'PQL' ? (
                 <div className="space-y-6">
                   {/* PQL CARDS GRID */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full auto-rows-fr">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full auto-rows-fr">
+                    {/* CUMPLIMIENTO M&Q */}
                     <motion.button
                       variants={itemVariants}
                       onClick={() => onSelectView('cumplimiento-mq')}
-                      className="group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer min-h-[19.5rem] lg:min-h-[21rem] md:col-span-2 lg:col-span-2"
+                      className="group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer min-h-[19.5rem] lg:min-h-[21rem]"
                     >
                       <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/15 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
                       
@@ -756,6 +757,48 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                           </h2>
                           <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 font-medium">
                             Monitoreo de vueltas solicitadas vs reales, toneladas transportadas, días críticos del mes y productividad diaria de la operación.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="w-full pt-4 mt-4 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className="text-slate-500 group-hover:text-indigo-600 transition-colors">ACCEDER AL COMPONENTE</span>
+                        <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300 shadow-sm">
+                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </motion.button>
+
+                    {/* CUMPLIMIENTO JORQUERA */}
+                    <motion.button
+                      variants={itemVariants}
+                      onClick={() => onSelectView('cumplimiento-jorquera')}
+                      className="group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer min-h-[19.5rem] lg:min-h-[21rem]"
+                    >
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/15 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      
+                      <div className="flex items-center justify-between w-full relative z-10">
+                        <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-indigo-600 transition-colors uppercase">
+                          PLANTA QUÍMICA
+                        </span>
+                        
+                        <span className="text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase bg-indigo-500/10 text-indigo-600">
+                          &bull; ACTIVO
+                        </span>
+                      </div>
+
+                      <div className="space-y-4 my-auto relative z-10">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm bg-indigo-600 text-white group-hover:scale-110 group-hover:rotate-3">
+                          <ClipboardList size={24} strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Desempeño & Productividad</p>
+                          <h2 className="font-[900] text-slate-800 tracking-tighter transition-colors text-2xl lg:text-3xl">
+                            Cumplimiento Jorquera
+                          </h2>
+                          <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 font-medium">
+                            Monitoreo de vueltas solicitadas vs reales, toneladas transportadas, días críticos del mes y productividad diaria de la operación Jorquera.
                           </p>
                         </div>
                       </div>

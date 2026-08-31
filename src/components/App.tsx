@@ -20,6 +20,7 @@ import { PasswordPrompt } from './PasswordPrompt';
 import CambioDeTurno from './CambioDeTurno';
 import LCEModule from './LCE/LCEModule';
 import { CumplimientoMQ } from './PQL/CumplimientoMQ';
+import { CumplimientoJorquera } from './PQL/CumplimientoJorquera';
 import { CloudUpload } from 'lucide-react';
 import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, syncBackupToFirebase, normalizeHeader, formatNumberWithDecimals, separateBischofitaByDest, isProductNovandino, isProductSQM, formatCLB } from '../utils/dataProcessor';
 import { NovandinoLogo } from './BrandLogo';
@@ -40,7 +41,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [view, setView] = useState<'menu' | 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'cumplimiento-mq'>('menu');
+  const [view, setView] = useState<'menu' | 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'cumplimiento-mq' | 'cumplimiento-jorquera'>('menu');
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
   const [rawData, setRawData] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -787,6 +788,7 @@ const App: React.FC = () => {
     if (view === 'cambioTurno') return <CambioDeTurno onBack={() => setView('menu')} />;
     if (view === 'lce') return <LCEModule currentUser={currentUser} onBack={() => setView('menu')} />;
     if (view === 'cumplimiento-mq') return <CumplimientoMQ onBack={() => setView('menu')} />;
+    if (view === 'cumplimiento-jorquera') return <CumplimientoJorquera onBack={() => setView('menu')} />;
 
     // fallback sidebar layout for standard dashboard view
     return (

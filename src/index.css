@@ -9,6 +9,7 @@
   --color-tecnico: #171717;
   --color-mineral: #C59E4D;
   --color-levanda: #DCDDEE;
+  --color-lavanda: #DCDDEE;
 }
 
 .page-break-before {
@@ -94,6 +95,17 @@
     display: flex !important;
 }
 
+
+/* Reglas para ocultar barras de desplazamiento en capturas y elementos interactivos */
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
 
 @layer base {
   html {
