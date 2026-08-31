@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { 
   ArrowLeft, Upload, X, AlertCircle, 
   Calendar, ClipboardCheck, Target, TrendingUp, TrendingDown, Gauge, Activity,
-  Download, Loader2
+  Download, Loader2, FileText, CheckCircle
 } from 'lucide-react';
 import { 
   BarChart, Bar, Cell, LineChart, Line, AreaChart, Area, XAxis, YAxis, 
@@ -43,6 +43,7 @@ export const CumplimientoJorquera: React.FC<CumplimientoJorqueraProps> = ({ onBa
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; isError: boolean } | null>(null);
+  const [noteText, setNoteText] = useState<string>('');
 
   const stripAccents = (s: string) => {
     return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -348,6 +349,12 @@ export const CumplimientoJorquera: React.FC<CumplimientoJorqueraProps> = ({ onBa
         height: height,
         backgroundColor: '#FAF5E6',
         pixelRatio: 2,
+        filter: (node) => {
+          if (node instanceof HTMLElement && node.getAttribute('data-ignore-capture') === 'true') {
+            return false;
+          }
+          return true;
+        },
         style: {
           borderRadius: '0px',
           padding: '24px',
@@ -888,11 +895,11 @@ export const CumplimientoJorquera: React.FC<CumplimientoJorqueraProps> = ({ onBa
                         <th className="px-4 py-4 text-right font-black tracking-widest uppercase">Acum. Ton</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#DCDDEE]">
+                    <tbody className="divide-y divide-[#DCDDEE] bg-white">
                       {currentData.map((row, idx) => (
                         <tr 
                           key={idx} 
-                          className={`hover:bg-[#FAF5E6]/80 transition-colors ${row.defDia <= -20 ? 'bg-[#C59E4D]/10' : ''}`}
+                          className="bg-white hover:bg-slate-50/80 transition-colors"
                         >
                           <td className="px-6 py-4 text-left font-bold text-[#461D77]">{row.dayLabel}</td>
                           <td className="px-4 py-4 text-right font-bold text-slate-800">{row.sol}</td>
@@ -909,6 +916,58 @@ export const CumplimientoJorquera: React.FC<CumplimientoJorqueraProps> = ({ onBa
                     </tbody>
                   </table>
                 </div>
+
+                {/* CUADRO DE NOTAS / OBSERVACIONES OPERATIVAS */}
+                {/* Formulario Interactivo (visible en pantalla para editar, ignorado en la captura para mostrar la tarjeta limpia) */}
+                <div data-ignore-capture="true" className="mt-5 pt-5 border-t border-[#DCDDEE]">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <FileText size={16} className="text-[#7177EC]" />
+                      <span className="text-xs font-black uppercase tracking-wider text-[#171717]">Notas y Observaciones de la Jornada</span>
+                    </div>
+                    {noteText.trim().length > 0 ? (
+                      <span className="text-[10px] font-bold text-[#3FAA88] bg-[#3FAA88]/10 border border-[#3FAA88]/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle size={12} /> Se incluirá en la exportación PNG
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-slate-400">
+                        Opcional (se omite en el PNG si está vacío)
+                      </span>
+                    )}
+                  </div>
+                  
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    placeholder="Escribe aquí notas, justificaciones de desvíos, condiciones climáticas o comentarios operacionales (opcional)..."
+                    rows={3}
+                    className="w-full text-xs font-medium text-slate-800 bg-[#FAF5E6]/60 hover:bg-[#FAF5E6] focus:bg-white border border-[#DCDDEE] focus:border-[#7177EC] rounded-2xl p-3.5 outline-none transition-all resize-y shadow-2xs placeholder:text-slate-400 placeholder:italic"
+                  />
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 px-1">
+                    <span>* Si no ingresas texto, el reporte PNG omitirá automáticamente este cuadro sin dejar espacios vacíos.</span>
+                    {noteText.length > 0 && (
+                      <button 
+                        type="button"
+                        onClick={() => setNoteText('')}
+                        className="text-slate-400 hover:text-red-500 font-bold transition-colors cursor-pointer"
+                      >
+                        Limpiar nota
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* TARJETA FORMATEADA DE NOTAS (Se muestra en la captura y en la vista cuando hay texto; se omite al 100% si está vacío) */}
+                {noteText.trim().length > 0 && (
+                  <div className="mt-4 p-5 rounded-3xl bg-[#FAF5E6] border border-[#7177EC]/30 border-l-4 border-l-[#7177EC] shadow-2xs">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#7177EC] mb-2 flex items-center gap-1.5">
+                      <FileText size={14} className="text-[#7177EC]" /> Notas y Observaciones Operativas
+                    </p>
+                    <p className="text-xs font-medium text-[#171717] leading-relaxed whitespace-pre-wrap">
+                      {noteText.trim()}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
