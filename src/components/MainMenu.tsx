@@ -55,6 +55,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   const [activeTab, setActiveTab] = useState<'supervision' | 'jefe_turno'>('supervision');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [openedLocation, setOpenedLocation] = useState<string | null>(initialLocation);
+  const [unlockedLocations, setUnlockedLocations] = useState<Record<string, boolean>>({});
+  const [locationPasswordPrompt, setLocationPasswordPrompt] = useState<{ id: string; name: string } | null>(null);
 
   // Sync state if initialLocation changes
   useEffect(() => {
@@ -556,14 +558,37 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                 {locationModules.map((loc) => {
                   const IconComponent = loc.icon;
                   const isSdA = loc.id === 'SdA';
+                  const isInProcess = !isSdA; // PQL, CLB, PANG are in process
+                  const isUnlocked = isSdA || unlockedLocations[loc.id];
                   
                   return (
                     <motion.button
                       key={loc.id}
                       variants={itemVariants}
-                      onClick={() => setOpenedLocation(loc.id)}
-                      className="group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer col-span-1 min-h-[18rem] lg:min-h-[19.5rem]"
+                      onClick={() => {
+                        if (isUnlocked) {
+                          setOpenedLocation(loc.id);
+                        } else {
+                          setLocationPasswordPrompt({
+                            id: loc.id,
+                            name: `${loc.title} - ${loc.fullName}`,
+                          });
+                        }
+                      }}
+                      className={`group relative bg-white/80 hover:bg-white border ${
+                        isInProcess && !isUnlocked 
+                          ? 'border-amber-400/50 hover:border-amber-500/70' 
+                          : 'border-black/[0.04] hover:border-black/[0.08]'
+                      } rounded-[2.2rem] ${isInProcess ? 'pt-11 pb-8 px-8' : 'p-8'} shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer col-span-1 min-h-[18rem] lg:min-h-[19.5rem]`}
                     >
+                      {/* IN-PROCESS TOP RIBBON / BANNER */}
+                      {isInProcess && (
+                        <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-[0.25em] shadow-xs z-20">
+                          <Lock size={12} strokeWidth={2.5} className="text-amber-100" />
+                          <span>EN PROCESO</span>
+                        </div>
+                      )}
+
                       {/* Decorative Apple-style light reflection */}
                       <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-white/20 to-transparent rounded-bl-[6rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
                       
@@ -572,17 +597,27 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm ${loc.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
                             <IconComponent size={24} strokeWidth={1.5} />
                           </div>
-                          <span className={`text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase ${
-                            isSdA ? 'bg-[#461D77]/10 text-[#461D77]' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            {loc.badge}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {isInProcess && !isUnlocked && (
+                              <span className="text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase bg-amber-500/10 text-amber-700 border border-amber-500/20 flex items-center gap-1">
+                                <Lock size={10} strokeWidth={2.5} /> PROTEGIDO
+                              </span>
+                            )}
+                            <span className={`text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase ${
+                              isSdA ? 'bg-[#461D77]/10 text-[#461D77]' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {loc.badge}
+                            </span>
+                          </div>
                         </div>
                         
                         <div className="space-y-2">
                           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">{loc.subtitle}</p>
-                          <h2 className="font-[900] text-slate-800 tracking-tighter transition-colors text-xl">
-                            {loc.title}
+                          <h2 className="font-[900] text-slate-800 tracking-tighter transition-colors text-xl flex items-center justify-between">
+                            <span>{loc.title}</span>
+                            {isInProcess && !isUnlocked && (
+                              <Lock size={16} className="text-amber-500/70" />
+                            )}
                           </h2>
                           <p className="text-slate-500 text-xs leading-relaxed font-medium line-clamp-3">
                             {loc.description}
@@ -591,11 +626,25 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                       </div>
 
                       <div className="w-full pt-4 mt-6 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
-                        <span className="text-slate-500 group-hover:text-[#461D77] transition-colors">
-                          {(isSdA || loc.id === 'PQL') ? 'Ingresar a la Zona' : 'Módulo en Desarrollo'}
+                        <span className={`${
+                          isInProcess && !isUnlocked 
+                            ? 'text-amber-700 font-extrabold flex items-center gap-1.5' 
+                            : 'text-slate-500 group-hover:text-[#461D77]'
+                        } transition-colors`}>
+                          {isSdA 
+                            ? 'Ingresar a la Zona' 
+                            : isUnlocked 
+                            ? 'Zona Desbloqueada' 
+                            : 'Desbloquear con Clave'}
                         </span>
-                        <div className={`w-8 h-8 rounded-full ${loc.iconBg} group-hover:bg-[#461D77] group-hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm`}>
-                          <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                        <div className={`w-8 h-8 rounded-full ${
+                          isInProcess && !isUnlocked ? 'bg-amber-500 text-white' : loc.iconBg
+                        } group-hover:bg-[#461D77] group-hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm`}>
+                          {isInProcess && !isUnlocked ? (
+                            <Lock size={14} />
+                          ) : (
+                            <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                          )}
                         </div>
                       </div>
                     </motion.button>
@@ -860,6 +909,21 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           </p>
         </div>
       </footer>
+      {/* PASSWORD PROTECTION FOR IN-PROCESS MODULES (PQL, CLB, PANG) */}
+      {locationPasswordPrompt && (
+        <PasswordPrompt
+          correctPassword="MIRAME"
+          moduleName={locationPasswordPrompt.name}
+          onSuccess={() => {
+            const targetId = locationPasswordPrompt.id;
+            setUnlockedLocations(prev => ({ ...prev, [targetId]: true }));
+            setLocationPasswordPrompt(null);
+            setOpenedLocation(targetId);
+          }}
+          onCancel={() => setLocationPasswordPrompt(null)}
+        />
+      )}
+
       {/* PASSWORD PROTECTION FOR JEFE TURNO TAB */}
       {showPasswordPrompt && (
         <PasswordPrompt

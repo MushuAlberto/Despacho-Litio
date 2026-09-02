@@ -20,7 +20,7 @@ export const PasswordPrompt: React.FC<PasswordPromptProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === correctPassword) {
+    if (password.trim().toUpperCase() === correctPassword.trim().toUpperCase() || password === correctPassword) {
       onSuccess();
     } else {
       setError(true);
