@@ -24,6 +24,11 @@ import { CumplimientoJorquera } from './PQL/CumplimientoJorquera';
 import { CloudUpload } from 'lucide-react';
 import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, syncBackupToFirebase, normalizeHeader, formatNumberWithDecimals, separateBischofitaByDest, isProductNovandino, isProductSQM, formatCLB } from '../utils/dataProcessor';
 import { NovandinoLogo } from './BrandLogo';
+import { OutlookSendButton } from './OutlookSendButton';
+import { ExcelUploadDropzone } from './ExcelUploadDropzone';
+import { ExportDownloadButton } from './ExportDownloadButton';
+import { FirebaseSyncButton } from './FirebaseSyncButton';
+import '../utils/send-button';
 
 // Firebase imports
 import { SystemUser, logActivity } from '../services/firebase';
@@ -189,18 +194,23 @@ const App: React.FC = () => {
       if (currentUser) {
         logActivity(currentUser, 'Exportó PNG', `Descargó placa gráfica de KPIs principales para la jornada ${formatDateToCL(selectedDate)}.`);
       }
+    } catch (error) {
+      console.error('Error al capturar imagen:', error);
+      alert('Error al generar la imagen PNG.');
+      throw error;
     } finally {
       setExportingImage(false);
     }
   };
 
-  const processFile = useCallback(async (file: File) => {
-    setLoading(true);
-    setUploadError(null);
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const data = e.target?.result;
+  const processFile = useCallback((file: File) => {
+    return new Promise<{ success: boolean; recordCount: number; fileName: string }>((resolve, reject) => {
+      setLoading(true);
+      setUploadError(null);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
         const sheetName = workbook.SheetNames.find(n => n === "Base de Datos") || workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
@@ -452,16 +462,28 @@ const App: React.FC = () => {
         if (currentUser) {
           logActivity(currentUser, 'Carga de Datos', `Cargó archivo base Excel con ${processed.length} registros operativos.`);
         }
+
+        resolve({
+          success: true,
+          recordCount: processed.length,
+          fileName: file.name
+        });
       } catch (err: any) {
         console.error("Error processing file:", err);
         setUploadError({
           message: err.message || 'Error desconocido al procesar el archivo Excel.'
         });
+        reject(err);
       } finally {
         setLoading(false);
       }
     };
+    reader.onerror = (err) => {
+      setLoading(false);
+      reject(err);
+    };
     reader.readAsBinaryString(file);
+    });
   }, [currentUser]);
 
   const separatedRawData = useMemo(() => {
@@ -701,18 +723,17 @@ const App: React.FC = () => {
 
   const [isSyncingFirebase, setIsSyncingFirebase] = useState(false);
 
-  const handleSyncToFirebase = async (date: string) => {
+  const handleSyncToFirebase = async (date: string): Promise<boolean> => {
     setIsSyncingFirebase(true);
     try {
       const success = await syncBackupToFirebase(date);
-      if (success) {
-        alert(`Historial .json del ${formatDateToCL(date)} guardado exitosamente en Firebase Cloud.`);
-      } else {
-        alert('No se pudo guardar el historial en Firebase. Verifique la conexión.');
+      if (!success) {
+        throw new Error('No se pudo guardar el historial en Firebase');
       }
+      return true;
     } catch (err) {
       console.error('Error guardando en Firebase:', err);
-      alert('Error al conectar con Firebase.');
+      throw err;
     } finally {
       setIsSyncingFirebase(false);
     }
@@ -818,16 +839,11 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-violeta">Cargar Datos</p>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-violeta/20 rounded-3xl cursor-pointer bg-white hover:border-ionizado hover:bg-calido transition-all">
-                <div className="flex flex-col items-center justify-center p-4 text-center">
-                  <Upload className="w-8 h-8 text-violeta/30 mb-2" />
-                  <p className="text-[10px] text-violeta/60 uppercase font-black tracking-widest">Base Excel</p>
-                </div>
-                <input type="file" className="hidden" accept=".xlsx,.xlsm" onChange={e => e.target.files?.[0] && processFile(e.target.files[0])} />
-              </label>
-            </div>
+            <ExcelUploadDropzone
+              onProcessFile={processFile}
+              isProcessingExternal={loading}
+              loadedRecordCount={rawData.length}
+            />
             {rawData.length > 0 && (
               <>
                 <div className="space-y-2">
@@ -838,34 +854,25 @@ const App: React.FC = () => {
                 </div>
                 <div className="space-y-3 pt-4 border-t border-slate-200/50">
                   <p className="text-[10px] font-black uppercase tracking-widest text-[#461D77] mb-1">Herramientas</p>
-                  <button onClick={handleExportPDF} disabled={exportingPDF} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:border-violeta/40 transition-all duration-200 premium-btn-transition cursor-pointer shadow-sm hover:shadow-md">
-                    {exportingPDF ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />} Exportar PDF
-                  </button>
-                  <button onClick={handleExportImage} disabled={exportingImage} className="w-full bg-white border border-violeta/20 text-nucleo py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:border-violeta/40 transition-all duration-200 premium-btn-transition cursor-pointer shadow-sm hover:shadow-md">
-                    {exportingImage ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />} Descargar PNG
-                  </button>
-                  <button 
+                  <ExportDownloadButton
+                    type="pdf"
+                    onClick={handleExportPDF}
+                    isLoading={exportingPDF}
+                  />
+                  <ExportDownloadButton
+                    type="png"
+                    onClick={handleExportImage}
+                    isLoading={exportingImage}
+                  />
+                  <OutlookSendButton 
                     onClick={() => setIsOutlookModalOpen(true)} 
-                    className="w-full bg-white border-2 border-violeta text-violeta py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-violeta/5 hover:border-violeta/60 transition-all duration-200 premium-btn-transition cursor-pointer shadow-sm hover:shadow-md"
-                  >
-                    <Mail size={12} /> Compartir por Outlook
-                  </button>
+                    autoreset={1800}
+                  />
 
-                  <button 
-                    onClick={() => handleSyncToFirebase(selectedDate)} 
-                    disabled={isSyncingFirebase}
-                    className="w-full bg-[#461D77] text-white py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#321159] transition-all duration-200 premium-btn-transition cursor-pointer shadow-lg shadow-nucleo/10 hover:shadow-nucleo/20 disabled:opacity-50"
-                  >
-                    {isSyncingFirebase ? (
-                      <>
-                        <Loader2 size={12} className="animate-spin" /> Guardando en Firebase...
-                      </>
-                    ) : (
-                      <>
-                        <CloudUpload size={12} /> Guardar Historial en Firebase
-                      </>
-                    )}
-                  </button>
+                  <FirebaseSyncButton 
+                    onSync={() => handleSyncToFirebase(selectedDate)} 
+                    isSyncingExternal={isSyncingFirebase}
+                  />
                 </div>
               </>
             )}

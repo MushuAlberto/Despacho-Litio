@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { CloudUpload, X, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { X, ShieldCheck, AlertCircle } from 'lucide-react';
 import { syncBackupToFirebase } from '../utils/dataProcessor';
+import { FirebaseSyncButton } from './FirebaseSyncButton';
 
 interface BackupReminderModalProps {
   isOpen: boolean;
@@ -18,15 +19,17 @@ const BackupReminderModal: React.FC<BackupReminderModalProps> = ({ isOpen, onClo
     try {
       const success = await syncBackupToFirebase();
       if (success) {
-        alert('Historial .json guardado exitosamente en Firebase Cloud.');
-      } else {
-        alert('No se pudo guardar en Firebase Cloud.');
+        setTimeout(() => {
+          onClose();
+        }, 1800);
+        return true;
       }
+      return false;
     } catch (e) {
       console.error(e);
+      throw e;
     } finally {
       setIsSyncing(false);
-      onClose();
     }
   };
 
@@ -56,21 +59,11 @@ const BackupReminderModal: React.FC<BackupReminderModalProps> = ({ isOpen, onClo
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
-            <button 
-              onClick={handleSync}
-              disabled={isSyncing}
-              className="group flex items-center justify-center gap-3 w-full bg-[#461D77] hover:bg-[#321159] text-white py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-nucleo/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-            >
-              {isSyncing ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> Guardando en Firebase...
-                </>
-              ) : (
-                <>
-                  <CloudUpload size={16} /> Guardar Historial en Firebase
-                </>
-              )}
-            </button>
+            <FirebaseSyncButton 
+              onSync={handleSync}
+              isSyncingExternal={isSyncing}
+              className="py-4 text-[11px]"
+            />
             <button 
               onClick={onClose}
               className="w-full bg-calido hover:bg-calido/80 text-violeta/40 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all cursor-pointer"

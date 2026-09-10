@@ -249,3 +249,388 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 4px rgba(113, 119, 236, 0.15);
 }
 
+/* Origami Paper Plane Animation (@keyframes sb-fold & facets) */
+@property --sb-corner-l-x {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 0%;
+}
+@property --sb-corner-r-x {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 100%;
+}
+@property --sb-wing-l-x {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 0%;
+}
+@property --sb-wing-r-x {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 100%;
+}
+@property --sb-notch-y {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 100%;
+}
+@property --sb-nose-y {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 0%;
+}
+@property --sb-wing-y {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 100%;
+}
+
+/* one sheet, cut in half; each facet is four named vertices and never moves */
+.facet--left {
+  clip-path: polygon(
+    var(--sb-corner-l-x, 0%) var(--sb-nose-y, 0%),
+    50% var(--sb-nose-y, 0%),
+    50% var(--sb-notch-y, 100%),
+    var(--sb-wing-l-x, 0%) var(--sb-wing-y, 100%)
+  );
+}
+
+.facet--right {
+  clip-path: polygon(
+    50% var(--sb-nose-y, 0%),
+    var(--sb-corner-r-x, 100%) var(--sb-nose-y, 0%),
+    var(--sb-wing-r-x, 100%) var(--sb-wing-y, 100%),
+    50% var(--sb-notch-y, 100%)
+  );
+}
+
+/* registering them makes them interpolable, so the whole fold is one keyframes rule */
+@keyframes sb-fold {
+  0% {
+    --sb-corner-l-x: 0%;
+    --sb-corner-r-x: 100%;
+    --sb-wing-l-x: 0%;
+    --sb-wing-r-x: 100%;
+    --sb-notch-y: 100%;
+    --sb-nose-y: 0%;
+    --sb-wing-y: 100%;
+    rotate: 0deg;
+  }
+  /* corners to the top centre */
+  45% {
+    --sb-corner-l-x: 50%;
+    --sb-corner-r-x: 50%;
+    --sb-wing-l-x: 0%;
+    --sb-wing-r-x: 100%;
+    --sb-notch-y: 100%;
+  }
+  /* wings in, notch up, crease */
+  78% {
+    --sb-corner-l-x: 50%;
+    --sb-corner-r-x: 50%;
+    --sb-wing-l-x: 12%;
+    --sb-wing-r-x: 88%;
+    --sb-notch-y: 61%;
+    rotate: 0deg;
+  }
+  /* and tip into the wind */
+  100% {
+    --sb-corner-l-x: 50%;
+    --sb-corner-r-x: 50%;
+    --sb-wing-l-x: 12%;
+    --sb-wing-r-x: 88%;
+    --sb-notch-y: 61%;
+    rotate: 55deg;
+  }
+}
+
+/* Direct polygon fallbacks ensuring 100% cross-browser frame interpolation */
+@keyframes sb-fold-facet-left {
+  0% {
+    clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%);
+  }
+  45% {
+    clip-path: polygon(50% 0%, 50% 0%, 50% 100%, 0% 100%);
+  }
+  78% {
+    clip-path: polygon(50% 0%, 50% 0%, 50% 61%, 12% 100%);
+  }
+  100% {
+    clip-path: polygon(50% 0%, 50% 0%, 50% 61%, 12% 100%);
+  }
+}
+
+@keyframes sb-fold-facet-right {
+  0% {
+    clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
+  }
+  45% {
+    clip-path: polygon(50% 0%, 50% 0%, 100% 100%, 50% 100%);
+  }
+  78% {
+    clip-path: polygon(50% 0%, 50% 0%, 88% 100%, 50% 61%);
+  }
+  100% {
+    clip-path: polygon(50% 0%, 50% 0%, 88% 100%, 50% 61%);
+  }
+}
+
+/* Flight and glide keyframe */
+@keyframes sb-takeoff-flight {
+  0% {
+    transform: translate(0, 0) rotate(55deg) scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: translate(22px, -8px) rotate(48deg) scale(1.08);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(110px, -32px) rotate(54deg) scale(0.85);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(220px, -55px) rotate(58deg) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Excel Upload & Completion Animations (Cargar Datos / Base Excel)
+   ========================================================================== */
+
+/* Laser scanner beam effect */
+@keyframes excel-laser-scanner {
+  0% {
+    top: -10%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: 110%;
+    opacity: 0;
+  }
+}
+
+/* Success expanding ripple ring */
+@keyframes success-ripple-wave {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* Shimmer on progress bar */
+@keyframes progress-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Floating data particle ascending */
+@keyframes data-particle-ascend {
+  0% {
+    transform: translateY(12px) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+  100% {
+    transform: translateY(-16px) scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* Spring pop for success badge */
+@keyframes success-pop-bounce {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.22) rotate(6deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Subtle border marching dash */
+@keyframes border-dash-crawl {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+/* ==========================================================================
+   File Download & Export Animations (PDF & PNG Buttons)
+   ========================================================================== */
+
+/* Downward arrow plunge into tray */
+@keyframes download-arrow-plunge {
+  0% {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+  40% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(3px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Tray bounce responding to arrow arrival */
+@keyframes download-tray-bounce {
+  0%, 100% {
+    transform: scaleX(1) scaleY(1);
+  }
+  45% {
+    transform: scaleX(1.18) scaleY(0.85);
+  }
+  75% {
+    transform: scaleX(0.95) scaleY(1.08);
+  }
+}
+
+/* Paper feed animation for PDF generation */
+@keyframes paper-sheet-slide {
+  0% {
+    transform: translateY(-10px) scale(0.85);
+    opacity: 0;
+  }
+  35% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(12px) scale(0.85);
+    opacity: 0;
+  }
+}
+
+/* Camera snapshot flash */
+@keyframes camera-shutter-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+
+/* Shimmer gleam for hover and processing */
+@keyframes button-sweep-gleam {
+  0% {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+
+/* ==========================================================================
+   Firebase Cloud Sync Animations (Guardar Historial en Firebase)
+   ========================================================================== */
+
+/* Cloud gently floating with micro bounce */
+@keyframes cloud-float-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
+/* Upward data pulse entering the cloud */
+@keyframes cloud-data-ascend {
+  0% {
+    transform: translateY(8px) scale(0.6);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  80% {
+    transform: translateY(-8px) scale(0.7);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-14px) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* Luminous cloud aura pulse during sync */
+@keyframes cloud-energy-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(113, 119, 236, 0.4), inset 0 0 12px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(113, 119, 236, 0), inset 0 0 20px rgba(255, 255, 255, 0.25);
+  }
+}
+
+/* Radiant ripple when sync finishes successfully */
+@keyframes cloud-success-ripple {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+/* Gradient background shift for active upload */
+@keyframes gradient-cloud-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+
