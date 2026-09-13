@@ -246,7 +246,9 @@ export const defaultDailyLogs: DailyLog[] = [
     m3Despachados: 2061.24, // Matches the average for the month: 45,319 accumulated
     lceProgramado: 845.18,
     lceActual: 611.77,
-    nivelPozasPqlc: "S/D"
+    nivelPozasPqlc: "S/D",
+    productividadProgramada: 1.30, // Columna F
+    productividadReal: 1.45 // Columna G
   },
   // Day 21 to 31 are placeholder/forecast as shown in the original chart with zero or fixed targets
   ...Array.from({ length: 11 }, (_, i) => {
@@ -359,4 +361,31 @@ export function formatShortDateSpanish(dateStr: string): string {
   const month = months[dateObj.getMonth()];
   const year = dateObj.getFullYear();
   return `${day}-${month}-${year}`;
+}
+
+/**
+ * Helper to compute or retrieve daily productivity (Column F: Prog vs Column G: Real)
+ */
+export function getProductividadDaily(log: DailyLog): {
+  prog: number;
+  real: number;
+  compliance: number;
+} {
+  const prog = log.productividadProgramada !== undefined && log.productividadProgramada > 0
+    ? log.productividadProgramada
+    : 1.30;
+
+  let real: number;
+  if (log.productividadReal !== undefined && log.productividadReal > 0) {
+    real = log.productividadReal;
+  } else if (log.m3Despachados > 0 && log.toneladasDespachadas > 0) {
+    real = parseFloat(((log.toneladasDespachadas / log.m3Despachados) * 1.14417).toFixed(2));
+  } else if (log.viajesProgramados > 0 && log.viajesRealizados > 0) {
+    real = parseFloat(((log.viajesRealizados / log.viajesProgramados) * 1.30).toFixed(2));
+  } else {
+    real = 0;
+  }
+
+  const compliance = prog > 0 ? (real / prog) * 100 : 0;
+  return { prog, real, compliance };
 }

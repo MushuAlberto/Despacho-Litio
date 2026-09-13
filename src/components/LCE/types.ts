@@ -14,6 +14,8 @@ export interface DailyLog {
   lceProgramado: number; // Daily or target factor
   lceActual: number;
   nivelPozasPqlc: string; // "S/D" or specific percentage/status string
+  productividadProgramada?: number; // Columna F (Base SLIT / Registro Diario)
+  productividadReal?: number; // Columna G (Base SLIT / Registro Diario)
   productividad?: number; // Optional productivity calculation overrides
 }
 

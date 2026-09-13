@@ -271,6 +271,8 @@ function tryParsingBaseSlit(worksheet: XLSX.WorkSheet): DailyLog[] | null {
   let indexViajesProg = 2;
   let indexTonDesp = 3;
   let indexViajesReal = 4;
+  let indexProdProg = 5; // Columna F: Productividad Programada
+  let indexProdReal = 6; // Columna G: Productividad Real
   let indexM3 = -1;
   let indexLceProg = -1;
   let indexLceActual = -1;
@@ -312,6 +314,10 @@ function tryParsingBaseSlit(worksheet: XLSX.WorkSheet): DailyLog[] | null {
           indexViajesProg = c;
         } else if (val.includes("viajesrealizados") || val.includes("viajesefectivos") || val.includes("viajesreal") || val.includes("tripsact") || (val.includes("viaje") && (val.includes("real") || val.includes("despachado"))) || val.includes("viajesdespachados") || val.includes("cantidadcamiones")) {
           indexViajesReal = c;
+        } else if (val.includes("productividadprogramada") || val.includes("productividadprog") || val.includes("prodprog") || (val.includes("productividad") && val.includes("prog")) || val === "f" || val === "columnaf") {
+          indexProdProg = c;
+        } else if (val.includes("productividadreal") || val.includes("prodreal") || val.includes("productividadefectiva") || (val.includes("productividad") && (val.includes("real") || val.includes("efectiva"))) || val === "g" || val === "columnag") {
+          indexProdReal = c;
         } else if (val.includes("lceprogramado") || val.includes("lceprog") || val.includes("lcetarget")) {
           indexLceProg = c;
         } else if (val.includes("lceactual") || val.includes("lcesda") || val.includes("lcereal") || val.includes("lceefectivo")) {
@@ -348,6 +354,10 @@ function tryParsingBaseSlit(worksheet: XLSX.WorkSheet): DailyLog[] | null {
     let lceActual = indexLceActual !== -1 ? cleanCellValueToNumber(row[indexLceActual]) : (row.length > 12 ? cleanCellValueToNumber(row[12]) : 0);
     let nivelPozasPqlc = indexNivelPozas !== -1 ? String(row[indexNivelPozas] || "S/D").trim() : "S/D";
 
+    // Column F and G (Productividad Programada y Productividad Real)
+    const prodProgVal = indexProdProg !== -1 && row.length > indexProdProg ? cleanCellValueToNumber(row[indexProdProg]) : undefined;
+    const prodRealVal = indexProdReal !== -1 && row.length > indexProdReal ? cleanCellValueToNumber(row[indexProdReal]) : undefined;
+
     // Deduce viajes / density / LCE if missing to maintain visual accuracy
     if (viajesRealizados === 0 && toneladasDespachadas > 0) {
       viajesRealizados = Math.round(toneladasDespachadas / 29.01);
@@ -375,7 +385,9 @@ function tryParsingBaseSlit(worksheet: XLSX.WorkSheet): DailyLog[] | null {
         m3Despachados,
         lceProgramado,
         lceActual,
-        nivelPozasPqlc
+        nivelPozasPqlc,
+        productividadProgramada: prodProgVal !== undefined && !isNaN(prodProgVal) && prodProgVal > 0 ? prodProgVal : undefined,
+        productividadReal: prodRealVal !== undefined && !isNaN(prodRealVal) && prodRealVal > 0 ? prodRealVal : undefined
       });
     }
   }
@@ -387,13 +399,15 @@ function tryParsingBaseSlit(worksheet: XLSX.WorkSheet): DailyLog[] | null {
  * Generates and downloads a custom Excel templates filled with pre-populated demo data.
  */
 export function downloadExcelTemplate(logs: DailyLog[]) {
-  // Map our internal state to readable column headers
+  // Map our internal state to readable column headers conforming to Base SLIT columns
   const data = logs.map((log) => ({
     "Fecha (AAAA-MM-DD)": log.fecha,
     "Toneladas Programadas": log.toneladasProgramadas,
-    "Toneladas Despachadas": log.toneladasDespachadas,
     "Viajes Programados": log.viajesProgramados,
+    "Toneladas Despachadas": log.toneladasDespachadas,
     "Viajes Realizados": log.viajesRealizados,
+    "Productividad Programada (Col F)": log.productividadProgramada ?? 1.30,
+    "Productividad Real (Col G)": log.productividadReal ?? (log.m3Despachados > 0 ? parseFloat(((log.toneladasDespachadas / log.m3Despachados) * 1.14417).toFixed(2)) : 1.45),
     "m3 Despachados": log.m3Despachados,
     "LCE Programado": log.lceProgramado,
     "LCE Actual": log.lceActual,
@@ -405,7 +419,7 @@ export function downloadExcelTemplate(logs: DailyLog[]) {
   XLSX.utils.book_append_sheet(workbook, worksheet, "Registro Diario");
 
   // Style column widths for professional aesthetics
-  const maxW = [16, 20, 20, 18, 18, 16, 16, 16, 16];
+  const maxW = [16, 20, 18, 20, 18, 22, 22, 16, 16, 16, 16];
   worksheet["!cols"] = maxW.map(w => ({ wch: w }));
 
   // Generate binary and trigger download
@@ -625,6 +639,8 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
           toneladasDespachadas: number;
           viajesProgramados: number;
           viajesRealizados: number;
+          productividadProgramada?: number;
+          productividadReal?: number;
           lceActual: number;
           nivelPozasPqlc: string;
         }>();
@@ -678,12 +694,16 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               // Columna C: Viajes Programados (index 2)
               // Columna D: Tonelaje Despachado (index 3)
               // Columna E: Viajes Realizados (index 4)
+              // Columna F: Productividad Programada (index 5)
+              // Columna G: Productividad Real (index 6)
               // Columna J: Nivel Pozas PQLC (index 9)
               // Columna M: LCE (SdA) (index 12)
               const rawB = row.length > 1 ? row[1] : undefined;
               const rawC = row.length > 2 ? row[2] : undefined;
               const rawD = row.length > 3 ? row[3] : undefined;
               const rawE = row.length > 4 ? row[4] : undefined;
+              const rawF = row.length > 5 ? row[5] : undefined;
+              const rawG = row.length > 6 ? row[6] : undefined;
               const rawJ = row.length > 9 ? row[9] : undefined;
               const rawM = row.length > 12 ? row[12] : undefined;
               
@@ -691,6 +711,8 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               const viajesProg = rawC !== undefined && rawC !== null ? Math.round(cleanCellValueToNumber(rawC)) : 0;
               const tonDesp = rawD !== undefined && rawD !== null ? cleanCellValueToNumber(rawD) : 0;
               const viajesReal = rawE !== undefined && rawE !== null ? Math.round(cleanCellValueToNumber(rawE)) : 0;
+              const prodProg = rawF !== undefined && rawF !== null ? cleanCellValueToNumber(rawF) : undefined;
+              const prodReal = rawG !== undefined && rawG !== null ? cleanCellValueToNumber(rawG) : undefined;
               const lceSda = rawM !== undefined && rawM !== null ? cleanCellValueToNumber(rawM) : undefined;
               
               // Extremely robust check: physical thresholds to reject monthly totals as daily records
@@ -728,6 +750,8 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
                   toneladasDespachadas: isNaN(tonDesp) ? 0 : tonDesp,
                   viajesProgramados: isNaN(viajesProg) ? 0 : viajesProg,
                   viajesRealizados: isNaN(viajesReal) ? 0 : viajesReal,
+                  productividadProgramada: prodProg !== undefined && !isNaN(prodProg) && prodProg > 0 ? prodProg : undefined,
+                  productividadReal: prodReal !== undefined && !isNaN(prodReal) && prodReal > 0 ? prodReal : undefined,
                   lceActual: (lceSda !== undefined && !isNaN(lceSda)) ? lceSda : parseFloat((tonDesp * 0.3061).toFixed(2)),
                   nivelPozasPqlc: nivelPozasVal
                 });
@@ -760,7 +784,7 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
         let logs: DailyLog[] = [];
 
         if (jsonRows.length > 0 && hasDateColumn) {
-          const mappedLogs = jsonRows.map((row: any, index: number) => {
+          const mappedLogs = jsonRows.map((row: any, index: number): DailyLog | null => {
             // Check if any property of row contains a total/summary keyword
             let isTotalRow = false;
             if (row && typeof row === "object") {
@@ -871,6 +895,10 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
             let lceActual = parseFloat(findValue(["lceactual", "lcesda", "lcereal"], 0)) || 0;
             let nivelPozasPqlc = String(findValue(["nivelpozas", "pozas", "pqlc"], "S/D")).trim() || "S/D";
 
+            // Productivity columns
+            let productividadProgramada = parseFloat(findValue(["productividadprogramada", "productividadprog", "prodprog", "productividadf", "columnaf"], 0)) || undefined;
+            let productividadReal = parseFloat(findValue(["productividadreal", "productividadefectiva", "prodreal", "productividadg", "columnag"], 0)) || undefined;
+
             // Determine voyages from standard headers or default
             let viajesProgramados = parseInt(findValue(["viajesprogramados", "viajesprog", "tripsprog"], 0)) || 0;
             let viajesRealizados = parseInt(findValue(["viajesrealizados", "viajesefectivos", "viajesreal", "tripsact"], 0)) || 0;
@@ -882,6 +910,12 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               viajesRealizados = slitOverride.viajesRealizados;
               toneladasProgramadas = slitOverride.toneladasProgramadas;
               toneladasDespachadas = slitOverride.toneladasDespachadas;
+              if (slitOverride.productividadProgramada !== undefined) {
+                productividadProgramada = slitOverride.productividadProgramada;
+              }
+              if (slitOverride.productividadReal !== undefined) {
+                productividadReal = slitOverride.productividadReal;
+              }
 
               // Recalculate derivative metrics with overriden dispatcher tonnage to guarantee visual/mathematical sync
               if (m3Despachados === 0 && toneladasDespachadas > 0) {
@@ -915,6 +949,8 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               lceProgramado,
               lceActual,
               nivelPozasPqlc,
+              productividadProgramada,
+              productividadReal,
             };
           });
           logs = mappedLogs.filter((l): l is DailyLog => l !== null);
@@ -928,6 +964,8 @@ export function parseUploadedExcel(file: File): Promise<ParseResult> {
               toneladasDespachadas: rowData.toneladasDespachadas,
               viajesProgramados: rowData.viajesProgramados,
               viajesRealizados: rowData.viajesRealizados,
+              productividadProgramada: rowData.productividadProgramada,
+              productividadReal: rowData.productividadReal,
               m3Despachados: parseFloat((rowData.toneladasDespachadas / 1.26714).toFixed(2)),
               lceProgramado: 845.18,
               lceActual: rowData.lceActual,

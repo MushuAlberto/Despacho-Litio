@@ -2,6 +2,9 @@ import express from "express";
 import path from "path";
 import dotenv from "dotenv";
 import PDFDocument from "pdfkit";
+import * as XLSX from "xlsx";
+// @ts-ignore
+import httpntlm from "httpntlm";
 
 dotenv.config();
 
@@ -547,6 +550,203 @@ REGLAS CRÍTICAS DE REDACCIÓN:
       console.error("Error generating server-side PDF:", err);
       res.status(500).json({ error: "No se pudo generar el reporte PDF en el servidor.", details: err.message });
     }
+  });
+
+  // ==========================================
+  // REPORTE STOKES - BACKEND PROXY (SSRS NTLM)
+  // ==========================================
+  const REPORT_SERVER_URL = process.env.REPORT_SERVER_URL || 'http://clanfdbsw06/ReportServer';
+  const REPORT_PATH = '/produccion/operaciones/canchas/publico/Historico_guia_transportista';
+
+  const normalizarAlmacenDespacho = (raw: string): string => {
+    if (!raw) return '—';
+    const trimmed = raw.trim();
+    if (/^Salar Atacama,\s*Mop/i.test(trimmed) || trimmed.toLowerCase().includes('salar')) {
+      return 'Salar';
+    }
+    return trimmed;
+  };
+
+  const procesarFilasStokes = (rawRows: any[][]) => {
+    if (!rawRows || rawRows.length === 0) return [];
+
+    let headerRowIdx = -1;
+    let colGuia = 0;
+    let colFecha = 1;
+    let colProd = 10;
+    let colCant = 13;
+    let colAlmDesp = 14;
+    let colAlmDest = 15;
+    let colTransp = 17;
+    let colPat = 20;
+
+    for (let i = 0; i < Math.min(rawRows.length, 12); i++) {
+      const r = rawRows[i];
+      if (!Array.isArray(r)) continue;
+      const rStr = r.map(c => String(c || '').toLowerCase().trim());
+      if (rStr.some(c => c.includes('guía') || c.includes('guia') || c.includes('n° guia'))) {
+        headerRowIdx = i;
+        r.forEach((cellVal, idx) => {
+          const val = String(cellVal || '').toLowerCase().trim();
+          if (val.includes('guía') || val.includes('guia')) colGuia = idx;
+          else if (val.includes('fecha')) colFecha = idx;
+          else if (val.includes('producto')) colProd = idx;
+          else if (val.includes('cant') && val.includes('desp')) colCant = idx;
+          else if (val.includes('almacen despacho') || val.includes('almacén despacho')) colAlmDesp = idx;
+          else if (val.includes('almacen destino') || val.includes('almacén destino')) colAlmDest = idx;
+          else if (val.includes('transportista')) colTransp = idx;
+          else if (val.includes('patente')) colPat = idx;
+        });
+        break;
+      }
+    }
+
+    const startRow = headerRowIdx !== -1 ? headerRowIdx + 1 : 8;
+
+    return rawRows.slice(startRow).filter(row => {
+      if (!row || row.length === 0) return false;
+      const g = String(row[colGuia] || row[0] || '').trim();
+      return g && !g.toLowerCase().includes('histórico') && !g.toLowerCase().includes('guía');
+    }).map(row => {
+      const almDesp = String(row[colAlmDesp] ?? row[14] ?? row[10] ?? '').trim();
+      const origenNormalizado = normalizarAlmacenDespacho(almDesp);
+
+      const rawCant = row[colCant] ?? row[13] ?? row[9];
+      let cantNum = 0;
+      if (rawCant !== undefined && rawCant !== null) {
+        const numStr = String(rawCant).replace(',', '.').replace(/[^\d.-]/g, '');
+        cantNum = parseFloat(numStr) || 0;
+      }
+
+      return {
+        guia: String(row[colGuia] ?? row[0] ?? '').trim(),
+        fechaGuia: String(row[colFecha] ?? row[1] ?? '').trim(),
+        producto: String(row[colProd] ?? row[10] ?? row[6] ?? '').trim(),
+        cantDespacho: cantNum,
+        almacenDespachoRaw: almDesp,
+        origenStokes: origenNormalizado,
+        almacenDestino: String(row[colAlmDest] ?? row[15] ?? row[11] ?? '').trim(),
+        transportista: String(row[colTransp] ?? row[17] ?? row[13] ?? '').trim(),
+        patenteCamion: String(row[colPat] ?? row[20] ?? row[16] ?? '').trim()
+      };
+    });
+  };
+
+  app.post('/api/reporte-stokes', async (req, res) => {
+    const { username, password, domain = '', fechaInicio, fechaFin, serverUrl } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuario y contraseña corporativa requeridos' });
+    }
+
+    let cleanUsername = String(username).trim();
+    let cleanDomain = String(domain || '').trim();
+
+    // Soporte para formato DOMAIN\usuario o usuario@dominio
+    if (cleanUsername.includes('\\')) {
+      const parts = cleanUsername.split('\\');
+      cleanDomain = parts[0];
+      cleanUsername = parts[1];
+    } else if (cleanUsername.includes('@')) {
+      const parts = cleanUsername.split('@');
+      cleanDomain = parts[0];
+      cleanUsername = parts[1];
+    }
+
+    const baseServerUrl = serverUrl || REPORT_SERVER_URL;
+    let urlReporte = `${baseServerUrl}?${encodeURIComponent(REPORT_PATH)}&rs:Command=Render&rs:Format=EXCELOPENXML`;
+    if (fechaInicio) {
+      urlReporte += `&FechaInicio=${encodeURIComponent(fechaInicio)}`;
+    }
+    if (fechaFin) {
+      urlReporte += `&FechaFin=${encodeURIComponent(fechaFin)}`;
+    }
+
+    console.log(`[Stokes Proxy] Conectando a ReportServer (${baseServerUrl}) con usuario '${cleanUsername}' (dominio: '${cleanDomain}')...`);
+
+    httpntlm.get({
+      url: urlReporte,
+      username: cleanUsername,
+      password: password,
+      workstation: '',
+      domain: cleanDomain,
+      binary: true
+    }, async (err: any, response: any) => {
+      if (err) {
+        const errMsg = String(err.message || err);
+        const isDnsOrUnreachable = 
+          err.code === 'EAI_AGAIN' || 
+          err.code === 'ENOTFOUND' || 
+          err.code === 'ECONNREFUSED' || 
+          err.code === 'ETIMEDOUT' ||
+          errMsg.includes('EAI_AGAIN') ||
+          errMsg.includes('clanfdbsw06');
+
+        if (isDnsOrUnreachable) {
+          console.log(`[Stokes Proxy] Host interno 'clanfdbsw06' no es resoluble directamente desde este contenedor en la nube (requiere Intranet/VPN SQM). Cargando el universo completo de las 112 guías reales normalizadas.`);
+          
+          try {
+            const { DATOS_REALES_STOKES } = await import('./src/data/datosStokesHistoricos.js');
+            return res.json({
+              totalRegistros: DATOS_REALES_STOKES.length,
+              data: DATOS_REALES_STOKES,
+              isContingency: true,
+              message: 'Servidor clanfdbsw06 requiere intranet SQM o VPN. Se ha cargado el universo completo de las 112 guías reales del reporte oficial de Microsoft ReportServer con variantes MOP 1-6 unificadas a "Salar".'
+            });
+          } catch (importErr) {
+            return res.json({
+              totalRegistros: 0,
+              data: [],
+              isContingency: true,
+              message: 'Conexión con clanfdbsw06 no disponible en nube pública.'
+            });
+          }
+        }
+
+        console.warn('[Stokes Proxy] Aviso NTLM / Conexión:', errMsg);
+        return res.status(502).json({ 
+          error: 'Error de conexión con ReportServer (clanfdbsw06)', 
+          detail: errMsg,
+          isConnectionError: true,
+          hint: 'El host clanfdbsw06 es un servidor interno de la intranet SQM. Si accede fuera de la red/VPN corporativa, puede cargar el archivo Excel manualmente o utilizar los datos oficiales del reporte.'
+        });
+      }
+
+      if (response.statusCode === 401) {
+        return res.status(401).json({
+          error: 'Credenciales corporativas rechazadas (Error 401: No autorizado)',
+          detail: 'Verifique su usuario de red y contraseña en ReportServer.'
+        });
+      }
+
+      if (response.statusCode !== 200) {
+        return res.status(response.statusCode || 500).json({
+          error: `ReportServer devolvió un código HTTP ${response.statusCode}`,
+          detail: response.body ? response.body.toString().slice(0, 300) : 'Sin respuesta detallada'
+        });
+      }
+
+      try {
+        const workbook = XLSX.read(response.body, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const rawRows: any[][] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+        const despachosProcesados = procesarFilasStokes(rawRows);
+
+        console.log(`[Stokes Proxy] Reporte procesado exitosamente: ${despachosProcesados.length} registros despachados.`);
+
+        return res.json({
+          totalRegistros: despachosProcesados.length,
+          data: despachosProcesados
+        });
+
+      } catch (parseError: any) {
+        console.warn('[Stokes Proxy] Error al procesar Excel descargado:', parseError.message);
+        return res.status(500).json({ 
+          error: 'Error al procesar el archivo Excel descargado desde ReportServer', 
+          detail: parseError.message 
+        });
+      }
+    });
   });
 
   // Export the Express app for Vercel Serverless Functions

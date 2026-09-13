@@ -5,10 +5,10 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { TrendingUp, Truck, Route, CalendarCheck, Percent, Layers, ShieldCheck } from "lucide-react";
+import { TrendingUp, Truck, Route, CalendarCheck, Percent, Layers, ShieldCheck, Award } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { DailyLog, MonthSummary } from "../types";
-import { formatShortDateSpanish } from "../data";
+import { formatShortDateSpanish, getProductividadDaily } from "../data";
 
 function CircularProgress({ percentage, color, trackColor = "#F5F2F9", size = 70 }: { percentage: number; color: string; trackColor?: string; size?: number }) {
   const strokeWidth = 6.5;
@@ -130,6 +130,8 @@ export function KPICards({ currentLog, summary, lceConfig, onUpdateLceConfig, se
     });
   };
 
+  const prodData = getProductividadDaily(currentLog);
+
   const dateObj = new Date(selectedDate + "T00:00:00");
   const months = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
   const currentMonthName = months[dateObj.getMonth()];
@@ -143,8 +145,8 @@ export function KPICards({ currentLog, summary, lceConfig, onUpdateLceConfig, se
 
   return (
     <div className="space-y-4">
-      {/* Top Row: Prog. Despacho (Toneladas) & (Viajes) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 select-none">
+      {/* Top Row: Prog. Despacho (Toneladas), Prog. Despacho (Viajes) & Productividad Prog. vs Real */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 select-none">
       
       {/* CARD 1: Programa Despacho (Toneladas) */}
       <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
@@ -270,12 +272,16 @@ export function KPICards({ currentLog, summary, lceConfig, onUpdateLceConfig, se
 
       {/* CARD 2: Programa Despacho (Viajes) */}
       <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
-        
         <div>
           <div className="flex justify-between items-start gap-2">
-            <span className="text-[10px] font-bold tracking-widest text-[#461D77] uppercase">
-              Prog. Despacho (Viajes)
-            </span>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold tracking-widest text-[#461D77] uppercase">
+                Prog. Despacho (Viajes)
+              </span>
+              <span className="text-[10px] text-[#737373] font-mono mt-0.5">
+                {formatShortDateSpanish(currentLog.fecha)}
+              </span>
+            </div>
             <span className="text-[10px] font-mono text-[#461D77] px-2 py-0.5 bg-[#F5F2F9] rounded-lg border border-[#D6CADF]">
               Diario
             </span>
@@ -303,7 +309,7 @@ export function KPICards({ currentLog, summary, lceConfig, onUpdateLceConfig, se
           </div>
 
           {/* COMPACT COMPARATIVE BAR CHART */}
-          <div className="w-full h-20 my-2.5 bg-[#FAF5E6] rounded-xl border border-[#D6CADF] p-1 flex items-center justify-center">
+          <div className="w-full h-24 my-2.5 bg-[#FAF5E6] rounded-xl border border-[#D6CADF] p-1 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={[
@@ -336,7 +342,6 @@ export function KPICards({ currentLog, summary, lceConfig, onUpdateLceConfig, se
                   }}
                 />
                 <Bar dataKey="viajes" radius={[4, 4, 0, 0]} barSize={32}>
-                  {/* Programados (deep violet), Realizados (teal/emerald) */}
                   <Cell fill="#461D77" />
                   <Cell fill="#3FAA88" />
                 </Bar>
@@ -346,21 +351,130 @@ export function KPICards({ currentLog, summary, lceConfig, onUpdateLceConfig, se
         </div>
 
         {/* COMPLIANCE PERCENTAGE */}
-        <div className="mt-3 pt-2 border-t border-[#F0EBF5] flex items-center justify-between">
-          <span className="text-[10px] text-[#737373] font-semibold uppercase flex items-center gap-1">
-            <Route className="w-3.5 h-3.5 text-nucleo" /> Vueltas Diarias
-          </span>
-          <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded-lg border ${getStatusColor(tripsCompliance)}`}>
-            {numFmt(tripsCompliance, 1)}%
-          </span>
+        <div>
+          <div className="mt-3 pt-2 border-t border-[#F0EBF5] flex items-center justify-between">
+            <span className="text-[10px] text-[#737373] font-semibold uppercase flex items-center gap-1">
+              <Route className="w-3.5 h-3.5 text-nucleo" /> Vueltas Diarias
+            </span>
+            <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded-lg border ${getStatusColor(tripsCompliance)}`}>
+              {numFmt(tripsCompliance, 1)}%
+            </span>
+          </div>
+          
+          {/* Progress horizontal Indicator bar */}
+          <div className="w-full bg-[#FAF5E6] h-1.5 rounded-full mt-2 overflow-hidden border border-[#F0EBF5]">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${getProgressBarColor(tripsCompliance)}`}
+              style={{ width: `${Math.min(100, tripsCompliance)}%` }}
+            />
+          </div>
         </div>
-        
-        {/* Progress horizontal Indicator bar */}
-        <div className="w-full bg-[#FAF5E6] h-1.5 rounded-full mt-2 overflow-hidden border border-[#F0EBF5]">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${getProgressBarColor(tripsCompliance)}`}
-            style={{ width: `${Math.min(100, tripsCompliance)}%` }}
-          />
+      </div>
+
+      {/* CARD 3: Productividad Prog. vs Real */}
+      <div className="bg-white rounded-xl p-4 border border-[#D6CADF] shadow-sm flex flex-col justify-between relative overflow-hidden group">
+        <div>
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold tracking-widest text-[#461D77] uppercase">
+                Productividad Prog. vs Real
+              </span>
+              <span className="text-[10px] text-[#737373] font-mono mt-0.5">
+                {formatShortDateSpanish(currentLog.fecha)}
+              </span>
+            </div>
+            <span className="text-[10px] font-mono text-[#461D77] px-2 py-0.5 bg-[#F5F2F9] rounded-lg border border-[#D6CADF]">
+              Diario
+            </span>
+          </div>
+
+          <div className="my-2.5 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] text-[#737373] font-medium">Productividad Prog.</p>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-xl font-bold font-mono text-[#171717]">
+                  {numFmt(prodData.prog, 2)}
+                </span>
+                <span className="text-xs text-[#8e8e8e] font-medium">Meta</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] text-[#737373] font-medium">Productividad Real</p>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className={`text-xl font-bold font-mono ${prodData.real >= prodData.prog ? "text-[#3FAA88]" : "text-[#C59E4D]"}`}>
+                  {numFmt(prodData.real, 2)}
+                </span>
+                <span className={`text-[10px] font-bold font-mono px-1.5 py-0.2 rounded ${
+                  prodData.real >= prodData.prog 
+                    ? "bg-[#EBF7F3] text-[#3FAA88] border border-[#CBE9DE]" 
+                    : "bg-[#FAF5EC] text-[#C59E4D] border border-[#EFE1C5]"
+                }`}>
+                  {prodData.real >= prodData.prog ? "Superada" : "Bajo Meta"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* COMPACT COMPARATIVE BAR CHART */}
+          <div className="w-full h-24 my-2.5 bg-[#FAF5E6] rounded-xl border border-[#D6CADF] p-1 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { name: "Programada", valor: prodData.prog },
+                  { name: "Real", valor: prodData.real }
+                ]}
+                margin={{ top: 8, right: 10, left: 10, bottom: 5 }}
+              >
+                <XAxis
+                  dataKey="name"
+                  fontSize={10}
+                  fontWeight="600"
+                  tickLine={false}
+                  axisLine={false}
+                  stroke="#5E6366"
+                />
+                <YAxis hide domain={[0, Math.max(2, Math.ceil(Math.max(prodData.prog, prodData.real) * 1.25))]} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(70, 29, 119, 0.04)', radius: 4 }}
+                  formatter={(value: any) => [numFmt(value, 2), "Productividad"]}
+                  labelStyle={{ display: 'none' }}
+                  contentStyle={{
+                    fontSize: '10px',
+                    fontFamily: 'monospace',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(70, 29, 119, 0.12)',
+                    padding: '4px 8px',
+                    backgroundColor: '#ffffff',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+                  }}
+                />
+                <Bar dataKey="valor" radius={[4, 4, 0, 0]} barSize={32}>
+                  <Cell fill="#461D77" />
+                  <Cell fill={prodData.real >= prodData.prog ? "#3FAA88" : "#C59E4D"} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* COMPLIANCE PERCENTAGE */}
+        <div>
+          <div className="mt-3 pt-2 border-t border-[#F0EBF5] flex items-center justify-between">
+            <span className="text-[10px] text-[#737373] font-semibold uppercase flex items-center gap-1">
+              <Award className="w-3.5 h-3.5 text-nucleo" /> Cumplimiento Productividad
+            </span>
+            <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded-lg border ${getStatusColor(prodData.compliance)}`}>
+              {numFmt(prodData.compliance, 1)}%
+            </span>
+          </div>
+          
+          {/* Progress horizontal Indicator bar */}
+          <div className="w-full bg-[#FAF5E6] h-1.5 rounded-full mt-2 overflow-hidden border border-[#F0EBF5]">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${getProgressBarColor(prodData.compliance)}`}
+              style={{ width: `${Math.min(100, prodData.compliance)}%` }}
+            />
+          </div>
         </div>
       </div>
       </div>

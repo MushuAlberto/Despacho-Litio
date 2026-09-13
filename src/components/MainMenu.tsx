@@ -26,13 +26,14 @@ import {
   Layers,
   Factory,
   Warehouse,
-  MapPin
+  MapPin,
+  Database
 } from 'lucide-react';
 import { NovandinoLogo } from './BrandLogo';
 import { PasswordPrompt } from './PasswordPrompt';
 
 interface MainMenuProps {
-  onSelectView: (view: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'cumplimiento-mq' | 'cumplimiento-jorquera') => void;
+  onSelectView: (view: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'cumplimiento-mq' | 'cumplimiento-jorquera' | 'stokes') => void;
   isJefeTurnoUnlocked: boolean;
   onUnlockJefeTurno: () => void;
   currentUser: any;
@@ -77,8 +78,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       fullName: 'SALAR DE ATACAMA',
       subtitle: 'SALAR DE ATACAMA',
       badge: 'OPERACIÓN DE CAMPO',
-      status: '5 MÓDULOS ACTIVOS',
-      description: 'Módulo integral Salar de Atacama. Acceso a Informes de Despacho Novandino y SQM NY, Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.',
+      status: '6 MÓDULOS ACTIVOS',
+      description: 'Módulo integral Salar de Atacama. Acceso a Informes de Despacho Novandino y SQM NY, Reporte Stokes (clanfdbsw06), Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.',
       icon: Building2,
       gradient: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10',
       borderColor: 'border-[#461D77]/30',
@@ -256,7 +257,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   };
 
   const cardsData: Array<{
-    id: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit';
+    id: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'stokes';
     title: string;
     subtitle: string;
     description: string;
@@ -375,6 +376,20 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       badge: 'ARCHIVO SEGURADO',
       status: 'SISTEMA LOCAL',
       group: 'jefe_turno' as const
+    },
+    {
+      id: 'stokes' as const,
+      title: 'Reporte Stokes',
+      subtitle: 'Extracción & Consolidado',
+      description: 'Generación automatizada de reportes desde Microsoft ReportServer (clanfdbsw06). Normalización inteligente de orígenes Salar Atacama (MOP 1, 2, 3, 4 y 6).',
+      icon: Database,
+      color: 'from-violet-600/10 via-[#461D77]/5 to-[#7177EC]/10 border-[#461D77]/25',
+      iconBg: 'bg-[#461D77]/10 text-[#461D77]',
+      accentColor: '#461D77',
+      isFeature: true,
+      badge: 'AUTOMATIZACIÓN NTLM',
+      status: 'CONECTADO',
+      group: 'supervision' as const
     }
   ];
 
