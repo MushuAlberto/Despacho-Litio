@@ -143,6 +143,14 @@ export function KPICards({ currentLog, summary, lceConfig, onUpdateLceConfig, se
     return `${day}-${month}-${year}`;
   }
 
+  function formatMesLabel(mesStr: string): string {
+    if (!mesStr) return "";
+    const parts = mesStr.split("-");
+    const m = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : "";
+    const a = parts[1] || "";
+    return a ? `${m} ${a}` : m;
+  }
+
   return (
     <div className="space-y-4">
       {/* Top Row: Prog. Despacho (Toneladas), Prog. Despacho (Viajes) & Productividad Prog. vs Real */}
@@ -487,7 +495,7 @@ export function KPICards({ currentLog, summary, lceConfig, onUpdateLceConfig, se
         <div>
           <div className="flex justify-between items-start gap-2">
             <span className="text-[10px] font-bold tracking-widest text-[#461D77] uppercase">
-              Cumplimiento MTD ({summary.mes})
+              Cumplimiento MTD ({formatMesLabel(summary.mes)})
             </span>
             <span className="text-[10px] font-semibold text-[#461D77] px-2 py-0.5 bg-[#F5F2F9] rounded-lg border border-[#D6CADF] flex items-center gap-1 font-mono font-bold">
               <TrendingUp className="w-3" /> ACUM.

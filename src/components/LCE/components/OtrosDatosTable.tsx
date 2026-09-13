@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BarChart3, HelpCircle, ShieldCheck, Scale, Compass, Award } from "lucide-react";
+import { BarChart3, HelpCircle, ShieldCheck, Scale, Compass, Award, Calendar } from "lucide-react";
 import { MonthSummary } from "../types";
 
 interface OtrosDatosTableProps {
@@ -17,6 +17,17 @@ export function OtrosDatosTable({ summary }: OtrosDatosTableProps) {
   const intFmt = (val: number) => 
     new Intl.NumberFormat("es-CL", { maximumFractionDigits: 0 }).format(val);
 
+  // Format month and year cleanly from "mes-año" (e.g. "septiembre-2026" -> "Septiembre", "2026")
+  const parseMonthYear = (rawMes: string) => {
+    if (!rawMes) return { mes: "Mes", anio: "" };
+    const parts = rawMes.split("-");
+    const m = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : "";
+    const a = parts[1] || "";
+    return { mes: m, anio: a };
+  };
+
+  const { mes: displayMes, anio: displayAnio } = parseMonthYear(summary.mes);
+
   // Determine productivity status
   const prodDiff = summary.productividadMes - summary.productividadMeta;
   const isMetaAchieved = prodDiff >= 0;
@@ -24,32 +35,30 @@ export function OtrosDatosTable({ summary }: OtrosDatosTableProps) {
   return (
     <div className="bg-white rounded-xl border border-[#D6CADF] shadow-sm flex flex-col lg:flex-row overflow-hidden select-none">
       
-      {/* Rotated Vertical Month Banner - Recreating the iconic widget sidebar from the image */}
-      <div className="bg-nucleo p-4 lg:p-6 lg:w-28 flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-4 border-b lg:border-b-0 lg:border-r border-[#A38EB9] relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.05),transparent)] pointer-events-none" />
+      {/* Month & Year Banner */}
+      <div className="bg-nucleo p-4 lg:p-6 lg:w-36 flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-3 border-b lg:border-b-0 lg:border-r border-[#A38EB9] relative shrink-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent)] pointer-events-none" />
         
-        {/* Mobile representation (not rotated) */}
-        <div className="lg:hidden whitespace-nowrap">
-          <span className="text-xl font-extrabold text-[#FAF5E6] capitalize tracking-wider">
-            {summary.mes}
-          </span>
-        </div>
-
-        {/* Desktop representation (SVG vertical text, completely bulletproof for html2canvas and browser rendering) */}
-        <div className="hidden lg:block w-20 h-48">
-          <svg className="w-full h-full" viewBox="0 0 80 200">
-            <text
-              x="40"
-              y="100"
-              textAnchor="middle"
-              transform="rotate(-90 40 100)"
-              fill="#FAF5E6"
-              className="text-2xl font-black capitalize tracking-widest select-none"
-              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-            >
-              {summary.mes}
-            </text>
-          </svg>
+        <div className="flex items-center gap-3 lg:flex-col lg:text-center relative z-10 w-full justify-between lg:justify-center">
+          <div className="flex items-center gap-2.5 lg:flex-col">
+            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center border border-white/20 shadow-xs shrink-0">
+              <Calendar className="w-4 h-4 text-[#FAF5E6]" />
+            </div>
+            <div className="text-left lg:text-center">
+              <span className="text-[10px] font-bold text-[#E9D5FF] uppercase tracking-widest block">
+                Período
+              </span>
+              <span className="text-base lg:text-lg font-black text-[#FAF5E6] capitalize leading-tight block">
+                {displayMes}
+              </span>
+            </div>
+          </div>
+          
+          {displayAnio && (
+            <span className="text-xs font-mono font-bold text-[#FAF5E6] px-2.5 py-1 bg-white/15 rounded-md border border-white/25 shadow-xs">
+              {displayAnio}
+            </span>
+          )}
         </div>
       </div>
 
