@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useState } from "react";
-import { Upload, RefreshCw, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Image, Loader2, ShieldCheck } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
+import { Upload, RefreshCw, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, ShieldCheck, Download, Check } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { formatFullDateSpanish } from "../data";
 
 interface DashboardHeaderProps {
@@ -38,6 +39,20 @@ export function DashboardHeader({
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("");
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const prevCapturing = useRef(isCapturing);
+
+  // Trigger brief celebration / success animation when capture finishes
+  useEffect(() => {
+    if (prevCapturing.current && !isCapturing) {
+      setDownloadSuccess(true);
+      const timer = setTimeout(() => {
+        setDownloadSuccess(false);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+    prevCapturing.current = isCapturing;
+  }, [isCapturing]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -242,18 +257,65 @@ export function DashboardHeader({
             <button
               onClick={onDownloadImage}
               disabled={isCapturing}
-              className={`flex items-center justify-center gap-2 bg-gradient-to-r from-nucleo to-[#7177EC] hover:from-nucleo/95 hover:to-[#7177EC]/95 active:scale-95 text-white transition-all rounded-lg text-xs font-bold uppercase tracking-widest shadow-md ${
-                isCapturing ? "opacity-75 cursor-wait" : ""
+              className={`flex items-center justify-center gap-2 relative overflow-hidden transition-all duration-300 rounded-lg text-xs font-bold uppercase tracking-widest shadow-md group active:scale-95 ${
+                downloadSuccess
+                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/25 ring-2 ring-emerald-400/40"
+                  : isCapturing
+                  ? "bg-gradient-to-r from-[#3c1768] via-[#5b2b9c] to-[#7177EC] text-white opacity-90 cursor-wait shadow-purple-500/30"
+                  : "bg-gradient-to-r from-nucleo to-[#7177EC] hover:from-nucleo/95 hover:to-[#7177EC]/95 text-white"
               }`}
               title="Descargar reporte como imagen PNG de alta resolución"
               id="btn-download-dashboard-image"
             >
-              {isCapturing ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-litio" />
-              ) : (
-                <Image className="w-3.5 h-3.5 text-litio" />
-              )}
-              {isCapturing ? "Procesando..." : "Plantilla"}
+              {/* Animated hover shine effect */}
+              <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-1000 pointer-events-none" />
+
+              <AnimatePresence mode="wait">
+                {downloadSuccess ? (
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.7 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.7 }}
+                    className="flex items-center gap-2"
+                  >
+                    <motion.div
+                      animate={{ rotate: [0, -10, 10, 0], scale: [1, 1.2, 1] }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <Check className="w-4 h-4 text-emerald-200 stroke-[2.5]" />
+                    </motion.div>
+                    <span className="text-emerald-100">¡Descargado!</span>
+                  </motion.div>
+                ) : isCapturing ? (
+                  <motion.div
+                    key="capturing"
+                    initial={{ opacity: 0, y: -2 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 2 }}
+                    className="flex items-center gap-2"
+                  >
+                    <motion.div
+                      animate={{ y: [-1, 2.5, -1] }}
+                      transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }}
+                    >
+                      <Download className="w-3.5 h-3.5 text-litio" />
+                    </motion.div>
+                    <span className="text-litio">Descargando...</span>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="idle"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-3.5 h-3.5 text-litio group-hover:translate-y-0.5 transition-transform duration-200" />
+                    <span>Descarga</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </button>
             <button
               onClick={onResetData}

@@ -78,8 +78,10 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       fullName: 'SALAR DE ATACAMA',
       subtitle: 'SALAR DE ATACAMA',
       badge: 'OPERACIÓN DE CAMPO',
-      status: '6 MÓDULOS ACTIVOS',
-      description: 'Módulo integral Salar de Atacama. Acceso a Informes de Despacho Novandino y SQM NY, Reporte Stokes (clanfdbsw06), Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.',
+      status: currentUser?.role === 'admin' ? '6 MÓDULOS ACTIVOS' : '5 MÓDULOS ACTIVOS',
+      description: currentUser?.role === 'admin'
+        ? 'Módulo integral Salar de Atacama. Acceso a Informes de Despacho Novandino y SQM NY, Reporte Stokes (clanfdbsw06), Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.'
+        : 'Módulo integral Salar de Atacama. Acceso a Informes de Despacho Novandino y SQM NY, Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.',
       icon: Building2,
       gradient: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10',
       borderColor: 'border-[#461D77]/30',
@@ -269,6 +271,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     badge: string;
     status: string;
     group: 'supervision' | 'jefe_turno';
+    adminOnly?: boolean;
   }> = [
     {
       id: 'informe-novandino',
@@ -389,7 +392,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       isFeature: true,
       badge: 'AUTOMATIZACIÓN NTLM',
       status: 'CONECTADO',
-      group: 'supervision' as const
+      group: 'supervision' as const,
+      adminOnly: true
     }
   ];
 
@@ -725,7 +729,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
                   {/* CARDS GRID FOR SELECTED TAB INSIDE SdA */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full auto-rows-fr">
-                    {cardsData.filter(c => c.group === activeTab).map((card, idx) => {
+                    {cardsData
+                      .filter(c => {
+                        if (c.adminOnly && currentUser?.role !== 'admin') {
+                          return false;
+                        }
+                        return c.group === activeTab;
+                      })
+                      .map((card, idx) => {
                       const IconComponent = card.icon;
                       const isNovandino = card.id === 'informe-novandino';
                       

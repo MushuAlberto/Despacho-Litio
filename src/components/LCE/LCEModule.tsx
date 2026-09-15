@@ -10,7 +10,8 @@ import { KPICards } from "./components/KPICards";
 import { OtrosDatosTable } from "./components/OtrosDatosTable";
 import { DashboardCharts } from "./components/DashboardCharts";
 import { downloadExcelTemplate, parseUploadedExcel } from "./utils/excelGenerator";
-import { BarChart3, ListFilter, AlertCircle, Sparkles, Home, ArrowLeft } from "lucide-react";
+import { BarChart3, ListFilter, AlertCircle, Sparkles, Home, ArrowLeft, Download, CheckCircle2 } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { ExcelOverrides } from "./types";
 import { NovandinoLogo } from "../BrandLogo";
 import { logActivity, SystemUser } from "../../services/firebase";
@@ -27,6 +28,7 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
   const [excelOverrides, setExcelOverrides] = useState<ExcelOverrides | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isEditingLce, setIsEditingLce] = useState(false);
+  const [downloadToast, setDownloadToast] = useState<string | null>(null);
 
   // For LCE Reprogramaciones
   const [lceConfigByMonth, setLceConfigByMonth] = useState<Record<string, {
@@ -387,6 +389,10 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
         link.click();
         document.body.removeChild(link);
 
+        // Feedback toast for download process
+        setDownloadToast(`Reporte PNG generado exitosamente.`);
+        setTimeout(() => setDownloadToast(null), 3500);
+
         // Record download audit log
         // Record download audit log (before trigger to avoid frame blockages)
         if (currentUser) {
@@ -479,11 +485,81 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
           onToggleEditingLce={() => setIsEditingLce(!isEditingLce)}
         />
 
+        {/* Floating Download Capture Overlay Indicator */}
+        <AnimatePresence>
+          {isCapturing && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: -24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -24 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-[#461D77]/95 backdrop-blur-md text-white px-6 py-3.5 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-4 pointer-events-none"
+            >
+              <div className="relative flex items-center justify-center">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+                  className="w-8 h-8 border-2 border-white/20 border-t-[#3FAA88] rounded-full"
+                />
+                <Download className="w-3.5 h-3.5 text-[#FAF5E6] absolute" />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black tracking-widest uppercase text-[#FAF5E6]">
+                    Generando Descarga
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[#3FAA88]/20 text-[#3FAA88] font-bold rounded border border-[#3FAA88]/40">
+                    PNG HD
+                  </span>
+                </div>
+                <span className="text-[11px] text-white/80 font-medium">
+                  Capturando tablero y gráficos del reporte...
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Floating Download Success Toast */}
+        <AnimatePresence>
+          {downloadToast && (
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="fixed bottom-6 right-6 z-50 bg-white text-[#171717] px-5 py-3.5 rounded-xl shadow-2xl border border-[#CBE9DE] flex items-center gap-3.5 select-none"
+            >
+              <div className="w-8 h-8 rounded-lg bg-[#EBF7F3] flex items-center justify-center text-[#3FAA88] shrink-0 border border-[#CBE9DE]">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-[#171717] uppercase tracking-wide">Descarga Exitosa</span>
+                <span className="text-[11px] text-[#525252] font-mono">{downloadToast}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Captured Content Wrapper representing everything requested in the attached image */}
         <div 
           id="dashboard-capture-area" 
-          className={`flex flex-col gap-6 bg-calido transition-all ${isCapturing ? "w-[1240px] p-8 mx-auto" : "w-full"}`}
+          className={`flex flex-col gap-6 bg-calido relative transition-all ${isCapturing ? "w-[1240px] p-8 mx-auto" : "w-full"}`}
         >
+          {/* Animated visual scan beam during capture - ignored by html2canvas */}
+          {isCapturing && (
+            <div 
+              data-html2canvas-ignore="true" 
+              className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-2xl"
+            >
+              <motion.div
+                initial={{ top: "0%" }}
+                animate={{ top: "100%" }}
+                transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                className="absolute left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[#7177EC] to-transparent shadow-[0_0_20px_4px_rgba(113,119,236,0.6)]"
+              />
+            </div>
+          )}
           {/* SECTION: Quick Status Overview Title */}
           <div className="flex flex-col gap-4 select-none items-center justify-center text-center">
             {/* High-Fidelity Professional Novandino Logo Image */}

@@ -811,7 +811,13 @@ const App: React.FC = () => {
     if (view === 'lce') return <LCEModule currentUser={currentUser} onBack={() => setView('menu')} />;
     if (view === 'cumplimiento-mq') return <CumplimientoMQ onBack={() => setView('menu')} />;
     if (view === 'cumplimiento-jorquera') return <CumplimientoJorquera onBack={() => setView('menu')} />;
-    if (view === 'stokes') return <ModuloStokes currentUser={currentUser} onBack={() => setView('menu')} />;
+    if (view === 'stokes') {
+      if (currentUser?.role !== 'admin') {
+        setView('menu');
+        return null;
+      }
+      return <ModuloStokes currentUser={currentUser} onBack={() => setView('menu')} />;
+    }
 
     // fallback sidebar layout for standard dashboard view
     return (

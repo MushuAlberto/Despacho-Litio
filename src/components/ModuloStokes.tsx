@@ -60,6 +60,30 @@ interface ModuloStokesProps {
 }
 
 export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack }) => {
+  if (currentUser?.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5] p-6">
+        <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200/80 max-w-md text-center space-y-5">
+          <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto border border-red-100 shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-black text-slate-800">Acceso Exclusivo de Administrador</h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              El módulo Reporte Stokes (clanfdbsw06) está restringido y solo puede ser visualizado y operado por el Administrador del sistema.
+            </p>
+          </div>
+          <button
+            onClick={onBack}
+            className="w-full py-3 bg-[#461D77] hover:bg-[#391761] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-98 cursor-pointer"
+          >
+            Volver al Menú Principal
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [modalAbierto, setModalAbierto] = useState<boolean>(false);
   const [usuario, setUsuario] = useState<string>('');
   const [password, setPassword] = useState<string>('');
