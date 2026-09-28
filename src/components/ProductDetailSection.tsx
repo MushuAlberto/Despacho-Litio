@@ -9,9 +9,19 @@ import {
   ClipboardEdit, AlertCircle, Save, Loader2, Sparkles
 } from 'lucide-react';
 import { formatDateToCL, formatNumberWithDecimals } from '../utils/dataProcessor';
-import { db } from '../services/firebase';
+import { db, isQuotaExceededError } from '../services/firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
-import { getCurrentUser } from '../auth/authStore';
+
+// Shared module-level cache to prevent redundant Firestore reads across 15+ product sections
+let cachedGlobalAiSettings: {
+  activeAi: 'gemini' | 'glm';
+  enableGemini: boolean;
+  enableGlm: boolean;
+  enableJustificationRefinement: boolean;
+} | null = null;
+let cachedUserAiEnabledMap: Record<string, boolean> = {};
+let lastFetchTime = 0;
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
 
 interface ProductDetailSectionProps {
   product: string;
@@ -174,35 +184,65 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
     enableJustificationRefinement: true
   });
   const [userAiEnabled, setUserAiEnabled] = useState<boolean>(() => {
-    const user = getCurrentUser();
-    return user ? user.enableAi !== false : true;
+    try {
+      const savedUser = localStorage.getItem('sqm_current_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        return parsedUser.enableAi !== false;
+      }
+    } catch (e) {
+      console.error('Error parsing sqm_current_user for AI state:', e);
+    }
+    return true; // Safe fallback
   });
 
   useEffect(() => {
     const fetchAiSettings = async () => {
+      // 1. If recently cached, use cached values immediately without hitting Firestore
+      const now = Date.now();
+      const savedUser = localStorage.getItem('sqm_current_user');
+      const userId = savedUser ? (JSON.parse(savedUser)?.userId || '') : '';
+
+      if (cachedGlobalAiSettings && (now - lastFetchTime < CACHE_TTL_MS)) {
+        setGlobalAiSettings(cachedGlobalAiSettings);
+        if (userId && cachedUserAiEnabledMap[userId] !== undefined) {
+          setUserAiEnabled(cachedUserAiEnabledMap[userId]);
+        }
+        return;
+      }
+
       try {
         const docRef = doc(db, 'system_config', 'ai_settings');
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setGlobalAiSettings({
-            activeAi: data.activeAi || 'gemini',
+          const newSettings = {
+            activeAi: (data.activeAi || 'gemini') as 'gemini' | 'glm',
             enableGemini: data.enableGemini !== false,
             enableGlm: data.enableGlm !== false,
             enableJustificationRefinement: data.enableJustificationRefinement !== false
-          });
+          };
+          cachedGlobalAiSettings = newSettings;
+          lastFetchTime = now;
+          setGlobalAiSettings(newSettings);
         }
 
-        const user = getCurrentUser();
-        if (user) {
-          const userDocRef = doc(db, 'users', user.entraOid);
+        if (userId) {
+          const userDocRef = doc(db, 'users', userId);
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
-            setUserAiEnabled(userData.enableAi !== false);
+            const enabled = userData.enableAi !== false;
+            cachedUserAiEnabledMap[userId] = enabled;
+            setUserAiEnabled(enabled);
           }
         }
       } catch (err) {
+        if (isQuotaExceededError(err)) {
+          // If Firestore quota is reached, keep default enabled state and prevent further calls
+          lastFetchTime = now; // Prevent repeating calls on error
+          return;
+        }
         console.error('Error fetching AI settings in ProductDetail:', err);
       }
     };
@@ -214,38 +254,41 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
     if (!targetText.trim()) return;
 
     try {
-      // 1. Fetch latest global AI config from Firestore
-      const docRef = doc(db, 'system_config', 'ai_settings');
-      const docSnap = await getDoc(docRef);
       let isGlobalRefinementEnabled = globalAiSettings.enableJustificationRefinement;
       let activeModel = globalAiSettings.activeAi;
 
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        isGlobalRefinementEnabled = data.enableJustificationRefinement !== false;
-        activeModel = data.activeAi || 'gemini';
-        
-        // Sync local React state
-        setGlobalAiSettings({
-          activeAi: activeModel,
-          enableGemini: data.enableGemini !== false,
-          enableGlm: data.enableGlm !== false,
-          enableJustificationRefinement: isGlobalRefinementEnabled
-        });
+      // Try fetching latest global AI config if not throttled
+      try {
+        const docRef = doc(db, 'system_config', 'ai_settings');
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          isGlobalRefinementEnabled = data.enableJustificationRefinement !== false;
+          activeModel = data.activeAi || 'gemini';
+          
+          setGlobalAiSettings({
+            activeAi: activeModel,
+            enableGemini: data.enableGemini !== false,
+            enableGlm: data.enableGlm !== false,
+            enableJustificationRefinement: isGlobalRefinementEnabled
+          });
+        }
+      } catch (quotaErr) {
+        if (!isQuotaExceededError(quotaErr)) {
+          console.warn('Could not refresh AI settings from cloud; using current settings:', quotaErr);
+        }
       }
 
-      // 2. Fetch latest user config from Firestore
+      // Check user setting
       let isUserEnabled = userAiEnabled;
-      const user = getCurrentUser();
-      if (user) {
-        const userDocRef = doc(db, 'users', user.entraOid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data();
-          isUserEnabled = userData.enableAi !== false;
-          
-          // Sync local React state
-          setUserAiEnabled(isUserEnabled);
+      const savedUser = localStorage.getItem('sqm_current_user');
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          isUserEnabled = parsedUser.enableAi !== false;
+        } catch {
+          // keep current
         }
       }
 
@@ -281,11 +324,12 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           localStorage.setItem(storageKey, refinedVal);
           await deleteStaleImage();
           
-          // Log activity if current user is active
-          if (user) {
+          // Log activity if current user is saved
+          if (savedUser) {
+            const parsedUser = JSON.parse(savedUser);
             const { logActivity } = await import('../services/firebase');
             await logActivity(
-              user,
+              parsedUser,
               'Refinó Justificación con IA',
               `Utilizó la IA (${activeModel.toUpperCase()}) para optimizar la justificación técnica de ${product} en la jornada ${formatDateToCL(date)}.`
             );
@@ -353,11 +397,12 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
       initialJustificationRef.current = newVal;
       await deleteStaleImage();
       try {
-        const user = getCurrentUser();
-        if (user) {
+        const savedUser = localStorage.getItem('sqm_current_user');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
           const { logActivity } = await import('../services/firebase');
           await logActivity(
-            user,
+            parsedUser,
             'Editó Justificación',
             `Modificó la justificación de desempeño del producto ${product} para la jornada ${formatDateToCL(date)}.`
           );

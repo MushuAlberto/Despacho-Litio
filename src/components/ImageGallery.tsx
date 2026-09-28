@@ -1,16 +1,17 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   Upload, Trash2, ChevronLeft, ChevronRight, 
   Image as ImageIcon, X, Home, Plus,
   Maximize2, Minimize2, Play, Pause, Timer,
   Clock, TrendingUp, Target, Users, Scale, ClipboardCheck, Truck, Loader2, RefreshCw,
-  CloudDownload, Database, CheckCircle2
+  CloudDownload, Database, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 import { collection, onSnapshot, query, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { 
   db, handleFirestoreError, OperationType, logActivity, 
-  OperationalReportDoc, getOperationalReportsFromFirebase, safeParseBackupJSON 
+  OperationalReportDoc, getOperationalReportsFromFirebase, safeParseBackupJSON,
+  isQuotaExceededError, isFirestoreWriteBlocked 
 } from '../services/firebase';
 import ChartCard from './ChartCard';
 import { ProductDetailSection } from './ProductDetailSection';
@@ -55,7 +56,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   const [cloudReports, setCloudReports] = useState<OperationalReportDoc[]>([]);
   const [isLoadingFirebase, setIsLoadingFirebase] = useState(false);
   const [firebaseNotice, setFirebaseNotice] = useState<string | null>(null);
+  const [quotaNotice, setQuotaNotice] = useState(false);
   const [lastSyncedDate, setLastSyncedDate] = useState<string>('');
+  const hasAttemptedCaptureForDate = useRef<Record<string, boolean>>({});
 
   // Sync internal operationalData if parent rawData changes and has content
   useEffect(() => {
@@ -156,6 +159,11 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         });
       }
     }, (error) => {
+      if (isQuotaExceededError(error)) {
+        console.warn('Firestore daily quota reached on operational_reports listener; operating in local mode.');
+        setQuotaNotice(true);
+        return;
+      }
       handleFirestoreError(error, OperationType.GET, 'operational_reports');
     });
 
@@ -188,36 +196,17 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
       setImages(fetchedImages);
       setHasLoaded(true);
     }, (error) => {
+      if (isQuotaExceededError(error)) {
+        console.warn('Firestore daily quota reached on gallery_images listener; operating in local mode.');
+        setQuotaNotice(true);
+        setHasLoaded(true);
+        return;
+      }
       handleFirestoreError(error, OperationType.GET, 'gallery_images');
     });
 
     return () => unsubscribe();
   }, []);
-
-  // Cleanup stale auto-generated images from before the design update (2026-07-07T06:50:00.000Z)
-  useEffect(() => {
-    if (!hasLoaded || images.length === 0) return;
-    const updateThreshold = new Date('2026-07-07T06:50:00.000Z').getTime();
-    
-    const deleteStale = async () => {
-      const path = 'gallery_images';
-      for (const img of images) {
-        if (img.id.startsWith('auto_')) {
-          const createdTime = img.createdAt ? new Date(img.createdAt).getTime() : 0;
-          if (createdTime < updateThreshold) {
-            console.log(`Deleting stale auto-generated image: ${img.id}`);
-            try {
-              await deleteDoc(doc(db, path, img.id));
-            } catch (err) {
-              console.error(`Error deleting stale image ${img.id}:`, err);
-            }
-          }
-        }
-      }
-    };
-    
-    deleteStale();
-  }, [hasLoaded, images]);
 
   // Determine all available operational report dates across operationalData, cloudReports, Firestore images, and prop
   const availableDates = useMemo(() => {
@@ -523,6 +512,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   // Automatic report image generation effect
   useEffect(() => {
     if (!hasLoaded || !operationalData || operationalData.length === 0 || !effectiveDate) return;
+    if (hasAttemptedCaptureForDate.current[effectiveDate]) return;
 
     const runAutomaticCapture = async () => {
       // Novandino IDs
@@ -548,9 +538,11 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                        (sqmData.length === 0 || (hasSqmKpis && hasSqmChart && hasSqmProducts));
 
       if (allExist) {
+        hasAttemptedCaptureForDate.current[effectiveDate] = true;
         return; // Already exists, don't regenerate
       }
 
+      hasAttemptedCaptureForDate.current[effectiveDate] = true;
       setIsGeneratingAuto(true);
       // Brief pause to allow hidden DOM elements to render styles
       await new Promise(resolve => setTimeout(resolve, 350));
@@ -691,6 +683,12 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             });
           });
 
+          // If Firestore write quota is blocked, keep generated images in local state and avoid sending network requests
+          if (isFirestoreWriteBlocked()) {
+            setQuotaNotice(true);
+            return;
+          }
+
           // Upload all generated images to Firestore in parallel for maximum speed
           const path = 'gallery_images';
           await Promise.all(
@@ -705,7 +703,12 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                   createdAt: newImg.createdAt || new Date().toISOString()
                 });
               } catch (innerErr) {
-                console.error("Error saving automatic report image to Firestore:", innerErr);
+                if (isQuotaExceededError(innerErr)) {
+                  console.warn("Firestore write quota reached; slide stored locally in memory:", newImg.id);
+                  setQuotaNotice(true);
+                } else {
+                  console.error("Error saving automatic report image to Firestore:", innerErr);
+                }
               }
             })
           );
@@ -719,11 +722,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     };
 
     runAutomaticCapture();
-  }, [operationalData, effectiveDate, novandinoProductList, sqmProductList, novandinoData.length, sqmData.length, hasLoaded, images]);
+  }, [operationalData, effectiveDate, novandinoProductList, sqmProductList, novandinoData.length, sqmData.length, hasLoaded]);
 
   const handleRegenerateAutoImages = async () => {
     if (isGeneratingAuto || !effectiveDate) return;
     
+    // Allow re-attempt for current date
+    hasAttemptedCaptureForDate.current[effectiveDate] = false;
     setIsGeneratingAuto(true);
     
     try {
@@ -741,18 +746,24 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         `auto_kpi_${effectiveDate}`, `auto_chart_${effectiveDate}` // Legacy IDs too
       ];
       
-      const path = 'gallery_images';
       const existingToDelete = idsToDelete.filter(id => images.some(img => img.id === id));
 
       // Instantly remove from local state
       setImages(prev => prev.filter(img => !existingToDelete.includes(img.id)));
 
-      // Delete in parallel from Firestore
-      await Promise.all(
-        existingToDelete.map(id => deleteDoc(doc(db, path, id)).catch(err => {
-          console.error(`Error deleting image ${id}:`, err);
-        }))
-      );
+      if (!isFirestoreWriteBlocked()) {
+        const path = 'gallery_images';
+        // Delete in parallel from Firestore
+        await Promise.all(
+          existingToDelete.map(id => deleteDoc(doc(db, path, id)).catch(err => {
+            if (isQuotaExceededError(err)) {
+              setQuotaNotice(true);
+            } else {
+              console.error(`Error deleting image ${id}:`, err);
+            }
+          }))
+        );
+      }
       
       const savedUser = localStorage.getItem('sqm_current_user');
       if (savedUser) {
@@ -793,6 +804,22 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         const date = new Date().toLocaleDateString();
         const url = e.target?.result as string;
 
+        const newUploadedImg: GalleryImage = {
+          id: imageId,
+          url,
+          name,
+          date,
+          createdAt: new Date().toISOString()
+        };
+
+        // Always show locally immediately
+        setImages(prev => [newUploadedImg, ...prev]);
+
+        if (isFirestoreWriteBlocked()) {
+          setQuotaNotice(true);
+          return;
+        }
+
         try {
           // Upload to Firestore
           const path = 'gallery_images';
@@ -801,7 +828,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             url,
             name,
             date,
-            createdAt: new Date().toISOString()
+            createdAt: newUploadedImg.createdAt
           });
 
           // Record Image upload activity log in Firestore
@@ -815,6 +842,11 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             );
           }
         } catch (err) {
+          if (isQuotaExceededError(err)) {
+            console.warn('Firestore write quota exceeded; upload stored in memory.');
+            setQuotaNotice(true);
+            return;
+          }
           console.error('Error saving image upload:', err);
           handleFirestoreError(err, OperationType.WRITE, `gallery_images/${imageId}`);
         }
@@ -826,14 +858,21 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   const deleteImage = async (id: string) => {
     if (id === 'static_novandino' || id.startsWith('sda_random_')) return;
     const imgToDelete = sortedImages.find(img => img.id === id);
+
+    // Remove from local state immediately
+    setImages(prev => prev.filter(img => img.id !== id));
+    if (currentIndex >= sortedImages.length - 1) {
+      setCurrentIndex(Math.max(0, sortedImages.length - 2));
+    }
+
+    if (isFirestoreWriteBlocked()) {
+      return;
+    }
+
     try {
       // Delete from Firestore
       const path = 'gallery_images';
       await deleteDoc(doc(db, path, id));
-
-      if (currentIndex >= sortedImages.length - 1) {
-        setCurrentIndex(Math.max(0, sortedImages.length - 2));
-      }
 
       // Record Image deletion activity log in Firestore
       const savedUser = localStorage.getItem('sqm_current_user');
@@ -846,6 +885,10 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         );
       }
     } catch (err) {
+      if (isQuotaExceededError(err)) {
+        setQuotaNotice(true);
+        return;
+      }
       console.error('Error deleting image:', err);
       handleFirestoreError(err, OperationType.DELETE, `gallery_images/${id}`);
     }
@@ -1116,6 +1159,22 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
           <button 
             onClick={() => setFirebaseNotice(null)} 
             className="text-emerald-700/60 hover:text-emerald-900 cursor-pointer p-1"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
+      {/* Quota Limit Notice Banner */}
+      {quotaNotice && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center justify-between text-amber-900 text-[10px] font-black uppercase tracking-wider animate-in fade-in transition-all">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+            <span>Límite diario de operaciones gratuitas de Firebase alcanzado (se reinicia a medianoche). La galería continúa operando con respaldo en memoria local.</span>
+          </div>
+          <button 
+            onClick={() => setQuotaNotice(false)} 
+            className="text-amber-700/60 hover:text-amber-900 cursor-pointer p-1"
           >
             <X size={12} />
           </button>

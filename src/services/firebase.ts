@@ -38,6 +38,31 @@ export interface FirestoreErrorInfo {
   }
 }
 
+let firestoreWriteBlocked = false;
+
+export function isFirestoreWriteBlocked(): boolean {
+  return firestoreWriteBlocked;
+}
+
+export function setFirestoreWriteBlocked(blocked: boolean) {
+  firestoreWriteBlocked = blocked;
+}
+
+export function isQuotaExceededError(error: unknown): boolean {
+  if (!error) return false;
+  const msg = error instanceof Error ? error.message : String(error);
+  const isExceeded = (
+    msg.includes('resource-exhausted') ||
+    msg.includes('Quota exceeded') ||
+    msg.includes('quota metric') ||
+    (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 'resource-exhausted')
+  );
+  if (isExceeded) {
+    firestoreWriteBlocked = true;
+  }
+  return isExceeded;
+}
+
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -49,6 +74,10 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+  if (isQuotaExceededError(error)) {
+    console.warn('Firestore daily write/read quota reached. Operations will fallback to local state.');
+    return;
+  }
   throw new Error(JSON.stringify(errInfo));
 }
 
@@ -57,6 +86,10 @@ export async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
+    if (isQuotaExceededError(error)) {
+      console.warn("Firestore daily quota limit reached on boot test.");
+      return;
+    }
     if (error instanceof Error && error.message.includes('the client is offline')) {
       console.error("Please check your Firebase configuration.");
     }
@@ -84,6 +117,7 @@ export const INITIAL_PREDEFINED_USERS: SystemUser[] = [
 ];
 
 export async function bootstrapPredefinedUsers() {
+  if (isFirestoreWriteBlocked()) return;
   const pathForGet = 'users';
   try {
     const q = query(collection(db, 'users'));
@@ -130,11 +164,16 @@ export async function bootstrapPredefinedUsers() {
       console.log(`Successfully bootstrapped ${countBootstrapped} missing official roster accounts.`);
     }
   } catch (error) {
+    if (isQuotaExceededError(error)) {
+      console.warn('Firestore write quota exceeded during user bootstrap; skipped.');
+      return;
+    }
     console.error('Error auto-bootstrapping predefined users:', error);
   }
 }
 
 export async function logActivity(user: SystemUser | null, action: string, details: string) {
+  if (isFirestoreWriteBlocked()) return;
   const logId = `log_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   const pathForWrite = 'activity_logs';
   try {
@@ -150,6 +189,10 @@ export async function logActivity(user: SystemUser | null, action: string, detai
     };
     await setDoc(logDocRef, logPayload);
   } catch (error) {
+    if (isQuotaExceededError(error)) {
+      console.warn('Firestore write quota reached; skipping activity log entry.');
+      return;
+    }
     handleFirestoreError(error, OperationType.WRITE, `${pathForWrite}/${logId}`);
   }
 }
@@ -220,6 +263,10 @@ export async function saveOperationalReportToFirebase(
   user?: SystemUser | null,
   summary?: string
 ): Promise<boolean> {
+  if (isFirestoreWriteBlocked()) {
+    console.warn(`Firestore write quota reached; operational report for ${date} preserved in local storage.`);
+    return true;
+  }
   const cleanDate = date.trim();
   const reportId = `report_${cleanDate.replace(/[^a-zA-Z0-9_\-]/g, '_')}`;
   const pathForWrite = `operational_reports/${reportId}`;
@@ -274,6 +321,10 @@ export async function saveOperationalReportToFirebase(
 
     return true;
   } catch (error) {
+    if (isQuotaExceededError(error)) {
+      console.warn(`Firestore write quota reached when saving report for ${date}. Data remains in local storage.`);
+      return false;
+    }
     console.error(`Error saving operational report for date ${date} to Firebase:`, error);
     handleFirestoreError(error, OperationType.WRITE, pathForWrite);
     return false;
