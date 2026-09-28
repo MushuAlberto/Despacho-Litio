@@ -11,6 +11,7 @@ import { generateShiftReportPDF } from '../utils/pdfGenerator';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from './Toast';
+import { getCurrentUser } from '../auth/authStore';
 
 interface ChartData {
   name: string;
@@ -71,16 +72,8 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
     enableJustificationRefinement: true
   });
   const [userAiEnabled, setUserAiEnabled] = useState<boolean>(() => {
-    try {
-      const savedUser = localStorage.getItem('sqm_current_user');
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
-        return parsedUser.enableAi !== false;
-      }
-    } catch (e) {
-      console.error('Error parsing sqm_current_user for AI state in CambioDeTurno:', e);
-    }
-    return true; // Safe fallback
+    const user = getCurrentUser();
+    return user ? user.enableAi !== false : true;
   });
 
   useEffect(() => {
@@ -99,10 +92,9 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           });
         }
 
-        const savedUser = localStorage.getItem('sqm_current_user');
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          const userDocRef = doc(db, 'users', parsedUser.userId);
+        const user = getCurrentUser();
+        if (user) {
+          const userDocRef = doc(db, 'users', user.entraOid);
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
@@ -262,12 +254,11 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
         
         // Record Cambio De Turno excel upload activity log in Firestore
         try {
-          const savedUser = localStorage.getItem('sqm_current_user');
-          if (savedUser) {
-            const parsedUser = JSON.parse(savedUser);
+          const user = getCurrentUser();
+          if (user) {
             const { logActivity } = await import('../services/firebase');
             await logActivity(
-              parsedUser,
+              user,
               'Carga de Datos',
               `Cargó de archivo base Excel (${file.name}) con ${mappedData.length} registros para Cambio de Turno.`
             );
@@ -418,12 +409,11 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
       // Record download audit log
       try {
-        const savedUser = localStorage.getItem('sqm_current_user');
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
+        const user = getCurrentUser();
+        if (user) {
           const { logActivity } = await import('../services/firebase');
           await logActivity(
-            parsedUser,
+            user,
             'Descargó Plantilla',
             'Descargó la plantilla Excel para análisis comparativo de cambios de turno (plantilla_comparativa.xlsx).'
           );
@@ -444,9 +434,8 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
     info(`Iniciando generación de PDF de alta precisión en el servidor para ${reportTitle}...`, "Generando Reporte", 4000);
     
     try {
-      const currentUserStr = localStorage.getItem('sqm_current_user');
-      const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
-      const operatorName = currentUser ? currentUser.name : '';
+      const user = getCurrentUser();
+      const operatorName = user ? user.name : '';
 
       const response = await fetch('/api/generate-pdf', {
         method: 'POST',
@@ -480,10 +469,10 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
       // Log to Firestore
       try {
-        if (currentUser) {
+        if (user) {
           const { logActivity } = await import('../services/firebase');
           await logActivity(
-            currentUser,
+            user,
             'Descargó PDF Servidor',
             `Exportó y descargó el Reporte PDF de alta precisión generado en el servidor para la faena ${reportTitle}.`
           );
@@ -546,12 +535,11 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
         // Log to Firestore
         try {
-          const savedUser = localStorage.getItem('sqm_current_user');
-          if (savedUser) {
-            const parsedUser = JSON.parse(savedUser);
+          const user = getCurrentUser();
+          if (user) {
             import('../services/firebase').then(({ logActivity }) => {
               logActivity(
-                parsedUser,
+                user,
                 'Descargó PNG',
                 `Exportó y descargó el Gráfico y Tabla Comparativa de ${title} en formato PNG.`
               );

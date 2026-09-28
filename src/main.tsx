@@ -1,6 +1,7 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
+import { AuthProvider } from './auth/AuthProvider';
 import './index.css';
 
 // Precise OKLCH & OKLAB to sRGB conversion functions to prevent html2canvas from crashing 
@@ -167,6 +168,8 @@ try {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </StrictMode>,
 );

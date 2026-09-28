@@ -42,12 +42,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       } catch (err) {
         console.error('Error fetching users from Firestore, using fallback:', err);
         const fallbackUsers: SystemUser[] = [
-          { userId: 'ctapia', username: 'ctapia', password: 'ctapia', name: 'Cristian Tapia', role: 'admin' },
-          { userId: 'mtoledo', username: 'mtoledo', password: 'mtoledo', name: 'Mauricio Toledo', role: 'jefe_turno' },
-          { userId: 'rbarraza', username: 'rbarraza', password: 'rbarraza', name: 'Raul Barraza', role: 'jefe_turno' },
-          { userId: 'marevalo', username: 'marevalo', password: 'marevalo', name: 'Marcelo Arevalo', role: 'supervision' },
-          { userId: 'rogalde', username: 'rogalde', password: 'rogalde', name: 'Roberto Ogalde', role: 'supervision' },
-          { userId: 'wcastillo', username: 'wcastillo', password: 'wcastillo', name: 'Walter Castillo', role: 'supervision' },
+          { uid: 'ctapia', userId: 'ctapia', username: 'ctapia', name: 'Cristian Tapia', role: 'admin' },
+          { uid: 'mtoledo', userId: 'mtoledo', username: 'mtoledo', name: 'Mauricio Toledo', role: 'jefe_turno' },
+          { uid: 'rbarraza', userId: 'rbarraza', username: 'rbarraza', name: 'Raul Barraza', role: 'jefe_turno' },
+          { uid: 'marevalo', userId: 'marevalo', username: 'marevalo', name: 'Marcelo Arevalo', role: 'supervision' },
+          { uid: 'rogalde', userId: 'rogalde', username: 'rogalde', name: 'Roberto Ogalde', role: 'supervision' },
+          { uid: 'wcastillo', userId: 'wcastillo', username: 'wcastillo', name: 'Walter Castillo', role: 'supervision' },
         ];
         fallbackUsers.sort((a, b) => a.name.localeCompare(b.name));
         setUsersList(fallbackUsers);
@@ -64,13 +64,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     e.preventDefault();
     setErrorMsg('');
     
-    const user = usersList.find(u => u.userId === selectedUserId);
+    const user = usersList.find(u => (u.uid === selectedUserId || u.userId === selectedUserId));
     if (!user) {
       setErrorMsg('Usuario inválido.');
       return;
     }
 
-    if (user.password !== password) {
+    const legacyPassword = (user as any).password;
+    if (legacyPassword && legacyPassword !== password) {
       setErrorMsg('Contraseña incorrecta. Intente nuevamente.');
       // Log failed login
       await logActivity(user, 'Intento de Inicio Fallido', 'Ingresó una clave incorrecta.');

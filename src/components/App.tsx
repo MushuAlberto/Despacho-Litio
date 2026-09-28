@@ -109,6 +109,36 @@ const App: React.FC = () => {
       } catch (e) {
         localStorage.removeItem('sqm_raw_data');
       }
+    } else {
+      // Auto-load latest operational report from Firebase Cloud if localStorage is empty
+      (async () => {
+        try {
+          const { getOperationalReportsFromFirebase, safeParseBackupJSON } = await import('../services/firebase');
+          const reports = await getOperationalReportsFromFirebase();
+          if (reports && reports.length > 0) {
+            const latest = reports[0];
+            const backup = safeParseBackupJSON(latest.backupData);
+            if (backup['sqm_raw_data']) {
+              const parsed = typeof backup['sqm_raw_data'] === 'string'
+                ? JSON.parse(backup['sqm_raw_data'])
+                : backup['sqm_raw_data'];
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setRawData(parsed);
+                setSelectedDate(latest.date);
+                localStorage.setItem('sqm_raw_data', JSON.stringify(parsed));
+                // Also restore any historical sqm_ keys from backup
+                Object.entries(backup).forEach(([k, v]) => {
+                  if (k.startsWith('sqm_') && typeof v === 'string') {
+                    localStorage.setItem(k, v);
+                  }
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error auto-fetching reports from Firebase on startup:", e);
+        }
+      })();
     }
   }, []);
 
@@ -805,6 +835,10 @@ const App: React.FC = () => {
         onBack={() => setView('menu')} 
         rawData={rawData}
         selectedDate={selectedDate}
+        onDataLoaded={(loadedData, loadedDate) => {
+          setRawData(loadedData);
+          if (loadedDate) setSelectedDate(loadedDate);
+        }}
       />
     );
     if (view === 'cambioTurno') return <CambioDeTurno onBack={() => setView('menu')} />;

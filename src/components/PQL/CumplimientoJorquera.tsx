@@ -376,12 +376,12 @@ export const CumplimientoJorquera: React.FC<CumplimientoJorqueraProps> = ({ onBa
 
       // Audit log to Firebase if available
       try {
-        const savedUser = localStorage.getItem('sqm_current_user');
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
+        const { getCurrentUser } = await import('../../auth/authStore');
+        const user = getCurrentUser();
+        if (user) {
           const { logActivity } = await import('../../services/firebase');
           logActivity(
-            parsedUser,
+            user,
             'Descargó PNG',
             `Descargó reporte completo de Cumplimiento Jorquera SLIT (${selectedSheet || ''}) en formato PNG.`
           );

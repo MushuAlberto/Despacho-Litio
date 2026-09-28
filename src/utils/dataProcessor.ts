@@ -172,6 +172,8 @@ export const downloadBackupJSON = (selectedDate?: string) => {
   }
 };
 
+export { safeParseBackupJSON } from '../services/firebase';
+
 /**
  * Guarda manualmente el respaldo JSON de los informes en Firebase Firestore.
  */
@@ -180,6 +182,8 @@ export const syncBackupToFirebase = async (selectedDate?: string): Promise<boole
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith('sqm_')) {
+      // Exclude heavy base64 gallery image cache (images are stored in Firestore gallery_images collection)
+      if (key === 'sqm_gallery_images') continue;
       backup[key] = localStorage.getItem(key) || '';
     }
   }

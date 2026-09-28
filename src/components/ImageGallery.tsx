@@ -4,10 +4,14 @@ import {
   Upload, Trash2, ChevronLeft, ChevronRight, 
   Image as ImageIcon, X, Home, Plus,
   Maximize2, Minimize2, Play, Pause, Timer,
-  Clock, TrendingUp, Target, Users, Scale, ClipboardCheck, Truck, Loader2, RefreshCw
+  Clock, TrendingUp, Target, Users, Scale, ClipboardCheck, Truck, Loader2, RefreshCw,
+  CloudDownload, Database, CheckCircle2
 } from 'lucide-react';
 import { collection, onSnapshot, query, setDoc, doc, deleteDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType, logActivity } from '../services/firebase';
+import { 
+  db, handleFirestoreError, OperationType, logActivity, 
+  OperationalReportDoc, getOperationalReportsFromFirebase, safeParseBackupJSON 
+} from '../services/firebase';
 import ChartCard from './ChartCard';
 import { ProductDetailSection } from './ProductDetailSection';
 import { NovandinoLogo } from './BrandLogo';
@@ -27,9 +31,15 @@ interface ImageGalleryProps {
   onBack: () => void;
   rawData?: any[];
   selectedDate?: string;
+  onDataLoaded?: (data: any[], date?: string) => void;
 }
 
-export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = [], selectedDate = '' }) => {
+export const ImageGallery: React.FC<ImageGalleryProps> = ({ 
+  onBack, 
+  rawData = [], 
+  selectedDate = '',
+  onDataLoaded
+}) => {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -40,7 +50,119 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
   const [isGeneratingAuto, setIsGeneratingAuto] = useState(false);
   const [sortBy, setSortBy] = useState<'report-order' | 'recent' | 'oldest' | 'name-asc' | 'name-desc' | 'type-first'>('report-order');
 
-  // Live Persistence via Firestore
+  // Firebase Operational Reports State
+  const [operationalData, setOperationalData] = useState<any[]>(rawData);
+  const [cloudReports, setCloudReports] = useState<OperationalReportDoc[]>([]);
+  const [isLoadingFirebase, setIsLoadingFirebase] = useState(false);
+  const [firebaseNotice, setFirebaseNotice] = useState<string | null>(null);
+  const [lastSyncedDate, setLastSyncedDate] = useState<string>('');
+
+  // Sync internal operationalData if parent rawData changes and has content
+  useEffect(() => {
+    if (rawData && rawData.length > 0) {
+      setOperationalData(rawData);
+    }
+  }, [rawData]);
+
+  // Helper to parse and apply an operational report from Firebase
+  const loadReportData = useCallback((report: OperationalReportDoc, showNotice = true) => {
+    try {
+      const backup = safeParseBackupJSON(report.backupData);
+      let parsedRows: any[] = [];
+      if (backup['sqm_raw_data']) {
+        parsedRows = typeof backup['sqm_raw_data'] === 'string'
+          ? JSON.parse(backup['sqm_raw_data'])
+          : backup['sqm_raw_data'];
+      }
+      if (Array.isArray(parsedRows) && parsedRows.length > 0) {
+        // Sync all keys to localStorage so that ProductDetailSection and charts have historical justifications
+        Object.entries(backup).forEach(([k, v]) => {
+          if (k.startsWith('sqm_') && typeof v === 'string') {
+            localStorage.setItem(k, v);
+          }
+        });
+        localStorage.setItem('sqm_raw_data', JSON.stringify(parsedRows));
+        setOperationalData(parsedRows);
+        setLastSyncedDate(report.date);
+        setActiveDate(report.date);
+        if (onDataLoaded) {
+          onDataLoaded(parsedRows, report.date);
+        }
+        if (showNotice) {
+          setFirebaseNotice(`Datos del ${formatDateToCL(report.date)} cargados exitosamente desde Firebase Cloud.`);
+          setTimeout(() => setFirebaseNotice(null), 5000);
+        }
+        return true;
+      }
+    } catch (err) {
+      console.error('Error al restaurar datos operativos desde Firebase:', err);
+    }
+    return false;
+  }, [onDataLoaded]);
+
+  // Live Subscription to operational_reports in Firestore
+  useEffect(() => {
+    const qReports = query(collection(db, 'operational_reports'));
+    const unsubscribeReports = onSnapshot(qReports, (snapshot) => {
+      const fetchedReports: OperationalReportDoc[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data && data.backupData && data.date) {
+          fetchedReports.push({
+            id: docSnap.id,
+            date: data.date,
+            backupData: data.backupData,
+            updatedAt: data.updatedAt || new Date().toISOString(),
+            updatedBy: data.updatedBy || 'Sistema SQM',
+            summary: data.summary || ''
+          });
+        }
+      });
+      // Sort descending by date
+      fetchedReports.sort((a, b) => b.date.localeCompare(a.date));
+      setCloudReports(fetchedReports);
+
+      // Auto-load latest report from Firebase if operationalData is currently empty
+      if (fetchedReports.length > 0) {
+        setOperationalData((prev) => {
+          if (!prev || prev.length === 0) {
+            const latest = fetchedReports[0];
+            try {
+              const backup = safeParseBackupJSON(latest.backupData);
+              if (backup['sqm_raw_data']) {
+                const parsed = typeof backup['sqm_raw_data'] === 'string'
+                  ? JSON.parse(backup['sqm_raw_data'])
+                  : backup['sqm_raw_data'];
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  // Restore sqm_ keys
+                  Object.entries(backup).forEach(([k, v]) => {
+                    if (k.startsWith('sqm_') && typeof v === 'string') {
+                      localStorage.setItem(k, v);
+                    }
+                  });
+                  localStorage.setItem('sqm_raw_data', JSON.stringify(parsed));
+                  setLastSyncedDate(latest.date);
+                  setFirebaseNotice(`Datos de jornada ${formatDateToCL(latest.date)} cargados automáticamente desde Firebase.`);
+                  setTimeout(() => setFirebaseNotice(null), 5000);
+                  if (onDataLoaded) onDataLoaded(parsed, latest.date);
+                  return parsed;
+                }
+              }
+            } catch (err) {
+              console.error('Error auto-loading latest report from Firebase:', err);
+            }
+          }
+          return prev;
+        });
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'operational_reports');
+    });
+
+    return () => unsubscribeReports();
+  }, [onDataLoaded]);
+
+  // Live Persistence via Firestore for Gallery Images
   useEffect(() => {
     const q = query(collection(db, 'gallery_images'));
     
@@ -97,20 +219,29 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     deleteStale();
   }, [hasLoaded, images]);
 
-  // Determine all available operational report dates across rawData, Firestore images, and prop
+  // Determine all available operational report dates across operationalData, cloudReports, Firestore images, and prop
   const availableDates = useMemo(() => {
     const datesSet = new Set<string>();
     
-    // 1. From rawData
-    if (rawData && rawData.length > 0) {
-      rawData.forEach(r => {
+    // 1. From operationalData
+    if (operationalData && operationalData.length > 0) {
+      operationalData.forEach(r => {
         if (r.Fecha && typeof r.Fecha === 'string') {
           datesSet.add(r.Fecha);
         }
       });
     }
 
-    // 2. From Firestore gallery images (extract dates from image IDs or names)
+    // 2. From Firebase operational reports
+    if (cloudReports && cloudReports.length > 0) {
+      cloudReports.forEach(cr => {
+        if (cr.date) {
+          datesSet.add(cr.date);
+        }
+      });
+    }
+
+    // 3. From Firestore gallery images (extract dates from image IDs or names)
     if (images && images.length > 0) {
       images.forEach(img => {
         const match = img.id.match(/\d{4}-\d{2}-\d{2}/);
@@ -120,13 +251,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       });
     }
 
-    // 3. From prop
+    // 4. From prop
     if (selectedDate) {
       datesSet.add(selectedDate);
     }
 
     return Array.from(datesSet).sort().reverse();
-  }, [rawData, images, selectedDate]);
+  }, [operationalData, cloudReports, images, selectedDate]);
 
   const [activeDate, setActiveDate] = useState<string>('');
 
@@ -140,22 +271,69 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     return selectedDate || '';
   }, [activeDate, availableDates, selectedDate]);
 
+  // When effectiveDate changes, if operationalData does not have rows for it, check if Firebase has it
+  useEffect(() => {
+    if (!effectiveDate || cloudReports.length === 0) return;
+    const hasDataForEffectiveDate = operationalData.some(r => r.Fecha === effectiveDate);
+    if (!hasDataForEffectiveDate) {
+      const matchingReport = cloudReports.find(r => r.date === effectiveDate);
+      if (matchingReport) {
+        loadReportData(matchingReport, false);
+      }
+    }
+  }, [effectiveDate, cloudReports, operationalData, loadReportData]);
+
+  // Manual trigger to load latest or current date data from Firebase
+  const handleManualLoadFromFirebase = async () => {
+    setIsLoadingFirebase(true);
+    try {
+      const reports = await getOperationalReportsFromFirebase();
+      setCloudReports(reports);
+      if (reports.length === 0) {
+        setFirebaseNotice('No se encontraron informes guardados en Firebase.');
+        setTimeout(() => setFirebaseNotice(null), 4000);
+        return;
+      }
+
+      // Priority: report for effectiveDate if available, else newest report
+      const matchingReport = reports.find(r => r.date === effectiveDate) || reports[0];
+      const success = loadReportData(matchingReport, true);
+      if (success) {
+        const savedUser = localStorage.getItem('sqm_current_user');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          await logActivity(
+            parsedUser,
+            'Cargó Datos de Firebase',
+            `Cargó los datos operativos de la jornada ${formatDateToCL(matchingReport.date)} desde Firebase en la Galería Operativa.`
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Error manual fetching from Firebase:', err);
+      setFirebaseNotice('Error al conectar con Firebase.');
+      setTimeout(() => setFirebaseNotice(null), 4000);
+    } finally {
+      setIsLoadingFirebase(false);
+    }
+  };
+
   const separatedRawData = useMemo(() => {
-    return separateBischofitaByDest(rawData);
-  }, [rawData]);
+    return separateBischofitaByDest(operationalData);
+  }, [operationalData]);
 
   // Data calculations for report generation
   const novandinoData = useMemo(() => {
-    if (!rawData || !effectiveDate) return [];
+    if (!operationalData || !effectiveDate) return [];
     const base = separatedRawData.filter(r => r.Fecha === effectiveDate);
     return base.filter(r => isProductNovandino(r));
-  }, [rawData, separatedRawData, effectiveDate]);
+  }, [operationalData, separatedRawData, effectiveDate]);
 
   const sqmData = useMemo(() => {
-    if (!rawData || !effectiveDate) return [];
+    if (!operationalData || !effectiveDate) return [];
     const base = separatedRawData.filter(r => r.Fecha === effectiveDate);
     return base.filter(r => isProductSQM(r));
-  }, [rawData, separatedRawData, effectiveDate]);
+  }, [operationalData, separatedRawData, effectiveDate]);
 
   const getKPIsForData = useCallback((data: any[]) => {
     if (data.length === 0) return null;
@@ -344,7 +522,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
 
   // Automatic report image generation effect
   useEffect(() => {
-    if (!hasLoaded || !rawData || rawData.length === 0 || !effectiveDate) return;
+    if (!hasLoaded || !operationalData || operationalData.length === 0 || !effectiveDate) return;
 
     const runAutomaticCapture = async () => {
       // Novandino IDs
@@ -374,16 +552,22 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       }
 
       setIsGeneratingAuto(true);
-      // Wait for rendering to complete
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Brief pause to allow hidden DOM elements to render styles
+      await new Promise(resolve => setTimeout(resolve, 350));
 
       const generatedList: GalleryImage[] = [];
+      const captureOpts = { 
+        scale: 1.25, 
+        useCORS: true, 
+        logging: false, 
+        backgroundColor: '#ffffff',
+        imageTimeout: 5000 
+      };
 
       try {
         // Temporarily add 'is-exporting' so that 'pdf-only-block' is rendered and inputs are hidden
         document.body.classList.add('is-exporting');
-        // Let layout styles apply
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 50));
 
         // --- 1. CAPTURE NOVANDINO REPORT ---
         if (novandinoData.length > 0) {
@@ -391,12 +575,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           if (!hasNovKpis) {
             const kpiEl = document.getElementById('capture-kpis-novandino');
             if (kpiEl) {
-              const canvas = await html2canvas(kpiEl, { scale: 1.5, useCORS: true });
+              const canvas = await html2canvas(kpiEl, captureOpts);
               generatedList.push({
                 id: novKpiId,
-                url: canvas.toDataURL('image/jpeg', 0.9),
+                url: canvas.toDataURL('image/jpeg', 0.82),
                 name: `NOVANDINO - INFORME OPERATIVO - CUMPLIMIENTO GLOBAL (${formatDateToCL(effectiveDate)})`,
-                date: formatDateToCL(effectiveDate)
+                date: formatDateToCL(effectiveDate),
+                createdAt: new Date().toISOString()
               });
             }
           }
@@ -405,12 +590,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           if (!hasNovChart) {
             const chartEl = document.getElementById('capture-chart-novandino');
             if (chartEl) {
-              const canvas = await html2canvas(chartEl, { scale: 1.5, useCORS: true });
+              const canvas = await html2canvas(chartEl, captureOpts);
               generatedList.push({
                 id: novChartId,
-                url: canvas.toDataURL('image/jpeg', 0.9),
+                url: canvas.toDataURL('image/jpeg', 0.82),
                 name: `NOVANDINO - ANÁLISIS COMPARATIVO (${formatDateToCL(effectiveDate)})`,
-                date: formatDateToCL(effectiveDate)
+                date: formatDateToCL(effectiveDate),
+                createdAt: new Date().toISOString()
               });
             }
           }
@@ -423,12 +609,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
             if (!hasProd) {
               const prodEl = document.getElementById(`capture-product-novandino-${i}`);
               if (prodEl) {
-                const canvas = await html2canvas(prodEl, { scale: 1.5, useCORS: true });
+                const canvas = await html2canvas(prodEl, captureOpts);
                 generatedList.push({
                   id: prodId,
-                  url: canvas.toDataURL('image/jpeg', 0.9),
+                  url: canvas.toDataURL('image/jpeg', 0.82),
                   name: `NOVANDINO - AUDITORÍA DE DESEMPEÑO - ${prod} (${formatDateToCL(effectiveDate)})`,
-                  date: formatDateToCL(effectiveDate)
+                  date: formatDateToCL(effectiveDate),
+                  createdAt: new Date().toISOString()
                 });
               }
             }
@@ -441,12 +628,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           if (!hasSqmKpis) {
             const kpiEl = document.getElementById('capture-kpis-sqm');
             if (kpiEl) {
-              const canvas = await html2canvas(kpiEl, { scale: 1.5, useCORS: true });
+              const canvas = await html2canvas(kpiEl, captureOpts);
               generatedList.push({
                 id: sqmKpiId,
-                url: canvas.toDataURL('image/jpeg', 0.9),
+                url: canvas.toDataURL('image/jpeg', 0.82),
                 name: `SQM NY - INFORME OPERATIVO - CUMPLIMIENTO GLOBAL (${formatDateToCL(effectiveDate)})`,
-                date: formatDateToCL(effectiveDate)
+                date: formatDateToCL(effectiveDate),
+                createdAt: new Date().toISOString()
               });
             }
           }
@@ -455,12 +643,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
           if (!hasSqmChart) {
             const chartEl = document.getElementById('capture-chart-sqm');
             if (chartEl) {
-              const canvas = await html2canvas(chartEl, { scale: 1.5, useCORS: true });
+              const canvas = await html2canvas(chartEl, captureOpts);
               generatedList.push({
                 id: sqmChartId,
-                url: canvas.toDataURL('image/jpeg', 0.9),
+                url: canvas.toDataURL('image/jpeg', 0.82),
                 name: `SQM NY - ANÁLISIS COMPARATIVO (${formatDateToCL(effectiveDate)})`,
-                date: formatDateToCL(effectiveDate)
+                date: formatDateToCL(effectiveDate),
+                createdAt: new Date().toISOString()
               });
             }
           }
@@ -473,12 +662,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
             if (!hasProd) {
               const prodEl = document.getElementById(`capture-product-sqm-${i}`);
               if (prodEl) {
-                const canvas = await html2canvas(prodEl, { scale: 1.5, useCORS: true });
+                const canvas = await html2canvas(prodEl, captureOpts);
                 generatedList.push({
                   id: prodId,
-                  url: canvas.toDataURL('image/jpeg', 0.9),
+                  url: canvas.toDataURL('image/jpeg', 0.82),
                   name: `SQM NY - AUDITORÍA DE DESEMPEÑO - ${prod} (${formatDateToCL(effectiveDate)})`,
-                  date: formatDateToCL(effectiveDate)
+                  date: formatDateToCL(effectiveDate),
+                  createdAt: new Date().toISOString()
                 });
               }
             }
@@ -486,22 +676,39 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         }
 
         if (generatedList.length > 0) {
-          // Upload each generated image to Firestore
-          for (const newImg of generatedList) {
-            try {
-              const path = 'gallery_images';
-              const cleanId = newImg.id.replace(/\//g, '_');
-              const docRef = doc(db, path, cleanId);
-              await setDoc(docRef, {
-                url: newImg.url,
-                name: newImg.name,
-                date: newImg.date,
-                createdAt: new Date().toISOString()
-              });
-            } catch (innerErr) {
-              console.error("Error saving automatic report image to Firestore:", innerErr);
-            }
-          }
+          // Instantly show in local gallery state without waiting for Firestore roundtrip
+          setImages(prev => {
+            const map = new Map<string, GalleryImage>();
+            generatedList.forEach(img => map.set(img.id, img));
+            prev.forEach(img => {
+              if (!map.has(img.id)) map.set(img.id, img);
+            });
+            return Array.from(map.values()).sort((a, b) => {
+              const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              if (timeA !== timeB) return timeB - timeA;
+              return b.id.localeCompare(a.id);
+            });
+          });
+
+          // Upload all generated images to Firestore in parallel for maximum speed
+          const path = 'gallery_images';
+          await Promise.all(
+            generatedList.map(async (newImg) => {
+              try {
+                const cleanId = newImg.id.replace(/\//g, '_');
+                const docRef = doc(db, path, cleanId);
+                await setDoc(docRef, {
+                  url: newImg.url,
+                  name: newImg.name,
+                  date: newImg.date,
+                  createdAt: newImg.createdAt || new Date().toISOString()
+                });
+              } catch (innerErr) {
+                console.error("Error saving automatic report image to Firestore:", innerErr);
+              }
+            })
+          );
         }
       } catch (err) {
         console.error("Error generating automatic report images:", err);
@@ -512,7 +719,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
     };
 
     runAutomaticCapture();
-  }, [rawData, effectiveDate, novandinoProductList, sqmProductList, novandinoData.length, sqmData.length, hasLoaded, images]);
+  }, [operationalData, effectiveDate, novandinoProductList, sqmProductList, novandinoData.length, sqmData.length, hasLoaded, images]);
 
   const handleRegenerateAutoImages = async () => {
     if (isGeneratingAuto || !effectiveDate) return;
@@ -535,11 +742,17 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
       ];
       
       const path = 'gallery_images';
-      for (const id of idsToDelete) {
-        if (images.some(img => img.id === id)) {
-          await deleteDoc(doc(db, path, id));
-        }
-      }
+      const existingToDelete = idsToDelete.filter(id => images.some(img => img.id === id));
+
+      // Instantly remove from local state
+      setImages(prev => prev.filter(img => !existingToDelete.includes(img.id)));
+
+      // Delete in parallel from Firestore
+      await Promise.all(
+        existingToDelete.map(id => deleteDoc(doc(db, path, id)).catch(err => {
+          console.error(`Error deleting image ${id}:`, err);
+        }))
+      );
       
       const savedUser = localStorage.getItem('sqm_current_user');
       if (savedUser) {
@@ -756,23 +969,55 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
             <h1 className="text-2xl font-[950] text-nucleo tracking-tighter uppercase leading-none">Galería Operativa</h1>
             <p className="text-[10px] font-bold text-violeta/60 uppercase tracking-[0.3em] mt-1">Registro Visual de Faena</p>
           </div>
-          {isGeneratingAuto ? (
-            <div className="flex items-center gap-2 bg-ionizado/10 px-4 py-2 rounded-full border border-ionizado/20 animate-pulse">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-ionizado" />
-              <span className="text-[9px] font-black text-ionizado uppercase tracking-wider">Sincronizando reportes automáticos...</span>
-            </div>
-          ) : (
-            rawData.length > 0 && effectiveDate && (
-              <button
-                onClick={handleRegenerateAutoImages}
-                className="flex items-center gap-1.5 bg-violeta/5 hover:bg-violeta/10 border border-violeta/15 hover:border-violeta/30 text-violeta font-black text-[9px] uppercase tracking-wider px-3 py-2 rounded-xl transition-all cursor-pointer"
-                title="Regenera todas las capturas automáticas para incluir las últimas modificaciones o justificaciones de desempeño."
+
+          {/* Firebase Cloud Sync Controls & Status */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleManualLoadFromFirebase}
+              disabled={isLoadingFirebase}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                isLoadingFirebase
+                  ? 'bg-violeta/10 border-violeta/20 text-violeta cursor-wait animate-pulse'
+                  : 'bg-violeta/5 hover:bg-violeta/10 border-violeta/15 hover:border-violeta/30 text-violeta'
+              }`}
+              title="Carga los datos operativos e informes más recientes guardados en Firebase Firestore."
+            >
+              {isLoadingFirebase ? (
+                <Loader2 size={12} className="animate-spin text-violeta" />
+              ) : (
+                <CloudDownload size={12} className="text-violeta" />
+              )}
+              {isLoadingFirebase ? 'Cargando de Firebase...' : 'Cargar de Firebase'}
+            </button>
+
+            {lastSyncedDate && (
+              <div 
+                className="hidden xl:flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider"
+                title={`Datos cargados desde la base de datos Firebase para la jornada ${formatDateToCL(lastSyncedDate)}.`}
               >
-                <RefreshCw size={12} className="text-violeta" />
-                Actualizar Reportes
-              </button>
-            )
-          )}
+                <Database size={11} className="text-emerald-600 shrink-0" />
+                <span>Nube: {formatDateToCL(lastSyncedDate)}</span>
+              </div>
+            )}
+
+            {isGeneratingAuto ? (
+              <div className="flex items-center gap-2 bg-ionizado/10 px-4 py-2 rounded-full border border-ionizado/20 animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-ionizado" />
+                <span className="text-[9px] font-black text-ionizado uppercase tracking-wider">Sincronizando reportes...</span>
+              </div>
+            ) : (
+              operationalData.length > 0 && effectiveDate && (
+                <button
+                  onClick={handleRegenerateAutoImages}
+                  className="flex items-center gap-1.5 bg-violeta/5 hover:bg-violeta/10 border border-violeta/15 hover:border-violeta/30 text-violeta font-black text-[9px] uppercase tracking-wider px-3 py-2 rounded-xl transition-all cursor-pointer"
+                  title="Regenera todas las capturas automáticas para incluir las últimas modificaciones o justificaciones de desempeño."
+                >
+                  <RefreshCw size={12} className="text-violeta" />
+                  Actualizar Reportes
+                </button>
+              )
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -861,8 +1106,34 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ onBack, rawData = []
         </div>
       </header>
 
+      {/* Cloud Notification Banner */}
+      {firebaseNotice && (
+        <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2.5 flex items-center justify-between text-emerald-800 text-[10px] font-black uppercase tracking-wider animate-in fade-in transition-all">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+            <span>{firebaseNotice}</span>
+          </div>
+          <button 
+            onClick={() => setFirebaseNotice(null)} 
+            className="text-emerald-700/60 hover:text-emerald-900 cursor-pointer p-1"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
       <main className="flex-1 p-8 max-w-7xl mx-auto w-full space-y-12">
-        {sortedImages.length === 0 ? (
+        {isLoadingFirebase && sortedImages.length === 0 ? (
+          <div className="w-full h-[60vh] border-4 border-dashed rounded-[3rem] border-violeta/10 bg-white/50 flex flex-col items-center justify-center space-y-4">
+            <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-ionizado shadow-sm border border-violeta/5">
+              <Loader2 size={36} className="animate-spin text-ionizado" />
+            </div>
+            <div className="text-center">
+              <h2 className="text-xl font-black text-nucleo uppercase tracking-tight">Cargando datos desde Firebase</h2>
+              <p className="text-violeta/60 font-medium text-xs mt-1">Conectando a la nube y recuperando los registros operativos...</p>
+            </div>
+          </div>
+        ) : sortedImages.length === 0 ? (
           <div 
             className={`
               w-full h-[60vh] border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center space-y-6 transition-all duration-500

@@ -11,6 +11,7 @@ import {
 import { formatDateToCL, formatNumberWithDecimals } from '../utils/dataProcessor';
 import { db } from '../services/firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { getCurrentUser } from '../auth/authStore';
 
 interface ProductDetailSectionProps {
   product: string;
@@ -173,16 +174,8 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
     enableJustificationRefinement: true
   });
   const [userAiEnabled, setUserAiEnabled] = useState<boolean>(() => {
-    try {
-      const savedUser = localStorage.getItem('sqm_current_user');
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
-        return parsedUser.enableAi !== false;
-      }
-    } catch (e) {
-      console.error('Error parsing sqm_current_user for AI state:', e);
-    }
-    return true; // Safe fallback
+    const user = getCurrentUser();
+    return user ? user.enableAi !== false : true;
   });
 
   useEffect(() => {
@@ -200,10 +193,9 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           });
         }
 
-        const savedUser = localStorage.getItem('sqm_current_user');
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          const userDocRef = doc(db, 'users', parsedUser.userId);
+        const user = getCurrentUser();
+        if (user) {
+          const userDocRef = doc(db, 'users', user.entraOid);
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
@@ -244,10 +236,9 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
 
       // 2. Fetch latest user config from Firestore
       let isUserEnabled = userAiEnabled;
-      const savedUser = localStorage.getItem('sqm_current_user');
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
-        const userDocRef = doc(db, 'users', parsedUser.userId);
+      const user = getCurrentUser();
+      if (user) {
+        const userDocRef = doc(db, 'users', user.entraOid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data();
@@ -290,12 +281,11 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           localStorage.setItem(storageKey, refinedVal);
           await deleteStaleImage();
           
-          // Log activity if current user is saved
-          if (savedUser) {
-            const parsedUser = JSON.parse(savedUser);
+          // Log activity if current user is active
+          if (user) {
             const { logActivity } = await import('../services/firebase');
             await logActivity(
-              parsedUser,
+              user,
               'Refinó Justificación con IA',
               `Utilizó la IA (${activeModel.toUpperCase()}) para optimizar la justificación técnica de ${product} en la jornada ${formatDateToCL(date)}.`
             );
@@ -363,12 +353,11 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
       initialJustificationRef.current = newVal;
       await deleteStaleImage();
       try {
-        const savedUser = localStorage.getItem('sqm_current_user');
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
+        const user = getCurrentUser();
+        if (user) {
           const { logActivity } = await import('../services/firebase');
           await logActivity(
-            parsedUser,
+            user,
             'Editó Justificación',
             `Modificó la justificación de desempeño del producto ${product} para la jornada ${formatDateToCL(date)}.`
           );

@@ -14,9 +14,10 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [newUser, setNewUser] = useState({
-    username: '',
-    password: '',
+    entraOid: '',
     name: '',
+    email: '',
+    username: '',
     role: 'supervision' as 'admin' | 'jefe_turno' | 'supervision'
   });
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
@@ -95,7 +96,18 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
       const qSnap = await getDocs(collection(db, 'users'));
       const list: SystemUser[] = [];
       qSnap.forEach((docSnap) => {
-        list.push(docSnap.data() as SystemUser);
+        const data = docSnap.data();
+        list.push({
+          uid: data.uid || data.userId || docSnap.id,
+          userId: docSnap.id,
+          entraOid: data.entraOid || docSnap.id,
+          username: data.username || docSnap.id,
+          name: data.name || data.username || docSnap.id,
+          email: data.email || '',
+          role: data.role || 'supervision',
+          enableAi: data.enableAi !== false,
+          active: data.active !== false,
+        });
       });
       setUsers(list);
     } catch (error) {
@@ -187,65 +199,63 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
     setStatusMsg({ type: '', text: '' });
 
     // Validate inputs
-    const usernameClean = newUser.username.trim().toLowerCase();
+    const uidClean = (newUser.entraOid || '').trim();
     const nameClean = newUser.name.trim();
-    if (!usernameClean || !nameClean || !newUser.password) {
-      setStatusMsg({ type: 'error', text: 'Todos los campos son obligatorios.' });
+    const emailClean = newUser.email.trim().toLowerCase();
+    const usernameClean = newUser.username.trim().toLowerCase() || (emailClean ? emailClean.split('@')[0] : uidClean.slice(0, 8));
+
+    if (!uidClean || !nameClean) {
+      setStatusMsg({ type: 'error', text: 'El UID de Firebase Auth (o identificador) y el Nombre son obligatorios.' });
       return;
     }
 
-    if (!/^[a-zA-Z0-9_]+$/.test(usernameClean)) {
-      setStatusMsg({ type: 'error', text: 'El nombre de usuario solo debe contener letras, números o subguión [_].' });
-      return;
-    }
-
-    // Check if user already exists
-    if (users.some(u => u.username === usernameClean)) {
-      setStatusMsg({ type: 'error', text: 'El nombre de usuario ya está registrado en el sistema.' });
+    // Check if user already exists by uid
+    if (users.some(u => (u.uid === uidClean || u.entraOid === uidClean))) {
+      setStatusMsg({ type: 'error', text: 'Este UID / identificador ya está registrado en el sistema.' });
       return;
     }
 
     setSaving(true);
-    const userId = usernameClean;
     const userDocPayload: SystemUser = {
-      userId,
+      uid: uidClean,
+      userId: uidClean,
+      entraOid: uidClean,
       username: usernameClean,
-      password: newUser.password,
       name: nameClean,
+      email: emailClean,
       role: newUser.role,
-      lastLogin: '',
-      enableAi: true
+      enableAi: true,
+      active: true
     };
 
     try {
-      await setDoc(doc(db, 'users', userId), userDocPayload);
+      await setDoc(doc(db, 'users', uidClean), {
+        ...userDocPayload,
+        createdAt: new Date().toISOString(),
+        lastLogin: ''
+      });
       
       // Log activity
       await logActivity(
         currentUser,
         'Usuario Creado',
-        `Se creó el perfil de: ${nameClean} (Usuario: @${usernameClean}) con rol: ${newUser.role}`
+        `Se vinculó la cuenta de usuario: ${nameClean} (UID: ${uidClean}) con rol: ${newUser.role}`
       );
 
-      setStatusMsg({ type: 'success', text: `Usuario @${usernameClean} creado exitosamente.` });
-      setNewUser({ username: '', password: '', name: '', role: 'supervision' });
+      setStatusMsg({ type: 'success', text: `Perfil de usuario vinculado exitosamente (${nameClean}).` });
+      setNewUser({ entraOid: '', name: '', email: '', username: '', role: 'supervision' });
       await fetchUsers();
     } catch (error) {
       console.error('Error creating user profile:', error);
-      setStatusMsg({ type: 'error', text: 'Error de red o permisos al almacenar el usuario.' });
+      setStatusMsg({ type: 'error', text: 'Error de red o permisos al almacenar el usuario en Firestore.' });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteUser = (userToDelete: SystemUser) => {
-    if (userToDelete.userId === currentUser.userId) {
+    if (userToDelete.entraOid === currentUser.entraOid) {
       alert('No puedes eliminar tu propio usuario en sesión.');
-      return;
-    }
-
-    if (userToDelete.userId === 'admin') {
-      alert('No se permite eliminar la cuenta de administración principal.');
       return;
     }
 
@@ -257,29 +267,22 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
   const handleConfirmDeleteUser = async () => {
     if (!deleteCandidate) return;
 
-    // A fail-safe allows using the logged in user's password, 'ctapia', or master 'MIRAME'
-    const correctPasswords = [
-      currentUser.password,
-      'ctapia',
-      'MIRAME'
-    ].filter(Boolean);
-
-    if (!correctPasswords.includes(adminPasswordConfirm)) {
+    if (adminPasswordConfirm.trim() !== 'MIRAME') {
       setPasswordError(true);
       return;
     }
 
     try {
-      await deleteDoc(doc(db, 'users', deleteCandidate.userId));
+      await deleteDoc(doc(db, 'users', deleteCandidate.entraOid));
       
       // Log activity
       await logActivity(
         currentUser,
         'Usuario Eliminado',
-        `Se eliminó la cuenta de: ${deleteCandidate.name} (Usuario: @${deleteCandidate.username}) - [Contraseña Confirmada]`
+        `Se eliminó la vinculación de cuenta de: ${deleteCandidate.name} (OID: ${deleteCandidate.entraOid})`
       );
 
-      setStatusMsg({ type: 'success', text: `Usuario @${deleteCandidate.username} eliminado correctamente.` });
+      setStatusMsg({ type: 'success', text: `Usuario ${deleteCandidate.name} eliminado correctamente.` });
       setDeleteCandidate(null);
       await fetchUsers();
     } catch (e) {
@@ -294,12 +297,12 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
     const newVal = !isAiCurrentlyEnabled;
 
     // Update locally in users array to slide toggle immediately
-    setUsers(prev => prev.map(u => u.userId === targetUser.userId ? { ...u, enableAi: newVal } : u));
+    setUsers(prev => prev.map(u => u.entraOid === targetUser.entraOid ? { ...u, enableAi: newVal } : u));
 
     // Store in pending changes
     setPendingUserAiChanges(prev => ({
       ...prev,
-      [targetUser.userId]: newVal
+      [targetUser.entraOid]: newVal
     }));
   };
 
@@ -311,16 +314,16 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
       let selfUpdatedUser: SystemUser | null = null;
       const entries = Object.entries(pendingUserAiChanges);
 
-      for (const [userId, enableAi] of entries) {
-        const targetUser = users.find(u => u.userId === userId);
+      for (const [entraOid, enableAi] of entries) {
+        const targetUser = users.find(u => u.entraOid === entraOid);
         if (targetUser) {
           const updatedUser = {
             ...targetUser,
             enableAi
           };
-          await setDoc(doc(db, 'users', userId), updatedUser);
+          await setDoc(doc(db, 'users', entraOid), updatedUser, { merge: true });
           
-          if (userId === currentUser.userId) {
+          if (entraOid === currentUser.entraOid) {
             loggedSelfUpdate = true;
             selfUpdatedUser = updatedUser;
           }
@@ -396,14 +399,28 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
             <div className="bg-white border border-white rounded-[2rem] p-6 md:p-8 shadow-sm space-y-6">
               <div className="space-y-1">
                 <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase">Añadir registro</span>
-                <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">Crear Nuevo Usuario</h2>
-                <p className="text-xs font-medium text-slate-500">Asigne clave de acceso y nivel de rol corporativo correspondiente.</p>
+                <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">Vincular Cuenta Entra ID</h2>
+                <p className="text-xs font-medium text-slate-500">Asocie el UID de Firebase Auth (o Microsoft Entra OID) y defina el rol operativo en la aplicación.</p>
               </div>
 
-            <form onSubmit={handleCreateUser} className="space-y-5">
+            <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black tracking-widest text-[#461D77] uppercase flex items-center gap-1">
-                  Nombre Completo
+                  Firebase UID / Identificador de Seguridad *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newUser.entraOid}
+                  onChange={(e) => setNewUser({...newUser, entraOid: e.target.value})}
+                  placeholder="Ej. Firebase UID (e.g. k5x9028... o Entra OID)"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-2xl text-xs font-mono text-slate-700 outline-none transition-all placeholder:text-slate-400"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black tracking-widest text-[#461D77] uppercase flex items-center gap-1">
+                  Nombre Completo *
                 </label>
                 <input
                   type="text"
@@ -417,28 +434,26 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black tracking-widest text-[#461D77] uppercase flex items-center gap-1">
-                  Nombre de Usuario (Para login)
+                  Correo Corporativo / UPN
                 </label>
                 <input
-                  type="text"
-                  required
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                  placeholder="Ej. jperez (letras y números)"
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  placeholder="Ej. jperez@empresa.com"
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-2xl text-xs font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black tracking-widest text-[#461D77] uppercase flex items-center gap-1">
-                  Contraseña de acceso
+                  Alias o Nombre Corto
                 </label>
                 <input
-                  type="password"
-                  required
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                  placeholder="Establezca contraseña"
+                  type="text"
+                  value={newUser.username}
+                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                  placeholder="Ej. jperez"
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-2xl text-xs font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400"
                 />
               </div>
@@ -467,7 +482,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                   <Loader2 size={14} className="animate-spin text-white" />
                 ) : (
                   <>
-                    <Plus size={14} /> Registrar Usuario
+                    <Plus size={14} /> Vincular Usuario
                   </>
                 )}
               </button>
@@ -784,7 +799,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
             ) : (
               <div className="space-y-4 divide-y divide-slate-100">
                 {users.map((user) => (
-                  <div key={user.userId} className="pt-4 first:pt-0 flex items-center justify-between gap-4">
+                  <div key={user.entraOid} className="pt-4 first:pt-0 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#461D77]/10 to-[#7177EC]/10 flex items-center justify-center text-[#461D77] font-black text-sm">
                         {user.name.substring(0, 2).toUpperCase()}
@@ -795,13 +810,20 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                           <span className="font-mono text-[9px] text-[#4e2283] font-black uppercase bg-[#4e2283]/5 px-2 py-0.5 rounded-full border border-[#4e2283]/10">
                             {getRoleLabel(user.role)}
                           </span>
-                          {pendingUserAiChanges[user.userId] !== undefined && (
+                          {pendingUserAiChanges[user.entraOid] !== undefined && (
                             <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tight animate-pulse">
                               Modificado
                             </span>
                           )}
+                          {user.active === false && (
+                            <span className="bg-red-100 text-red-700 border border-red-200 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tight">
+                              Desactivado
+                            </span>
+                          )}
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5 font-mono">@{user.username} &bull; Contraseña: <span className="font-bold text-slate-700">{user.userId === currentUser.userId ? user.password : '••••••••'}</span></p>
+                        <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
+                          @{user.username} {user.email ? `• ${user.email}` : ''} • UID: <span className="font-bold text-slate-600 font-mono text-[10px]">{(user.uid || user.entraOid || user.userId || '').length > 14 ? `${(user.uid || user.entraOid || user.userId || '').slice(0, 10)}...` : (user.uid || user.entraOid || user.userId)}</span>
+                        </p>
                       </div>
                     </div>
 
@@ -821,9 +843,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
 
                       <button
                         onClick={() => handleDeleteUser(user)}
-                        disabled={user.userId === currentUser.userId || user.userId === 'admin'}
+                        disabled={user.entraOid === currentUser.entraOid}
                         className="p-3 text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-xl transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
-                        title="Eliminar usuario"
+                        title="Eliminar vinculación de usuario"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -864,11 +886,11 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
             </div>
             
             <p className="text-xs text-slate-500 leading-relaxed font-medium">
-              Por motivos de seguridad, para eliminar la cuenta de <strong className="text-slate-800">@{deleteCandidate.username} ({deleteCandidate.name})</strong>, debe confirmar ingresando su contraseña de administrador.
+              Por motivos de seguridad, para desvincular la cuenta de <strong className="text-slate-800">@{deleteCandidate.username} ({deleteCandidate.name})</strong>, confirme ingresando la clave maestra de autorización.
             </p>
 
             <div className="space-y-2">
-              <label className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Contraseña del Administrador</label>
+              <label className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Clave Maestra de Autorización</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-[1.125rem] w-4 h-4 text-slate-400" />
                 <input
@@ -879,14 +901,14 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                     setPasswordError(false);
                   }}
                   autoFocus
-                  placeholder="Ingrese contraseña..."
+                  placeholder="Ingrese clave maestra..."
                   className={`w-full py-3.5 pl-11 pr-4 bg-slate-50 border-2 rounded-xl text-sm font-bold text-slate-800 outline-none transition-all ${
                     passwordError ? 'border-red-500 focus:border-red-500 bg-red-50' : 'border-[#461D77] focus:border-[#461D77] focus:bg-white focus:shadow-md'
                   }`}
                 />
               </div>
               {passwordError && (
-                <p className="text-[10px] text-red-600 font-extrabold uppercase tracking-widest mt-1">Contraseña Incorrecta</p>
+                <p className="text-[10px] text-red-600 font-extrabold uppercase tracking-widest mt-1">Clave Incorrecta</p>
               )}
             </div>
 

@@ -90,13 +90,7 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
   };
 
   const handleConfirmDelete = async () => {
-    const correctPasswords = [
-      currentUser?.password,
-      'ctapia',
-      'MIRAME'
-    ].filter(Boolean);
-
-    if (!correctPasswords.includes(adminPasswordConfirm)) {
+    if (adminPasswordConfirm.trim() !== 'MIRAME') {
       setPasswordError(true);
       return;
     }
@@ -548,7 +542,7 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
             </p>
 
             <div className="space-y-2">
-              <label className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Contraseña del Administrador</label>
+              <label className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Clave Maestra de Autorización</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-[1.125rem] w-4 h-4 text-slate-400" />
                 <input
@@ -559,7 +553,7 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
                     setPasswordError(false);
                   }}
                   autoFocus
-                  placeholder="Ingrese contraseña..."
+                  placeholder="Ingrese clave maestra..."
                   className={`w-full py-3.5 pl-11 pr-4 bg-slate-50 border-2 rounded-xl text-sm font-bold text-slate-800 outline-none transition-all ${
                     passwordError ? 'border-red-500 focus:border-red-500 bg-red-50' : 'border-transparent focus:border-[#461D77] focus:bg-white focus:shadow-md'
                   }`}
@@ -569,7 +563,7 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
                 />
               </div>
               {passwordError && (
-                <p className="text-[10px] text-red-600 font-extrabold uppercase tracking-widest mt-1">Contraseña Incorrecta</p>
+                <p className="text-[10px] text-red-600 font-extrabold uppercase tracking-widest mt-1">Clave Incorrecta</p>
               )}
             </div>
 

@@ -2,17 +2,20 @@
   "entities": {
     "User": {
       "title": "User Profile",
-      "description": "User account for PWA authentication and tracking",
+      "description": "User account for PWA authorization and tracking",
       "type": "object",
       "properties": {
-        "userId": { "type": "string", "description": "Unique identifier of the user" },
-        "username": { "type": "string", "description": "Login username" },
-        "password": { "type": "string", "description": "Login password" },
+        "uid": { "type": "string", "description": "Unique Firebase Authentication UID of the user" },
+        "userId": { "type": "string", "description": "Compatibility alias to UID" },
+        "username": { "type": "string", "description": "User alias or display username" },
+        "email": { "type": "string", "description": "Email address" },
         "name": { "type": "string", "description": "Full display name of the user" },
         "role": { "type": "string", "enum": ["admin", "jefe_turno", "supervision"], "description": "Determines access levels within the application" },
+        "enableAi": { "type": "boolean", "description": "Whether AI tools are enabled for this user" },
+        "active": { "type": "boolean", "description": "Whether the user account is active" },
         "lastLogin": { "type": "string", "format": "date-time", "description": "ISO timestamp of last authentication" }
       },
-      "required": ["userId", "username", "password", "name", "role"]
+      "required": ["name", "role"]
     },
     "ActivityLog": {
       "title": "Activity Log",

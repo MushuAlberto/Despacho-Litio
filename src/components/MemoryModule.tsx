@@ -10,7 +10,8 @@ import {
   SystemUser, 
   getOperationalReportsFromFirebase, 
   deleteOperationalReportFromFirebase,
-  OperationalReportDoc
+  OperationalReportDoc,
+  safeParseBackupJSON
 } from '../services/firebase';
 
 interface MemoryModuleProps {
@@ -87,7 +88,7 @@ export const MemoryModule: React.FC<MemoryModuleProps> = ({ data, onBack, onSele
   // Restore a cloud JSON report to current local browser storage
   const handleRestoreFromCloud = (report: OperationalReportDoc) => {
     try {
-      const backup = JSON.parse(report.backupData);
+      const backup = safeParseBackupJSON(report.backupData);
       let count = 0;
       Object.entries(backup).forEach(([key, value]) => {
         if (key.startsWith('sqm_')) {

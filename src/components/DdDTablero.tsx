@@ -252,12 +252,12 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
 
             // Record download audit log
             try {
-                const savedUser = localStorage.getItem('sqm_current_user');
-                if (savedUser) {
-                    const parsedUser = JSON.parse(savedUser);
+                const { getCurrentUser } = await import('../auth/authStore');
+                const user = getCurrentUser();
+                if (user) {
                     const { logActivity } = await import('../services/firebase');
                     await logActivity(
-                        parsedUser,
+                        user,
                         'Descargó Imagen',
                         `Descargó captura gráfica del tablero DdD de la fecha ${formatDateToCL(selectedDate)}.`
                     );

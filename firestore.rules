@@ -24,7 +24,6 @@ service cloud.firestore {
       allow get: if isValidId(userId);
       allow list: if true;
       allow create, update: if isValidId(userId)
-        && incoming().userId is string && incoming().userId.size() <= 128
         && incoming().username is string && incoming().username.size() <= 128
         && incoming().name is string && incoming().name.size() <= 128
         && incoming().role is string && incoming().role.size() <= 128;

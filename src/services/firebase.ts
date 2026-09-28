@@ -164,6 +164,54 @@ export interface OperationalReportDoc {
 }
 
 /**
+ * Safely parses an operational report backup JSON string from Firebase Firestore.
+ * Handles cases where the string was previously truncated or malformed,
+ * recovering all intact key-value pairs without throwing SyntaxError.
+ */
+export function safeParseBackupJSON(rawStr: string | null | undefined): Record<string, any> {
+  if (!rawStr || typeof rawStr !== 'string') return {};
+  
+  // 1. Direct standard parse
+  try {
+    const parsed = JSON.parse(rawStr);
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch {
+    // String was cut off or malformed, continue to recovery
+  }
+
+  // 2. Backtrack recovery for truncated JSON objects
+  try {
+    const s = rawStr.trim();
+    // Try simple bracket closures first
+    const quickSuffixes = ['"}', '"]}', '"}', '}'];
+    for (const suffix of quickSuffixes) {
+      try {
+        const candidate = JSON.parse(s + suffix);
+        if (candidate && typeof candidate === 'object') return candidate;
+      } catch {
+        // continue
+      }
+    }
+
+    // Backtrack to the last completed key-value pair
+    let lastCleanComma = s.lastIndexOf(',"sqm_');
+    while (lastCleanComma > 0) {
+      const candidate = s.substring(0, lastCleanComma) + '}';
+      try {
+        const obj = JSON.parse(candidate);
+        if (obj && typeof obj === 'object') return obj;
+      } catch {
+        lastCleanComma = s.lastIndexOf(',"sqm_', lastCleanComma - 1);
+      }
+    }
+  } catch (recoverErr) {
+    console.warn('Could not fully recover truncated JSON backup:', recoverErr);
+  }
+
+  return {};
+}
+
+/**
  * Saves or updates an operational report backup JSON in Firebase Firestore.
  */
 export async function saveOperationalReportToFirebase(
@@ -177,20 +225,39 @@ export async function saveOperationalReportToFirebase(
   const pathForWrite = `operational_reports/${reportId}`;
 
   try {
-    const backupDataString = typeof backupDataObj === 'string' 
-      ? backupDataObj 
-      : JSON.stringify(backupDataObj);
+    // Parse object if passed as string to ensure clean processing
+    let cleanObj: Record<string, any> = typeof backupDataObj === 'string'
+      ? safeParseBackupJSON(backupDataObj)
+      : { ...backupDataObj };
 
-    // Limit string size if needed to avoid exceeding Firestore doc limit (1MB max, rules allow <= 1,048,500 bytes)
-    const truncatedBackupData = backupDataString.length > 1048000 
-      ? backupDataString.substring(0, 1048000) 
-      : backupDataString;
+    // Strip out heavy non-operational keys like base64 gallery images cache
+    delete cleanObj.sqm_gallery_images;
+
+    let backupDataString = JSON.stringify(cleanObj);
+
+    // If still exceeds 1,000,000 characters, compress rawData to avoid exceeding Firestore 1MB doc limit
+    if (backupDataString.length > 1000000 && cleanObj.sqm_raw_data) {
+      try {
+        const rows = typeof cleanObj.sqm_raw_data === 'string'
+          ? JSON.parse(cleanObj.sqm_raw_data)
+          : cleanObj.sqm_raw_data;
+        if (Array.isArray(rows) && rows.length > 0) {
+          // Keep rows for current date and recent dates
+          const currentDayRows = rows.filter((r: any) => r.Fecha === cleanDate);
+          const preservedRows = currentDayRows.length > 0 ? currentDayRows : rows.slice(-150);
+          cleanObj.sqm_raw_data = JSON.stringify(preservedRows);
+          backupDataString = JSON.stringify(cleanObj);
+        }
+      } catch (err) {
+        console.warn('Error compressing rawData for cloud backup:', err);
+      }
+    }
 
     const reportDocRef = doc(db, 'operational_reports', reportId);
     const payload = {
       id: reportId,
       date: cleanDate,
-      backupData: truncatedBackupData,
+      backupData: backupDataString,
       updatedAt: new Date().toISOString(),
       updatedBy: user?.name || user?.username || 'Sistema SQM',
       summary: summary || `Informe Operativo del ${cleanDate}`
@@ -274,6 +341,7 @@ export function buildCurrentLocalBackupJSON(): Record<string, string> {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith('sqm_')) {
+      if (key === 'sqm_gallery_images') continue;
       backup[key] = localStorage.getItem(key) || '';
     }
   }

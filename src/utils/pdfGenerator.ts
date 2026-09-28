@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { getCurrentUser } from '../auth/authStore';
 
 // Helper to format decimal hours to HH:MM
 function formatDecimalToHHMM(decimalValue: number): string {
@@ -331,12 +332,11 @@ export function generateShiftReportPDF(report: PDFReportData) {
 
   // Record download activity log in Firestore
   try {
-    const savedUser = localStorage.getItem('sqm_current_user');
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
+    const user = getCurrentUser();
+    if (user) {
       import('../services/firebase').then(({ logActivity }) => {
         logActivity(
-          parsedUser,
+          user,
           'Descargó PDF',
           `Exportó y descargó el Reporte de Cambio de Turno PDF para el módulo ${report.title} (${outputFileName}).`
         );
