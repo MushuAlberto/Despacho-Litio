@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import {
   AlertCircle,
@@ -7,13 +7,11 @@ import {
   Database,
   Download,
   FileSpreadsheet,
+  Info,
   KeyRound,
   Lock,
-  RefreshCw,
   Search,
-  Server,
   ShieldCheck,
-  Truck,
   UploadCloud,
   User
 } from 'lucide-react';
@@ -36,9 +34,7 @@ interface ModuloStokesProps {
   onBack: () => void;
 }
 
-type BridgeStatus = 'checking' | 'online' | 'offline';
-
-const BRIDGE_BASE_URL = 'http://127.0.0.1:3847';
+const INTERNAL_API_BASE_URL = String((import.meta as any).env?.VITE_STOKES_INTERNAL_API_URL || '').replace(/\/+$/, '');
 
 function fechaLocalISO() {
   const now = new Date();
@@ -61,7 +57,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
   }
 
   const hoy = fechaLocalISO();
-  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>('checking');
+  const apiConfigurada = Boolean(INTERNAL_API_BASE_URL);
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [dominio, setDominio] = useState('SQM');
@@ -71,29 +67,15 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ultimaActualizacion, setUltimaActualizacion] = useState<string | null>(null);
-  const [origen, setOrigen] = useState<'bridge' | 'excel' | null>(null);
+  const [origen, setOrigen] = useState<'api' | 'excel' | null>(null);
   const [busqueda, setBusqueda] = useState('');
-
-  const verificarBridge = async () => {
-    setBridgeStatus('checking');
-    try {
-      const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 5000);
-      const response = await fetch(`${BRIDGE_BASE_URL}/health`, { cache: 'no-store', signal: controller.signal });
-      window.clearTimeout(timeout);
-      if (!response.ok) throw new Error('Bridge no disponible');
-      setBridgeStatus('online');
-    } catch {
-      setBridgeStatus('offline');
-    }
-  };
-
-  useEffect(() => {
-    verificarBridge();
-  }, []);
 
   const consultarStokes = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!apiConfigurada) {
+      setError('La API corporativa Stokes todavía no está configurada. Utiliza la carga manual de Excel.');
+      return;
+    }
     if (!usuario.trim() || !password) {
       setError('Ingresa tu usuario y contraseña corporativa.');
       return;
@@ -106,7 +88,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
     setCargando(true);
     setError(null);
     try {
-      const response = await fetch(`${BRIDGE_BASE_URL}/api/reporte-stokes`, {
+      const response = await fetch(`${INTERNAL_API_BASE_URL}/api/reporte-stokes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -119,15 +101,11 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || result.error || 'No fue posible obtener el reporte Stokes.');
-      if (result.isContingency) throw new Error('ReportServer no está disponible. No se usarán datos de contingencia como información operacional.');
-
       setDatos(Array.isArray(result.data) ? result.data : []);
-      setOrigen('bridge');
+      setOrigen('api');
       setUltimaActualizacion(new Date().toISOString());
-      setBridgeStatus('online');
     } catch (err: any) {
-      setError(err?.message || 'Error de conexión con Stokes Bridge.');
-      if (String(err?.message || '').includes('fetch')) setBridgeStatus('offline');
+      setError(err?.message || 'Error de conexión con la API corporativa Stokes.');
     } finally {
       setPassword('');
       setCargando(false);
@@ -141,6 +119,9 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
     reader.onload = e => {
       try {
         const parsed = parsearExcelReportServer(new Uint8Array(e.target?.result as ArrayBuffer));
+        if (!parsed.length) {
+          throw new Error('No se detectaron guías válidas en el archivo seleccionado.');
+        }
         setDatos(parsed);
         setOrigen('excel');
         setUltimaActualizacion(new Date().toISOString());
@@ -203,64 +184,55 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
             <button onClick={onBack} className="p-3 rounded-2xl bg-purple-50 text-[#461D77] hover:bg-purple-100"><ArrowLeft size={18} /></button>
             <div>
               <div className="text-[10px] font-black tracking-[.18em] uppercase text-[#461D77]">Reporte Stokes</div>
-              <h1 className="text-2xl font-black text-[#461D77]">Conexión segura mediante Bridge local</h1>
-              <p className="text-sm text-slate-500 mt-1">ReportServer: clanfdbsw06-li.ad.sqmlitio.com · las credenciales no se envían a Vercel.</p>
+              <h1 className="text-2xl font-black text-[#461D77]">Datos operacionales Stokes</h1>
+              <p className="text-sm text-slate-500 mt-1">Modo actual: carga manual del Excel generado en Historico_guia_transportista.</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 ${bridgeStatus === 'online' ? 'bg-emerald-50 text-emerald-700' : bridgeStatus === 'checking' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>
-              <span className={`w-2 h-2 rounded-full ${bridgeStatus === 'online' ? 'bg-emerald-500' : bridgeStatus === 'checking' ? 'bg-amber-500' : 'bg-red-500'}`} />
-              {bridgeStatus === 'online' ? 'Bridge conectado' : bridgeStatus === 'checking' ? 'Verificando Bridge' : 'Bridge desconectado'}
-            </div>
-            <button onClick={verificarBridge} className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50"><RefreshCw size={16} /></button>
+          <div className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 ${apiConfigurada ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+            <span className={`w-2 h-2 rounded-full ${apiConfigurada ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+            {apiConfigurada ? 'API corporativa configurada' : 'API corporativa pendiente'}
           </div>
         </header>
 
-        {bridgeStatus === 'offline' && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 text-amber-900">
-            <AlertCircle className="shrink-0 mt-0.5" size={19} />
+        {!apiConfigurada && (
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex gap-3 text-blue-900">
+            <Info className="shrink-0 mt-0.5" size={19} />
             <div>
-              <div className="font-black">Stokes Bridge no está ejecutándose en este computador.</div>
-              <p className="text-sm mt-1">En el PC corporativo inicia el repositorio y ejecuta <code className="bg-white px-2 py-0.5 rounded">npm run stokes:bridge</code>. Luego presiona el botón de actualización.</p>
+              <div className="font-black">La conexión automática queda preparada para una futura API interna.</div>
+              <p className="text-sm mt-1">Los equipos corporativos no pueden ejecutar un Bridge local y Vercel no tiene acceso directo a ReportServer. Mientras TI no disponga de un gateway interno autorizado, carga el Excel generado desde Stokes. El archivo se procesa en este navegador.</p>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 xl:grid-cols-[390px_1fr] gap-5">
-          <section className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm h-fit">
-            <div className="flex items-center gap-2 mb-4">
-              <ShieldCheck className="text-emerald-600" size={20} />
-              <div>
-                <h2 className="font-black text-[#461D77]">Solicitar reporte</h2>
-                <p className="text-xs text-slate-500">Las credenciales viven solo durante esta solicitud en el navegador y el Bridge local.</p>
-              </div>
+          <section className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm h-fit space-y-5">
+            <div>
+              <div className="flex items-center gap-2 mb-2"><UploadCloud className="text-[#461D77]" size={20} /><h2 className="font-black text-[#461D77]">Cargar reporte Stokes</h2></div>
+              <p className="text-xs text-slate-500 mb-4">Exporta el reporte <strong>Historico_guia_transportista</strong> desde el sistema corporativo y selecciona el archivo Excel aquí.</p>
+              <label className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#461D77] hover:bg-[#35145b] text-white cursor-pointer font-black text-sm">
+                <FileSpreadsheet size={17} /> Seleccionar Excel Stokes
+                <input type="file" accept=".xlsx,.xls" onChange={cargarExcel} className="hidden" />
+              </label>
             </div>
 
-            <form onSubmit={consultarStokes} className="space-y-3">
-              <label className="block text-xs font-bold text-slate-600">Usuario corporativo
-                <div className="relative mt-1"><User size={15} className="absolute left-3 top-3 text-slate-400" /><input value={usuario} onChange={e => setUsuario(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" placeholder="usuario o SQM\\usuario" /></div>
-              </label>
-              <label className="block text-xs font-bold text-slate-600">Contraseña
-                <div className="relative mt-1"><KeyRound size={15} className="absolute left-3 top-3 text-slate-400" /><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" autoComplete="current-password" /></div>
-              </label>
-              <label className="block text-xs font-bold text-slate-600">Dominio Windows<input value={dominio} onChange={e => setDominio(e.target.value)} className="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" /></label>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="text-xs font-bold text-slate-600">Desde<input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
-                <label className="text-xs font-bold text-slate-600">Hasta<input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
-              </div>
-              <button disabled={cargando || bridgeStatus !== 'online'} className="w-full bg-[#461D77] hover:bg-[#35145b] disabled:bg-slate-300 text-white py-3 rounded-xl font-black flex items-center justify-center gap-2">
-                {cargando ? <RefreshCw size={16} className="animate-spin" /> : <Database size={16} />}
-                {cargando ? 'Consultando ReportServer…' : 'Conectar y obtener Stokes'}
-              </button>
-            </form>
+            {apiConfigurada && (
+              <>
+                <div className="border-t border-slate-100" />
+                <div className="flex items-center gap-2 mb-2"><ShieldCheck className="text-emerald-600" size={20} /><div><h2 className="font-black text-[#461D77]">Consulta automática</h2><p className="text-xs text-slate-500">Disponible mediante la API corporativa configurada por TI.</p></div></div>
+                <form onSubmit={consultarStokes} className="space-y-3">
+                  <label className="block text-xs font-bold text-slate-600">Usuario corporativo<div className="relative mt-1"><User size={15} className="absolute left-3 top-3 text-slate-400" /><input value={usuario} onChange={e => setUsuario(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" placeholder="usuario o SQM\\usuario" /></div></label>
+                  <label className="block text-xs font-bold text-slate-600">Contraseña<div className="relative mt-1"><KeyRound size={15} className="absolute left-3 top-3 text-slate-400" /><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" autoComplete="current-password" /></div></label>
+                  <label className="block text-xs font-bold text-slate-600">Dominio Windows<input value={dominio} onChange={e => setDominio(e.target.value)} className="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" /></label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-xs font-bold text-slate-600">Desde<input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
+                    <label className="text-xs font-bold text-slate-600">Hasta<input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
+                  </div>
+                  <button disabled={cargando} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-black flex items-center justify-center gap-2"><Database size={16} />{cargando ? 'Consultando…' : 'Obtener desde API interna'}</button>
+                </form>
+              </>
+            )}
 
-            <div className="my-4 border-t border-slate-100" />
-            <label className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer font-bold text-sm text-slate-700">
-              <UploadCloud size={16} /> Cargar Excel manual
-              <input type="file" accept=".xlsx,.xls" onChange={cargarExcel} className="hidden" />
-            </label>
-
-            {error && <div className="mt-4 bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 text-sm"><strong>Error:</strong> {error}</div>}
+            {error && <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 text-sm flex gap-2"><AlertCircle size={17} className="shrink-0 mt-0.5" /><div><strong>Error:</strong> {error}</div></div>}
           </section>
 
           <section className="space-y-4">
@@ -274,8 +246,8 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-black text-[#461D77] flex items-center gap-2"><FileSpreadsheet size={18} /> Datos Stokes</h2>
-                  <p className="text-xs text-slate-500 mt-1">{origen === 'bridge' ? 'Fuente: ReportServer vía Bridge local' : origen === 'excel' ? 'Fuente: Excel local' : 'Sin datos cargados'}{ultimaActualizacion ? ` · Actualizado ${new Date(ultimaActualizacion).toLocaleString('es-CL')}` : ''}</p>
+                  <div className="font-black text-[#461D77] flex items-center gap-2"><Database size={17} /> Datos Stokes</div>
+                  <div className="text-xs text-slate-400 mt-1">{ultimaActualizacion ? `${origen === 'excel' ? 'Excel local' : 'API interna'} · ${new Date(ultimaActualizacion).toLocaleString('es-CL')}` : 'Sin datos cargados'}</div>
                 </div>
                 <div className="flex gap-2">
                   <div className="relative"><Search size={15} className="absolute left-3 top-3 text-slate-400" /><input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar…" className="pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm" /></div>
@@ -284,7 +256,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
               </div>
 
               {!datos.length ? (
-                <div className="py-20 text-center text-slate-400"><Server size={42} className="mx-auto mb-3 text-slate-300" /><div className="font-bold text-slate-600">Aún no hay datos Stokes en esta sesión</div><p className="text-sm mt-1">Conecta el Bridge y solicita el reporte o carga un Excel.</p></div>
+                <div className="py-20 text-center text-slate-400"><FileSpreadsheet size={42} className="mx-auto mb-3 text-slate-300" /><div className="font-bold text-slate-600">Aún no hay datos Stokes en esta sesión</div><p className="text-sm mt-1">Carga el Excel exportado desde Historico_guia_transportista.</p></div>
               ) : (
                 <div className="overflow-auto max-h-[650px]">
                   <table className="w-full text-xs text-left min-w-[1100px]">
@@ -297,7 +269,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
           </section>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-xs text-slate-500 flex items-start gap-2"><ShieldCheck size={16} className="text-emerald-600 shrink-0" /><p><strong className="text-slate-700">Diseño de seguridad:</strong> el Bridge escucha únicamente en <code>127.0.0.1</code>; Despacho-Litio se comunica con él desde este computador y el Bridge se conecta al ReportServer interno. La contraseña se limpia del estado del formulario al terminar cada solicitud.</p></div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-xs text-slate-500 flex items-start gap-2"><ShieldCheck size={16} className="text-emerald-600 shrink-0" /><p><strong className="text-slate-700">Privacidad:</strong> en modo manual el archivo Excel se procesa directamente en el navegador. La conexión automática solo se habilitará cuando exista una API corporativa autorizada y se configure <code>VITE_STOKES_INTERNAL_API_URL</code>.</p></div>
       </div>
     </div>
   );
