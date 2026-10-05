@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Lock, User, LogIn, KeyRound, ShieldAlert, Loader2, Check } from 'lucide-react';
 import { NovandinoLogo } from './BrandLogo';
-import { db, bootstrapPredefinedUsers, logActivity, SystemUser } from '../services/firebase';
+import { db, bootstrapPredefinedUsers, logActivity, SystemUser, isQuotaExceededError } from '../services/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
 interface LoginScreenProps {
@@ -40,7 +40,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           throw new Error('No users found in collection.');
         }
       } catch (err) {
-        console.error('Error fetching users from Firestore, using fallback:', err);
+        if (!isQuotaExceededError(err)) {
+          console.error('Error fetching users from Firestore, using fallback:', err);
+        } else {
+          console.warn('Firestore read quota reached; using preloaded roster for sign-in.');
+        }
         const fallbackUsers: SystemUser[] = [
           { uid: 'ctapia', userId: 'ctapia', username: 'ctapia', name: 'Cristian Tapia', role: 'admin' },
           { uid: 'mtoledo', userId: 'mtoledo', username: 'mtoledo', name: 'Mauricio Toledo', role: 'jefe_turno' },

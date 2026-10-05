@@ -39,13 +39,22 @@ export interface FirestoreErrorInfo {
 }
 
 let firestoreWriteBlocked = false;
+let firestoreReadBlocked = false;
 
 export function isFirestoreWriteBlocked(): boolean {
   return firestoreWriteBlocked;
 }
 
+export function isFirestoreReadBlocked(): boolean {
+  return firestoreReadBlocked;
+}
+
 export function setFirestoreWriteBlocked(blocked: boolean) {
   firestoreWriteBlocked = blocked;
+}
+
+export function setFirestoreReadBlocked(blocked: boolean) {
+  firestoreReadBlocked = blocked;
 }
 
 export function isQuotaExceededError(error: unknown): boolean {
@@ -54,16 +63,22 @@ export function isQuotaExceededError(error: unknown): boolean {
   const isExceeded = (
     msg.includes('resource-exhausted') ||
     msg.includes('Quota exceeded') ||
+    msg.includes('Quota limit exceeded') ||
     msg.includes('quota metric') ||
     (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 'resource-exhausted')
   );
   if (isExceeded) {
     firestoreWriteBlocked = true;
+    firestoreReadBlocked = true;
   }
   return isExceeded;
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  if (isQuotaExceededError(error)) {
+    console.warn(`[Firestore Quota] Limit reached for operation ${operationType} on ${path || 'database'}. Falling back gracefully to local state.`);
+    return;
+  }
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
@@ -74,15 +89,12 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  if (isQuotaExceededError(error)) {
-    console.warn('Firestore daily write/read quota reached. Operations will fallback to local state.');
-    return;
-  }
   throw new Error(JSON.stringify(errInfo));
 }
 
 // Verify connection on boot
 export async function testConnection() {
+  if (isFirestoreReadBlocked()) return;
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
@@ -99,12 +111,16 @@ testConnection();
 
 export interface SystemUser {
   userId: string;
-  username: string;
+  uid?: string;
+  entraOid?: string;
+  username?: string;
   password?: string;
   name: string;
   role: 'admin' | 'jefe_turno' | 'supervision';
   lastLogin?: string;
   enableAi?: boolean;
+  email?: string;
+  active?: boolean;
 }
 
 export const INITIAL_PREDEFINED_USERS: SystemUser[] = [
@@ -335,6 +351,10 @@ export async function saveOperationalReportToFirebase(
  * Retrieves all operational report backups stored in Firebase Firestore.
  */
 export async function getOperationalReportsFromFirebase(): Promise<OperationalReportDoc[]> {
+  if (isFirestoreReadBlocked()) {
+    console.warn('Firestore read quota reached; using locally saved reports.');
+    return [];
+  }
   const pathForGet = 'operational_reports';
   try {
     const q = query(collection(db, pathForGet));
@@ -358,6 +378,10 @@ export async function getOperationalReportsFromFirebase(): Promise<OperationalRe
     // Sort descending by date
     return reports.sort((a, b) => b.date.localeCompare(a.date));
   } catch (error) {
+    if (isQuotaExceededError(error)) {
+      console.warn('Firestore daily read quota limit reached; returning local cached operational reports.');
+      return [];
+    }
     console.error('Error fetching operational reports from Firebase:', error);
     handleFirestoreError(error, OperationType.LIST, pathForGet);
     return [];
