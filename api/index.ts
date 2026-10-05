@@ -14,7 +14,7 @@ app.post("/api/reporte-stokes", (_req, res) => {
     code: "STOKES_REQUIRES_CORPORATE_BRIDGE",
     detail:
       "ReportServer está disponible únicamente dentro de la red corporativa. Use el diagnóstico Stokes para validar acceso desde este equipo; las credenciales corporativas no serán reenviadas desde Vercel.",
-    diagnosticUrl: "/stokes-diagnostic"
+    diagnosticUrl: "/stokes-diagnostic.html"
   });
 });
 
