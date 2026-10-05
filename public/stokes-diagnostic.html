@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Diagnóstico Stokes · Despacho Litio</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f6f4f8}
+    *{box-sizing:border-box} body{margin:0;padding:32px 18px} main{max-width:900px;margin:0 auto}
+    .card{background:#fff;border:1px solid #e6e1eb;border-radius:20px;padding:24px;box-shadow:0 10px 35px rgba(70,29,119,.08);margin-bottom:18px}
+    h1{margin:0 0 8px;color:#461d77;font-size:28px} h2{font-size:17px;margin:0 0 12px;color:#461d77}
+    p{line-height:1.55}.muted{color:#667085}.ok{color:#087a55}.warn{color:#9a6700}.bad{color:#b42318}
+    code{background:#f4f1f7;padding:2px 6px;border-radius:6px;word-break:break-all}
+    button,a.btn{appearance:none;border:0;border-radius:12px;padding:11px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;margin:4px 6px 4px 0}
+    .primary{background:#461d77;color:white}.secondary{background:#eee9f3;color:#461d77}.danger{background:#fef3f2;color:#b42318}
+    pre{white-space:pre-wrap;background:#101828;color:#e6edf3;border-radius:14px;padding:16px;min-height:170px;overflow:auto;font-size:12px}
+    .pill{display:inline-block;padding:4px 9px;border-radius:999px;background:#ecfdf3;color:#027a48;font-size:12px;font-weight:800}
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <span class="pill">Sin envío de credenciales</span>
+    <h1>Diagnóstico de conexión Stokes</h1>
+    <p>Esta página comprueba qué puede hacer <strong>el navegador de este computador corporativo</strong> frente al ReportServer interno detectado en el HAR.</p>
+    <p class="muted">Host observado: <code>clanfdbsw06-li.ad.sqmlitio.com</code><br>Reporte: <code>/produccion/operaciones/canchas/publico/Historico_guia_transportista</code></p>
+  </section>
+
+  <section class="card">
+    <h2>1. Comprobar acceso corporativo</h2>
+    <p>Abre el ReportServer directamente. Si carga y Windows te autentica, confirmamos que este PC alcanza el servidor interno.</p>
+    <a class="btn primary" target="_blank" rel="noopener noreferrer" href="http://clanfdbsw06-li.ad.sqmlitio.com/ReportServer/Pages/ReportViewer.aspx?/produccion/operaciones/canchas/publico/Historico_guia_transportista">Abrir ReportServer</a>
+  </section>
+
+  <section class="card">
+    <h2>2. Pruebas desde JavaScript</h2>
+    <p>Estas pruebas no piden usuario ni contraseña. El resultado nos dirá si el navegador permite integrar el ReportServer directamente o si necesitaremos un puente dentro de la red corporativa.</p>
+    <button class="secondary" onclick="testHttps()">Probar HTTPS + credenciales integradas</button>
+    <button class="secondary" onclick="testHttp()">Probar HTTP desde Vercel</button>
+    <button class="danger" onclick="clearLog()">Limpiar registro</button>
+    <pre id="log"></pre>
+  </section>
+
+  <section class="card">
+    <h2>Cómo interpretar el resultado</h2>
+    <p><strong>Si “Abrir ReportServer” funciona pero los fetch fallan:</strong> la red corporativa está bien; el bloqueo será del navegador (CORS, mixed content o autenticación cross-origin). En ese escenario implementaremos un Stokes Gateway dentro de la intranet.</p>
+    <p><strong>Si HTTPS responde correctamente:</strong> podremos estudiar integración directa sin exponer credenciales a Vercel.</p>
+    <p><strong>Si HTTP es bloqueado por mixed content:</strong> es esperado porque Vercel usa HTTPS mientras el ReportServer observado en el HAR usa HTTP.</p>
+  </section>
+</main>
+<script>
+const REPORT_PATH = '/ReportServer/Pages/ReportViewer.aspx?/produccion/operaciones/canchas/publico/Historico_guia_transportista';
+const HTTPS_URL = 'https://clanfdbsw06-li.ad.sqmlitio.com' + REPORT_PATH;
+const HTTP_URL = 'http://clanfdbsw06-li.ad.sqmlitio.com' + REPORT_PATH;
+const logEl = document.getElementById('log');
+function line(msg){
+  const ts = new Date().toLocaleTimeString('es-CL');
+  logEl.textContent += `[${ts}] ${msg}\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function clearLog(){ logEl.textContent=''; init(); }
+function init(){
+  line(`Página: ${location.href}`);
+  line(`Origen: ${location.origin}`);
+  line(`Protocolo: ${location.protocol}`);
+  line(`Navegador: ${navigator.userAgent}`);
+  line('No se recopilan ni envían credenciales desde esta página.');
+}
+async function runFetch(label,url){
+  line(`${label}: iniciando ${url}`);
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(),12000);
+  const started = performance.now();
+  try{
+    const r = await fetch(url,{method:'GET',credentials:'include',mode:'cors',cache:'no-store',signal:controller.signal});
+    line(`${label}: respuesta HTTP ${r.status} ${r.statusText} en ${Math.round(performance.now()-started)} ms`);
+    line(`${label}: content-type=${r.headers.get('content-type') || 'no visible'}`);
+    line(`${label}: CORS permitió leer la respuesta.`);
+  }catch(err){
+    line(`${label}: FALLÓ -> ${err && err.name ? err.name : 'Error'}: ${err && err.message ? err.message : String(err)}`);
+    if(location.protocol==='https:' && url.startsWith('http:')) line(`${label}: si la consola indica Mixed Content, el bloqueo es esperado desde Vercel HTTPS.`);
+    line(`${label}: un TypeError también puede significar CORS, certificado, DNS o autenticación cross-origin; revisa F12 > Console/Network.`);
+  }finally{ clearTimeout(timer); }
+}
+function testHttps(){ return runFetch('HTTPS',HTTPS_URL); }
+function testHttp(){ return runFetch('HTTP',HTTP_URL); }
+init();
+</script>
+</body>
+</html>
