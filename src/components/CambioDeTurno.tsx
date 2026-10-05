@@ -8,7 +8,7 @@ import { SimpleMarkdown } from './SimpleMarkdown';
 import { analyzeProductData } from '../services/localAnalysisService';
 import { cleanNumeric, parseExcelTime, normalizeHeader } from '../utils/dataProcessor';
 import { generateShiftReportPDF } from '../utils/pdfGenerator';
-import { db } from '../services/firebase';
+import { db, isQuotaExceededError } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from './Toast';
 import { getCurrentUser } from '../auth/authStore';
@@ -94,7 +94,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
         const user = getCurrentUser();
         if (user) {
-          const userDocRef = doc(db, 'users', user.entraOid);
+          const userDocRef = doc(db, 'users', user.entraOid || user.userId || user.uid || '');
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
@@ -102,7 +102,9 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           }
         }
       } catch (err) {
-        console.error('Error fetching AI settings in CambioDeTurno:', err);
+        if (!isQuotaExceededError(err)) {
+          console.error('Error fetching AI settings in CambioDeTurno:', err);
+        }
       }
     };
     fetchAiSettings();

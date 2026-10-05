@@ -7,7 +7,7 @@ import type { User as FirebaseUser } from 'firebase/auth';
  */
 export interface SystemUser {
   uid: string;
-  userId?: string; // Compatibility alias to uid for existing application modules
+  userId: string; // Compatibility alias to uid for existing application modules
   entraOid?: string; // Compatibility alias
   username?: string;
   name: string;
