@@ -6,14 +6,12 @@ import {
   CheckCircle2,
   Database,
   Download,
+  ExternalLink,
   FileSpreadsheet,
   Info,
-  KeyRound,
-  Lock,
   Search,
   ShieldCheck,
-  UploadCloud,
-  User
+  UploadCloud
 } from 'lucide-react';
 import { parsearExcelReportServer } from '../data/datosStokesHistoricos';
 
@@ -34,88 +32,40 @@ interface ModuloStokesProps {
   onBack: () => void;
 }
 
-const INTERNAL_API_BASE_URL = String((import.meta as any).env?.VITE_STOKES_INTERNAL_API_URL || '').replace(/\/+$/, '');
-
-function fechaLocalISO() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
-}
+const REPORT_SERVER_URL = 'http://clanfdbsw06-li.ad.sqmlitio.com/ReportServer/Pages/ReportViewer.aspx?/produccion/operaciones/canchas/publico/Historico_guia_transportista';
 
 export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack }) => {
-  if (currentUser?.role !== 'admin') {
+  if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5] p-6">
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 max-w-md text-center space-y-4">
-          <Lock className="w-10 h-10 text-red-600 mx-auto" />
-          <h2 className="text-xl font-black text-slate-800">Acceso exclusivo de administrador</h2>
-          <p className="text-sm text-slate-500">El módulo Reporte Stokes está restringido al administrador del sistema.</p>
+          <ShieldCheck className="w-10 h-10 text-[#461D77] mx-auto" />
+          <h2 className="text-xl font-black text-slate-800">Sesión requerida</h2>
+          <p className="text-sm text-slate-500">Debes iniciar sesión en Despacho-Litio para utilizar Reporte Stokes.</p>
           <button onClick={onBack} className="w-full py-3 bg-[#461D77] text-white rounded-xl font-bold">Volver</button>
         </div>
       </div>
     );
   }
 
-  const hoy = fechaLocalISO();
-  const apiConfigurada = Boolean(INTERNAL_API_BASE_URL);
-  const usuarioInicial = String(currentUser?.username || currentUser?.userId || currentUser?.uid || '');
-  const [usuario, setUsuario] = useState(usuarioInicial);
-  const [password, setPassword] = useState('');
-  const [dominio, setDominio] = useState('SQM');
-  const [fechaInicio, setFechaInicio] = useState(hoy);
-  const [fechaFin, setFechaFin] = useState(hoy);
   const [datos, setDatos] = useState<DespachoStokes[]>([]);
-  const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ultimaActualizacion, setUltimaActualizacion] = useState<string | null>(null);
-  const [origen, setOrigen] = useState<'api' | 'excel' | null>(null);
   const [busqueda, setBusqueda] = useState('');
 
-  const consultarStokes = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!usuario.trim() || !password) {
-      setError('Ingresa tu usuario y contraseña corporativa.');
-      return;
-    }
-    if (fechaFin < fechaInicio) {
-      setError('La fecha final no puede ser anterior a la fecha inicial.');
-      return;
-    }
-    if (!apiConfigurada) {
-      setError('Tus credenciales están listas para esta sesión, pero la conexión automática aún requiere la API corporativa Stokes. Mientras tanto utiliza la carga manual de Excel.');
-      return;
-    }
-
-    setCargando(true);
-    setError(null);
-    try {
-      const response = await fetch(`${INTERNAL_API_BASE_URL}/api/reporte-stokes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: usuario.trim(),
-          password,
-          domain: dominio.trim(),
-          fechaInicio,
-          fechaFin
-        })
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.detail || result.error || 'No fue posible obtener el reporte Stokes.');
-      setDatos(Array.isArray(result.data) ? result.data : []);
-      setOrigen('api');
-      setUltimaActualizacion(new Date().toISOString());
-    } catch (err: any) {
-      setError(err?.message || 'Error de conexión con la API corporativa Stokes.');
-    } finally {
-      setPassword('');
-      setCargando(false);
+  const abrirStokes = () => {
+    const nuevaVentana = window.open(REPORT_SERVER_URL, '_blank', 'noopener,noreferrer');
+    if (!nuevaVentana) {
+      setError('El navegador bloqueó la nueva ventana. Habilita las ventanas emergentes para Despacho-Litio e inténtalo nuevamente.');
+    } else {
+      setError(null);
     }
   };
 
   const cargarExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = e => {
       try {
@@ -124,7 +74,6 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
           throw new Error('No se detectaron guías válidas en el archivo seleccionado.');
         }
         setDatos(parsed);
-        setOrigen('excel');
         setUltimaActualizacion(new Date().toISOString());
         setError(null);
       } catch (err: any) {
@@ -174,7 +123,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
     const sheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, sheet, 'Stokes');
-    XLSX.writeFile(workbook, `Reporte_Stokes_${fechaInicio}_${fechaFin}.xlsx`);
+    XLSX.writeFile(workbook, `Reporte_Stokes_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   return (
@@ -185,47 +134,39 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
             <button onClick={onBack} className="p-3 rounded-2xl bg-purple-50 text-[#461D77] hover:bg-purple-100"><ArrowLeft size={18} /></button>
             <div>
               <div className="text-[10px] font-black tracking-[.18em] uppercase text-[#461D77]">Reporte Stokes</div>
-              <h1 className="text-2xl font-black text-[#461D77]">Datos operacionales Stokes</h1>
-              <p className="text-sm text-slate-500 mt-1">Cada usuario utiliza sus propias credenciales corporativas. La contraseña no se guarda.</p>
+              <h1 className="text-2xl font-black text-[#461D77]">Obtención de datos Stokes</h1>
+              <p className="text-sm text-slate-500 mt-1">Autenticación en el ReportServer corporativo y procesamiento del Excel en este navegador.</p>
             </div>
           </div>
-          <div className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 ${apiConfigurada ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-            <span className={`w-2 h-2 rounded-full ${apiConfigurada ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            {apiConfigurada ? 'Conexión automática disponible' : 'Conexión automática pendiente'}
+          <div className="px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 bg-emerald-50 text-emerald-700">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            Flujo corporativo disponible
           </div>
         </header>
 
-        {!apiConfigurada && (
-          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex gap-3 text-blue-900">
-            <Info className="shrink-0 mt-0.5" size={19} />
-            <div>
-              <div className="font-black">El formulario de credenciales ya está preparado para cada usuario.</div>
-              <p className="text-sm mt-1">Puedes ingresar usuario, contraseña, dominio y período. Por ahora esas credenciales permanecen únicamente en esta sesión del navegador y no se envían a Vercel. La consulta automática quedará habilitada cuando TI disponga de la API corporativa interna. Mientras tanto, el Excel Stokes puede cargarse manualmente.</p>
-            </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex gap-3 text-blue-900">
+          <Info className="shrink-0 mt-0.5" size={19} />
+          <div>
+            <div className="font-black">Las credenciales se ingresan directamente en el sistema corporativo Stokes.</div>
+            <p className="text-sm mt-1">Despacho-Litio no guarda ni recibe tu contraseña. Al abrir Stokes, inicia sesión con tus credenciales habituales, genera <strong>Historico_guia_transportista</strong>, exporta el Excel y luego cárgalo aquí.</p>
           </div>
-        )}
+        </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[390px_1fr] gap-5">
           <section className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm h-fit space-y-5">
             <div>
-              <div className="flex items-center gap-2 mb-2"><ShieldCheck className="text-emerald-600" size={20} /><div><h2 className="font-black text-[#461D77]">Credenciales Stokes</h2><p className="text-xs text-slate-500">Datos propios de cada usuario. No se almacenan ni se comparten entre sesiones.</p></div></div>
-              <form onSubmit={consultarStokes} className="space-y-3 mt-4">
-                <label className="block text-xs font-bold text-slate-600">Usuario corporativo<div className="relative mt-1"><User size={15} className="absolute left-3 top-3 text-slate-400" /><input value={usuario} onChange={e => setUsuario(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" placeholder="usuario o SQM\\usuario" autoComplete="username" /></div></label>
-                <label className="block text-xs font-bold text-slate-600">Contraseña<div className="relative mt-1"><KeyRound size={15} className="absolute left-3 top-3 text-slate-400" /><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" autoComplete="current-password" /></div></label>
-                <label className="block text-xs font-bold text-slate-600">Dominio Windows<input value={dominio} onChange={e => setDominio(e.target.value)} className="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" /></label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="text-xs font-bold text-slate-600">Desde<input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
-                  <label className="text-xs font-bold text-slate-600">Hasta<input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
-                </div>
-                <button disabled={cargando || !apiConfigurada} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-3 rounded-xl font-black flex items-center justify-center gap-2"><Database size={16} />{cargando ? 'Consultando…' : apiConfigurada ? 'Obtener desde Stokes' : 'Conexión automática pendiente'}</button>
-              </form>
+              <div className="flex items-center gap-2 mb-2"><ShieldCheck className="text-emerald-600" size={20} /><h2 className="font-black text-[#461D77]">1. Iniciar sesión en Stokes</h2></div>
+              <p className="text-xs text-slate-500 mb-4">Se abrirá el ReportServer interno de la empresa. Allí ingresa tu usuario y contraseña corporativa.</p>
+              <button onClick={abrirStokes} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm">
+                <ExternalLink size={17} /> Abrir Stokes e iniciar sesión
+              </button>
             </div>
 
             <div className="border-t border-slate-100" />
 
             <div>
-              <div className="flex items-center gap-2 mb-2"><UploadCloud className="text-[#461D77]" size={20} /><h2 className="font-black text-[#461D77]">Carga manual</h2></div>
-              <p className="text-xs text-slate-500 mb-4">Exporta <strong>Historico_guia_transportista</strong> desde el sistema corporativo y selecciona el Excel aquí.</p>
+              <div className="flex items-center gap-2 mb-2"><UploadCloud className="text-[#461D77]" size={20} /><h2 className="font-black text-[#461D77]">2. Cargar reporte generado</h2></div>
+              <p className="text-xs text-slate-500 mb-4">Después de exportar <strong>Historico_guia_transportista</strong> desde Stokes, selecciona el archivo Excel.</p>
               <label className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#461D77] hover:bg-[#35145b] text-white cursor-pointer font-black text-sm">
                 <FileSpreadsheet size={17} /> Seleccionar Excel Stokes
                 <input type="file" accept=".xlsx,.xls" onChange={cargarExcel} className="hidden" />
@@ -247,7 +188,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
               <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
                   <div className="font-black text-[#461D77] flex items-center gap-2"><Database size={17} /> Datos Stokes</div>
-                  <div className="text-xs text-slate-400 mt-1">{ultimaActualizacion ? `${origen === 'excel' ? 'Excel local' : 'API interna'} · ${new Date(ultimaActualizacion).toLocaleString('es-CL')}` : 'Sin datos cargados'}</div>
+                  <div className="text-xs text-slate-400 mt-1">{ultimaActualizacion ? `Excel local · ${new Date(ultimaActualizacion).toLocaleString('es-CL')}` : 'Sin datos cargados'}</div>
                 </div>
                 <div className="flex gap-2">
                   <div className="relative"><Search size={15} className="absolute left-3 top-3 text-slate-400" /><input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar…" className="pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm" /></div>
@@ -256,7 +197,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
               </div>
 
               {!datos.length ? (
-                <div className="py-20 text-center text-slate-400"><FileSpreadsheet size={42} className="mx-auto mb-3 text-slate-300" /><div className="font-bold text-slate-600">Aún no hay datos Stokes en esta sesión</div><p className="text-sm mt-1">Carga el Excel exportado desde Historico_guia_transportista.</p></div>
+                <div className="py-20 text-center text-slate-400"><FileSpreadsheet size={42} className="mx-auto mb-3 text-slate-300" /><div className="font-bold text-slate-600">Aún no hay datos Stokes en esta sesión</div><p className="text-sm mt-1">Abre Stokes, genera el reporte y carga el Excel exportado.</p></div>
               ) : (
                 <div className="overflow-auto max-h-[650px]">
                   <table className="w-full text-xs text-left min-w-[1100px]">
@@ -269,7 +210,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
           </section>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-xs text-slate-500 flex items-start gap-2"><ShieldCheck size={16} className="text-emerald-600 shrink-0" /><p><strong className="text-slate-700">Privacidad:</strong> usuario, contraseña y dominio se mantienen únicamente en el estado temporal de esta pantalla. No se guardan en localStorage, Firebase ni Vercel. En modo manual el Excel se procesa directamente en el navegador.</p></div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-xs text-slate-500 flex items-start gap-2"><ShieldCheck size={16} className="text-emerald-600 shrink-0" /><p><strong className="text-slate-700">Privacidad:</strong> la autenticación ocurre directamente en el ReportServer corporativo. Despacho-Litio no recibe la contraseña. El Excel se procesa localmente en el navegador y no se envía a Vercel.</p></div>
       </div>
     </div>
   );
