@@ -58,7 +58,8 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
 
   const hoy = fechaLocalISO();
   const apiConfigurada = Boolean(INTERNAL_API_BASE_URL);
-  const [usuario, setUsuario] = useState('');
+  const usuarioInicial = String(currentUser?.username || currentUser?.userId || currentUser?.uid || '');
+  const [usuario, setUsuario] = useState(usuarioInicial);
   const [password, setPassword] = useState('');
   const [dominio, setDominio] = useState('SQM');
   const [fechaInicio, setFechaInicio] = useState(hoy);
@@ -72,16 +73,16 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
 
   const consultarStokes = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!apiConfigurada) {
-      setError('La API corporativa Stokes todavía no está configurada. Utiliza la carga manual de Excel.');
-      return;
-    }
     if (!usuario.trim() || !password) {
       setError('Ingresa tu usuario y contraseña corporativa.');
       return;
     }
     if (fechaFin < fechaInicio) {
       setError('La fecha final no puede ser anterior a la fecha inicial.');
+      return;
+    }
+    if (!apiConfigurada) {
+      setError('Tus credenciales están listas para esta sesión, pero la conexión automática aún requiere la API corporativa Stokes. Mientras tanto utiliza la carga manual de Excel.');
       return;
     }
 
@@ -185,12 +186,12 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
             <div>
               <div className="text-[10px] font-black tracking-[.18em] uppercase text-[#461D77]">Reporte Stokes</div>
               <h1 className="text-2xl font-black text-[#461D77]">Datos operacionales Stokes</h1>
-              <p className="text-sm text-slate-500 mt-1">Modo actual: carga manual del Excel generado en Historico_guia_transportista.</p>
+              <p className="text-sm text-slate-500 mt-1">Cada usuario utiliza sus propias credenciales corporativas. La contraseña no se guarda.</p>
             </div>
           </div>
-          <div className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 ${apiConfigurada ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-            <span className={`w-2 h-2 rounded-full ${apiConfigurada ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-            {apiConfigurada ? 'API corporativa configurada' : 'API corporativa pendiente'}
+          <div className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 ${apiConfigurada ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+            <span className={`w-2 h-2 rounded-full ${apiConfigurada ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            {apiConfigurada ? 'Conexión automática disponible' : 'Conexión automática pendiente'}
           </div>
         </header>
 
@@ -198,8 +199,8 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex gap-3 text-blue-900">
             <Info className="shrink-0 mt-0.5" size={19} />
             <div>
-              <div className="font-black">La conexión automática queda preparada para una futura API interna.</div>
-              <p className="text-sm mt-1">Los equipos corporativos no pueden ejecutar un Bridge local y Vercel no tiene acceso directo a ReportServer. Mientras TI no disponga de un gateway interno autorizado, carga el Excel generado desde Stokes. El archivo se procesa en este navegador.</p>
+              <div className="font-black">El formulario de credenciales ya está preparado para cada usuario.</div>
+              <p className="text-sm mt-1">Puedes ingresar usuario, contraseña, dominio y período. Por ahora esas credenciales permanecen únicamente en esta sesión del navegador y no se envían a Vercel. La consulta automática quedará habilitada cuando TI disponga de la API corporativa interna. Mientras tanto, el Excel Stokes puede cargarse manualmente.</p>
             </div>
           </div>
         )}
@@ -207,32 +208,31 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
         <div className="grid grid-cols-1 xl:grid-cols-[390px_1fr] gap-5">
           <section className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm h-fit space-y-5">
             <div>
-              <div className="flex items-center gap-2 mb-2"><UploadCloud className="text-[#461D77]" size={20} /><h2 className="font-black text-[#461D77]">Cargar reporte Stokes</h2></div>
-              <p className="text-xs text-slate-500 mb-4">Exporta el reporte <strong>Historico_guia_transportista</strong> desde el sistema corporativo y selecciona el archivo Excel aquí.</p>
+              <div className="flex items-center gap-2 mb-2"><ShieldCheck className="text-emerald-600" size={20} /><div><h2 className="font-black text-[#461D77]">Credenciales Stokes</h2><p className="text-xs text-slate-500">Datos propios de cada usuario. No se almacenan ni se comparten entre sesiones.</p></div></div>
+              <form onSubmit={consultarStokes} className="space-y-3 mt-4">
+                <label className="block text-xs font-bold text-slate-600">Usuario corporativo<div className="relative mt-1"><User size={15} className="absolute left-3 top-3 text-slate-400" /><input value={usuario} onChange={e => setUsuario(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" placeholder="usuario o SQM\\usuario" autoComplete="username" /></div></label>
+                <label className="block text-xs font-bold text-slate-600">Contraseña<div className="relative mt-1"><KeyRound size={15} className="absolute left-3 top-3 text-slate-400" /><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" autoComplete="current-password" /></div></label>
+                <label className="block text-xs font-bold text-slate-600">Dominio Windows<input value={dominio} onChange={e => setDominio(e.target.value)} className="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" /></label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="text-xs font-bold text-slate-600">Desde<input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
+                  <label className="text-xs font-bold text-slate-600">Hasta<input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
+                </div>
+                <button disabled={cargando || !apiConfigurada} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-3 rounded-xl font-black flex items-center justify-center gap-2"><Database size={16} />{cargando ? 'Consultando…' : apiConfigurada ? 'Obtener desde Stokes' : 'Conexión automática pendiente'}</button>
+              </form>
+            </div>
+
+            <div className="border-t border-slate-100" />
+
+            <div>
+              <div className="flex items-center gap-2 mb-2"><UploadCloud className="text-[#461D77]" size={20} /><h2 className="font-black text-[#461D77]">Carga manual</h2></div>
+              <p className="text-xs text-slate-500 mb-4">Exporta <strong>Historico_guia_transportista</strong> desde el sistema corporativo y selecciona el Excel aquí.</p>
               <label className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#461D77] hover:bg-[#35145b] text-white cursor-pointer font-black text-sm">
                 <FileSpreadsheet size={17} /> Seleccionar Excel Stokes
                 <input type="file" accept=".xlsx,.xls" onChange={cargarExcel} className="hidden" />
               </label>
             </div>
 
-            {apiConfigurada && (
-              <>
-                <div className="border-t border-slate-100" />
-                <div className="flex items-center gap-2 mb-2"><ShieldCheck className="text-emerald-600" size={20} /><div><h2 className="font-black text-[#461D77]">Consulta automática</h2><p className="text-xs text-slate-500">Disponible mediante la API corporativa configurada por TI.</p></div></div>
-                <form onSubmit={consultarStokes} className="space-y-3">
-                  <label className="block text-xs font-bold text-slate-600">Usuario corporativo<div className="relative mt-1"><User size={15} className="absolute left-3 top-3 text-slate-400" /><input value={usuario} onChange={e => setUsuario(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" placeholder="usuario o SQM\\usuario" /></div></label>
-                  <label className="block text-xs font-bold text-slate-600">Contraseña<div className="relative mt-1"><KeyRound size={15} className="absolute left-3 top-3 text-slate-400" /><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" autoComplete="current-password" /></div></label>
-                  <label className="block text-xs font-bold text-slate-600">Dominio Windows<input value={dominio} onChange={e => setDominio(e.target.value)} className="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:border-[#461D77]" /></label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="text-xs font-bold text-slate-600">Desde<input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
-                    <label className="text-xs font-bold text-slate-600">Hasta<input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-full mt-1 px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></label>
-                  </div>
-                  <button disabled={cargando} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-black flex items-center justify-center gap-2"><Database size={16} />{cargando ? 'Consultando…' : 'Obtener desde API interna'}</button>
-                </form>
-              </>
-            )}
-
-            {error && <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 text-sm flex gap-2"><AlertCircle size={17} className="shrink-0 mt-0.5" /><div><strong>Error:</strong> {error}</div></div>}
+            {error && <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 text-sm flex gap-2"><AlertCircle size={17} className="shrink-0 mt-0.5" /><div><strong>Aviso:</strong> {error}</div></div>}
           </section>
 
           <section className="space-y-4">
@@ -269,7 +269,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
           </section>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-xs text-slate-500 flex items-start gap-2"><ShieldCheck size={16} className="text-emerald-600 shrink-0" /><p><strong className="text-slate-700">Privacidad:</strong> en modo manual el archivo Excel se procesa directamente en el navegador. La conexión automática solo se habilitará cuando exista una API corporativa autorizada y se configure <code>VITE_STOKES_INTERNAL_API_URL</code>.</p></div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-xs text-slate-500 flex items-start gap-2"><ShieldCheck size={16} className="text-emerald-600 shrink-0" /><p><strong className="text-slate-700">Privacidad:</strong> usuario, contraseña y dominio se mantienen únicamente en el estado temporal de esta pantalla. No se guardan en localStorage, Firebase ni Vercel. En modo manual el Excel se procesa directamente en el navegador.</p></div>
       </div>
     </div>
   );
