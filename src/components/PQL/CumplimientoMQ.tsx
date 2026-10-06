@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { 
-  ArrowLeft, Upload, X, ChevronRight, BarChart3, TrendingUp, TrendingDown, AlertCircle, 
+  ArrowLeft, Upload, X, ChevronLeft, ChevronRight, BarChart3, TrendingUp, TrendingDown, AlertCircle, 
   Calendar, CheckCircle, HelpCircle, Activity, ClipboardCheck, Target, Gauge, Zap, Package, Truck,
   Download, Loader2, Image as ImageIcon, FileText, MessageSquare
 } from 'lucide-react';
@@ -38,6 +38,7 @@ const MONTH_FULL_TO_ABBR: { [key: string]: string } = {
 };
 
 export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [workbookSheets, setWorkbookSheets] = useState<{ [key: string]: CumplimientoRow[] }>({});
   const [selectedSheet, setSelectedSheet] = useState<string>('');
@@ -398,10 +399,34 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="flex h-screen bg-[#FAF5E6] font-sans text-[#171717] overflow-hidden">
+    <div className="flex h-screen bg-[#FAF5E6] font-sans text-[#171717] overflow-hidden relative">
       
+      {/* PESTAÑA FLOTANTE PARA MOSTRAR EL MENÚ LATERAL CUANDO ESTÁ OCULTO */}
+      {isSidebarCollapsed && (
+        <button
+          type="button"
+          onClick={() => setIsSidebarCollapsed(false)}
+          className="fixed top-20 left-0 z-50 bg-[#461D77] text-white hover:bg-[#381660] border border-l-0 border-white/20 rounded-r-2xl p-3 shadow-2xl flex items-center justify-center transition-all duration-300 cursor-pointer no-print animate-in fade-in slide-in-from-left-2 group"
+          title="Mostrar Menú Lateral"
+        >
+          <ChevronRight size={20} className="text-[#4FD1C5] group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      )}
+
       {/* SIDEBAR FOR ACTIONS */}
-      <aside className="w-[300px] bg-[#DCDDEE] border-r border-[#7177EC]/20 flex flex-col no-print shrink-0">
+      <aside className={`bg-[#DCDDEE] border-r border-[#7177EC]/20 flex flex-col no-print shrink-0 relative transition-all duration-300 ${
+        isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden border-r-0' : 'w-[300px] opacity-100'
+      }`}>
+        {/* BOTÓN PARA OCULTAR EL MENÚ LATERAL */}
+        <button
+          type="button"
+          onClick={() => setIsSidebarCollapsed(true)}
+          className="absolute top-4 right-3 z-30 w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-[#7177EC]/20 flex items-center justify-center text-[#461D77] shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer no-print"
+          title="Ocultar Menú Lateral"
+        >
+          <ChevronLeft size={16} />
+        </button>
+
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
           <button 
             onClick={onBack} 

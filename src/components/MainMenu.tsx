@@ -9,6 +9,7 @@ import {
   Image as ImageIcon, 
   RefreshCw, 
   ClipboardList, 
+  FileText,
   Clock, 
   Calendar, 
   User, 
@@ -346,71 +347,6 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       {/* Main Content Safe Area wrapper */}
       <div className="relative z-10 w-full max-w-[102rem] mx-auto px-6 py-6 md:py-10 flex-grow flex flex-col gap-6 md:gap-10">
         
-        {/* TOP STATUS NAVIGATION BAR (Glassmorphism Header) */}
-        <header className="w-full bg-white/60 backdrop-blur-md rounded-3xl border border-white/50 p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-            <NovandinoLogo className="h-16 w-[200px]" variant="small" />
-            <div className="hidden sm:block h-8 w-[1px] bg-slate-300/60" />
-            <div className="space-y-1">
-              <span className="inline-flex items-center gap-1.5 bg-nucleo/10 text-nucleo text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase">
-                SISTEMA INFORMATIZADO M1
-              </span>
-              <p className="text-[11px] font-medium text-slate-500 tracking-wide">
-                SUBGERENCIA LOGÍSTICA LITIO &bull; DESPACHO
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-3.5">
-            {/* Admin and Jefe Turno actions */}
-            <div className="flex items-center gap-2">
-              {currentUser?.role === 'admin' && (
-                <>
-                  {/* Control SLIT button removed as requested */}
-                  <button
-                    type="button"
-                    onClick={() => onSelectView('users')}
-                    className="bg-[#461D77]/8 hover:bg-[#461D77]/15 border border-[#461D77]/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-[#461D77] uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
-                  >
-                    <User size={13} strokeWidth={2.5} /> Usuarios
-                  </button>
-                </>
-              )}
-              {(currentUser?.role === 'admin' || currentUser?.role === 'jefe_turno') && (
-                <button
-                  type="button"
-                  onClick={() => onSelectView('logs')}
-                  className="bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-indigo-600 uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
-                >
-                  <Activity size={13} strokeWidth={2.5} /> Bitácora
-                </button>
-              )}
-            </div>
-
-            {/* Sign Out Trigger button */}
-            <button
-              type="button"
-              onClick={onLogout}
-              className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-2xl px-4 py-2.5 text-[10px] font-black text-rose-600 uppercase tracking-widest transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm hover:shadow-md"
-            >
-              Salir
-            </button>
-
-            {/* Real-time Clock Widget */}
-            <div className="bg-white/80 border border-slate-200/50 rounded-2xl px-5 py-2 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Clock size={16} className="text-[#7177EC]" />
-                <span className="font-mono text-sm font-extrabold text-tecnico tracking-tight">{time || '00:00:00'}</span>
-              </div>
-              <div className="w-[1px] h-4 bg-slate-200" />
-              <div className="flex items-center gap-2">
-                <Calendar size={15} className="text-[#3FAA88]" />
-                <span className="text-[11px] font-bold text-slate-500 capitalize">{dateStr.replace(' de 2026', '') || 'Cargando fecha...'}</span>
-              </div>
-            </div>
-          </div>
-        </header>
-
         {/* HERO SECTION - Welcome and general operational context */}
         <section className="w-full bg-gradient-to-r from-[#1e1b4b] via-[#311042] to-[#110e2e] rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-xl border-t border-white/10">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
@@ -721,7 +657,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               ) : openedLocation === 'PQL' ? (
                 <div className="space-y-6">
                   {/* PQL CARDS GRID */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full auto-rows-fr">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full auto-rows-fr">
                     {/* CUMPLIMIENTO M&Q */}
                     <motion.button
                       variants={itemVariants}
@@ -801,6 +737,48 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                       <div className="w-full pt-4 mt-4 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
                         <span className="text-slate-500 group-hover:text-indigo-600 transition-colors">ACCEDER AL COMPONENTE</span>
                         <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300 shadow-sm">
+                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </motion.button>
+
+                    {/* INFORME OPERATIVO SLIT (TERCER MÓDULO PQL) */}
+                    <motion.button
+                      variants={itemVariants}
+                      onClick={() => onSelectView('informe-operativo')}
+                      className="group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer min-h-[19.5rem] lg:min-h-[21rem]"
+                    >
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      
+                      <div className="flex items-center justify-between w-full relative z-10">
+                        <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-emerald-600 transition-colors uppercase">
+                          PLANTA QUÍMICA &bull; SLIT
+                        </span>
+                        
+                        <span className="text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase bg-emerald-500/10 text-emerald-600">
+                          &bull; ACTIVO
+                        </span>
+                      </div>
+
+                      <div className="space-y-4 my-auto relative z-10">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm bg-[#4B1F82] text-white group-hover:scale-110 group-hover:rotate-3">
+                          <FileText size={24} strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Informe Operacional SLIT</p>
+                          <h2 className="font-[900] text-slate-800 tracking-tighter transition-colors text-2xl lg:text-3xl">
+                            Informe Operativo
+                          </h2>
+                          <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 font-medium">
+                            Informe operacional en dos piezas: resumen gerencial para correo en PNG y documento adjunto en PDF con tendencia y detalle de planta.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="w-full pt-4 mt-4 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className="text-slate-500 group-hover:text-emerald-600 transition-colors">ACCEDER AL COMPONENTE</span>
+                        <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-[#4B1F82] group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300 shadow-sm">
                           <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                         </div>
                       </div>

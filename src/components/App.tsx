@@ -4,7 +4,7 @@ import {
   Upload, Loader2,
   Home, Truck, Image as ImageIcon,
   Clock, BarChart3, TrendingUp, Target, Users, Scale, ClipboardCheck, FileText, Download,
-  Mail, Send, X, Lock, ArrowLeft
+  Mail, Send, X, Lock, ArrowLeft, ChevronLeft, ChevronRight, PanelLeft, PanelLeftClose
 } from 'lucide-react';
 import ChartCard from './ChartCard';
 import ProductDetailSection from './ProductDetailSection';
@@ -21,6 +21,7 @@ import CambioDeTurno from './CambioDeTurno';
 import LCEModule from './LCE/LCEModule';
 import { CumplimientoMQ } from './PQL/CumplimientoMQ';
 import { CumplimientoJorquera } from './PQL/CumplimientoJorquera';
+import { InformeOperativo } from './PQL/InformeOperativo';
 import { ModuloStokes } from './ModuloStokes';
 import { CloudUpload } from 'lucide-react';
 import { cleanNumeric, parseExcelTime, formatHoursToTime, formatDateToCL, downloadBackupJSON, syncBackupToFirebase, normalizeHeader, formatNumberWithDecimals, separateBischofitaByDest, isProductNovandino, isProductSQM, formatCLB } from '../utils/dataProcessor';
@@ -59,6 +60,7 @@ export type AppView =
   | 'slit'
   | 'cumplimiento-mq'
   | 'cumplimiento-jorquera'
+  | 'informe-operativo'
   | 'stokes'
   | '404';
 
@@ -77,6 +79,7 @@ export const VIEW_TO_PATH: Record<AppView, string> = {
   'slit': '/slit',
   'cumplimiento-mq': '/cumplimiento-mq',
   'cumplimiento-jorquera': '/cumplimiento-jorquera',
+  'informe-operativo': '/informe-operativo',
   'stokes': '/stokes',
   '404': '/404'
 };
@@ -101,6 +104,7 @@ export const PATH_TO_VIEW: Record<string, AppView> = {
   '/slit': 'slit',
   '/cumplimiento-mq': 'cumplimiento-mq',
   '/cumplimiento-jorquera': 'cumplimiento-jorquera',
+  '/informe-operativo': 'informe-operativo',
   '/stokes': 'stokes',
   '/404': '404'
 };
@@ -120,6 +124,7 @@ const VIEW_TITLES: Record<AppView, string> = {
   'slit': 'Dashboard SLIT · Despacho Litio',
   'cumplimiento-mq': 'Cumplimiento MQ · Despacho Litio',
   'cumplimiento-jorquera': 'Cumplimiento Jorquera · Despacho Litio',
+  'informe-operativo': 'Informe Operativo SLIT · Planta Química Litio',
   'stokes': 'Reporte Stokes · Despacho Litio',
   '404': 'Ruta No Encontrada (404) · Despacho Litio'
 };
@@ -150,6 +155,7 @@ const App: React.FC = () => {
 
   const [view, setView] = useState<AppView>(() => getInitialView());
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [rawData, setRawData] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -1056,6 +1062,7 @@ const App: React.FC = () => {
     }
     if (view === 'cumplimiento-mq') return <CumplimientoMQ onBack={handleBack} />;
     if (view === 'cumplimiento-jorquera') return <CumplimientoJorquera onBack={handleBack} />;
+    if (view === 'informe-operativo') return <InformeOperativo onBack={handleBack} />;
     if (view === 'stokes') {
       if (!currentUser) {
         navigateTo('menu', true);
@@ -1077,8 +1084,32 @@ const App: React.FC = () => {
 
     // fallback sidebar layout for standard dashboard view
     return (
-      <div className="flex h-screen bg-calido font-sans text-tecnico overflow-hidden">
-        <aside className="w-[300px] bg-levanda border-r border-violeta/20 flex flex-col no-print shrink-0">
+      <div className="flex h-screen bg-calido font-sans text-tecnico overflow-hidden relative">
+        {/* PESTAÑA FLOTANTE PARA MOSTRAR EL MENÚ LATERAL CUANDO ESTÁ OCULTO */}
+        {isSidebarCollapsed && (
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed(false)}
+            className="fixed top-20 left-0 z-50 bg-[#461D77] text-white hover:bg-[#381660] border border-l-0 border-white/20 rounded-r-2xl p-3 shadow-2xl flex items-center justify-center transition-all duration-300 cursor-pointer no-print animate-in fade-in slide-in-from-left-2 group"
+            title="Mostrar Menú Lateral"
+          >
+            <ChevronRight size={20} className="text-[#4FD1C5] group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        )}
+
+        <aside className={`bg-levanda border-r border-violeta/20 flex flex-col no-print shrink-0 relative transition-all duration-300 ${
+          isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden border-r-0' : 'w-[300px] opacity-100'
+        }`}>
+          {/* BOTÓN PARA OCULTAR EL MENÚ LATERAL */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed(true)}
+            className="absolute top-4 right-3 z-30 w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-violeta/20 flex items-center justify-center text-[#461D77] shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer no-print"
+            title="Ocultar Menú Lateral"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
           <div className="p-6 overflow-y-auto flex-1 space-y-8">
             <div className="flex flex-col gap-2 mb-4">
               {activeLocation && (
