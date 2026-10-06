@@ -40,6 +40,95 @@ import { UserManagementView } from './UserManagementView';
 declare const html2canvas: any;
 declare const jspdf: any;
 
+export type AppView =
+  | 'menu'
+  | 'llegada'
+  | 'informe-novandino'
+  | 'informe-sqm'
+  | 'memoria'
+  | 'ddd'
+  | 'galeria'
+  | 'cambioTurno'
+  | 'lce'
+  | 'users'
+  | 'logs'
+  | 'slit'
+  | 'cumplimiento-mq'
+  | 'cumplimiento-jorquera'
+  | 'stokes';
+
+export const VIEW_TO_PATH: Record<AppView, string> = {
+  'menu': '/',
+  'llegada': '/llegada',
+  'informe-novandino': '/informe-novandino',
+  'informe-sqm': '/informe-sqm',
+  'memoria': '/memoria',
+  'ddd': '/ddd',
+  'galeria': '/galeria',
+  'cambioTurno': '/cambio-turno',
+  'lce': '/lce',
+  'users': '/usuarios',
+  'logs': '/bitacora',
+  'slit': '/slit',
+  'cumplimiento-mq': '/cumplimiento-mq',
+  'cumplimiento-jorquera': '/cumplimiento-jorquera',
+  'stokes': '/stokes'
+};
+
+export const PATH_TO_VIEW: Record<string, AppView> = {
+  '/': 'menu',
+  '': 'menu',
+  '/menu': 'menu',
+  '/llegada': 'llegada',
+  '/informe-novandino': 'informe-novandino',
+  '/informe-sqm': 'informe-sqm',
+  '/memoria': 'memoria',
+  '/ddd': 'ddd',
+  '/galeria': 'galeria',
+  '/cambio-turno': 'cambioTurno',
+  '/cambioturno': 'cambioTurno',
+  '/lce': 'lce',
+  '/usuarios': 'users',
+  '/users': 'users',
+  '/bitacora': 'logs',
+  '/logs': 'logs',
+  '/slit': 'slit',
+  '/cumplimiento-mq': 'cumplimiento-mq',
+  '/cumplimiento-jorquera': 'cumplimiento-jorquera',
+  '/stokes': 'stokes'
+};
+
+const VIEW_TITLES: Record<AppView, string> = {
+  'menu': 'Litio Dashboard SQM · Menú Principal',
+  'llegada': 'Llegada de Equipos · Despacho Litio',
+  'informe-novandino': 'Informe Operativo Novandino · Despacho Litio',
+  'informe-sqm': 'Informe Operativo SQM NY · Despacho Litio',
+  'memoria': 'Módulo Memoria e Historial · Despacho Litio',
+  'ddd': 'Tablero DdD · Despacho Litio',
+  'galeria': 'Galería de Informes · Despacho Litio',
+  'cambioTurno': 'Cambio de Turno · Despacho Litio',
+  'lce': 'Control LCE · Despacho Litio',
+  'users': 'Gestión de Usuarios · Despacho Litio',
+  'logs': 'Bitácora de Auditoría · Despacho Litio',
+  'slit': 'Dashboard SLIT · Despacho Litio',
+  'cumplimiento-mq': 'Cumplimiento MQ · Despacho Litio',
+  'cumplimiento-jorquera': 'Cumplimiento Jorquera · Despacho Litio',
+  'stokes': 'Reporte Stokes · Despacho Litio'
+};
+
+function getInitialView(): AppView {
+  if (typeof window === 'undefined') return 'menu';
+  const pathname = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  if (PATH_TO_VIEW[pathname]) {
+    return PATH_TO_VIEW[pathname];
+  }
+  const hash = window.location.hash.toLowerCase().replace(/^#\/?/, '/').replace(/\/+$/, '') || '/';
+  if (PATH_TO_VIEW[hash]) {
+    return PATH_TO_VIEW[hash];
+  }
+  return 'menu';
+}
+
 const App: React.FC = () => {
   // Session details stored in state and localStorage
   const [currentUser, setCurrentUser] = useState<SystemUser | null>(() => {
@@ -47,7 +136,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [view, setView] = useState<'menu' | 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'cumplimiento-mq' | 'cumplimiento-jorquera' | 'stokes'>('menu');
+  const [view, setView] = useState<AppView>(() => getInitialView());
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
   const [rawData, setRawData] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -68,6 +157,65 @@ const App: React.FC = () => {
   const [emailCC, setEmailCC] = useState('operaciones@novandino.cl, despacho@novandino.cl');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
+
+  // Browser History Navigation Manager (supports browser back/forward arrows and direct URLs)
+  const navigateTo = useCallback((nextView: AppView, replace: boolean = false) => {
+    setView(nextView);
+    if (typeof window !== 'undefined') {
+      const targetPath = VIEW_TO_PATH[nextView] || '/';
+      const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+      if (currentPath !== targetPath) {
+        if (replace) {
+          window.history.replaceState({ view: nextView }, '', targetPath);
+        } else {
+          window.history.pushState({ view: nextView }, '', targetPath);
+        }
+      }
+      if (VIEW_TITLES[nextView]) {
+        document.title = VIEW_TITLES[nextView];
+      }
+    }
+  }, []);
+
+  const handleBack = useCallback(() => {
+    if (typeof window !== 'undefined' && window.history.state?.view && window.history.state.view !== 'menu') {
+      window.history.back();
+    } else {
+      navigateTo('menu');
+    }
+  }, [navigateTo]);
+
+  // Synchronize browser native back/forward buttons (popstate event)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const initView = getInitialView();
+      const initPath = VIEW_TO_PATH[initView] || '/';
+      window.history.replaceState({ view: initView }, '', initPath);
+      if (VIEW_TITLES[initView]) {
+        document.title = VIEW_TITLES[initView];
+      }
+    }
+
+    const onPopState = (e: PopStateEvent) => {
+      if (e.state && e.state.view && VIEW_TO_PATH[e.state.view as AppView]) {
+        const nextView = e.state.view as AppView;
+        setView(nextView);
+        if (VIEW_TITLES[nextView]) {
+          document.title = VIEW_TITLES[nextView];
+        }
+        return;
+      }
+      const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+      const matched = PATH_TO_VIEW[currentPath] || 'menu';
+      setView(matched);
+      if (VIEW_TITLES[matched]) {
+        document.title = VIEW_TITLES[matched];
+      }
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   // Sync access state with user roles on change and save session to localStorage
   useEffect(() => {
@@ -151,7 +299,7 @@ const App: React.FC = () => {
     setCurrentUser(null);
     setIsJefeTurnoUnlocked(false);
     localStorage.removeItem('sqm_current_user');
-    setView('menu');
+    navigateTo('menu', true);
   };
 
   const handleExportPDF = async () => {
@@ -770,36 +918,16 @@ const App: React.FC = () => {
     }
   };
 
-  const handleViewChange = (v: 'menu' | 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs') => {
-    if (v === 'memoria') {
-      if (isJefeTurnoUnlocked) {
-        setView('memoria');
-      } else {
-        setPasswordRequest({ view: 'memoria', name: 'Memoria' });
-      }
-    } else if (v === 'cambioTurno') {
-      if (isJefeTurnoUnlocked) {
-        setView('cambioTurno');
-      } else {
-        setPasswordRequest({ view: 'cambioTurno', name: 'Cambio de Turno' });
-      }
-    } else if (v === 'lce') {
-      if (isJefeTurnoUnlocked) {
-        setView('lce');
-      } else {
-        setPasswordRequest({ view: 'lce', name: 'Control LCE' });
-      }
-    } else {
-      setView(v);
-    }
+  const handleViewChange = (v: AppView) => {
+    navigateTo(v);
   };
 
   const renderCurrentView = () => {
     if (view === 'logs' && (currentUser?.role === 'admin' || currentUser?.role === 'jefe_turno')) {
-      return <ActivityLogsView currentUser={currentUser} onBack={() => setView('menu')} />;
+      return <ActivityLogsView currentUser={currentUser} onBack={handleBack} />;
     }
     if (view === 'users' && currentUser?.role === 'admin') {
-      return <UserManagementView currentUser={currentUser} onBack={() => setView('menu')} onUpdateCurrentUser={setCurrentUser} />;
+      return <UserManagementView currentUser={currentUser} onBack={handleBack} onUpdateCurrentUser={setCurrentUser} />;
     }
     if (view === 'menu') return (
       <MainMenu 
@@ -812,27 +940,39 @@ const App: React.FC = () => {
         onLocationChange={setActiveLocation}
       />
     );
-    if (view === 'llegada') return <LlegadaEquipos currentUser={currentUser} onBack={() => setView('menu')} />;
+    if (view === 'llegada') return <LlegadaEquipos currentUser={currentUser} onBack={handleBack} />;
     if (view === 'slit' && currentUser?.role === 'admin') {
-      return <SlitDashboard data={rawData} onBack={() => setView('menu')} />;
+      return <SlitDashboard data={rawData} onBack={handleBack} />;
     }
-    if (view === 'memoria') return (
-      <MemoryModule
-        data={rawData}
-        onBack={() => setView('menu')}
-        onSelectDate={(d) => { setSelectedDate(d); setView('informe-novandino'); }}
-      />
-    );
+    if (view === 'memoria') {
+      if (!isJefeTurnoUnlocked) {
+        return (
+          <PasswordPrompt 
+            correctPassword="MIRAME"
+            moduleName="Memoria"
+            onSuccess={() => setIsJefeTurnoUnlocked(true)}
+            onCancel={handleBack}
+          />
+        );
+      }
+      return (
+        <MemoryModule
+          data={rawData}
+          onBack={handleBack}
+          onSelectDate={(d) => { setSelectedDate(d); navigateTo('informe-novandino'); }}
+        />
+      );
+    }
     if (view === 'ddd') return (
       <DdDTablero
         data={rawData}
         selectedDate={selectedDate}
-        onBack={() => setView('menu')}
+        onBack={handleBack}
       />
     );
     if (view === 'galeria') return (
       <ImageGallery 
-        onBack={() => setView('menu')} 
+        onBack={handleBack} 
         rawData={rawData}
         selectedDate={selectedDate}
         onDataLoaded={(loadedData, loadedDate) => {
@@ -841,16 +981,40 @@ const App: React.FC = () => {
         }}
       />
     );
-    if (view === 'cambioTurno') return <CambioDeTurno onBack={() => setView('menu')} />;
-    if (view === 'lce') return <LCEModule currentUser={currentUser} onBack={() => setView('menu')} />;
-    if (view === 'cumplimiento-mq') return <CumplimientoMQ onBack={() => setView('menu')} />;
-    if (view === 'cumplimiento-jorquera') return <CumplimientoJorquera onBack={() => setView('menu')} />;
+    if (view === 'cambioTurno') {
+      if (!isJefeTurnoUnlocked) {
+        return (
+          <PasswordPrompt 
+            correctPassword="MIRAME"
+            moduleName="Cambio de Turno"
+            onSuccess={() => setIsJefeTurnoUnlocked(true)}
+            onCancel={handleBack}
+          />
+        );
+      }
+      return <CambioDeTurno onBack={handleBack} />;
+    }
+    if (view === 'lce') {
+      if (!isJefeTurnoUnlocked) {
+        return (
+          <PasswordPrompt 
+            correctPassword="MIRAME"
+            moduleName="Control LCE"
+            onSuccess={() => setIsJefeTurnoUnlocked(true)}
+            onCancel={handleBack}
+          />
+        );
+      }
+      return <LCEModule currentUser={currentUser} onBack={handleBack} />;
+    }
+    if (view === 'cumplimiento-mq') return <CumplimientoMQ onBack={handleBack} />;
+    if (view === 'cumplimiento-jorquera') return <CumplimientoJorquera onBack={handleBack} />;
     if (view === 'stokes') {
-      if (currentUser?.role !== 'admin') {
-        setView('menu');
+      if (!currentUser) {
+        navigateTo('menu', true);
         return null;
       }
-      return <ModuloStokes currentUser={currentUser} onBack={() => setView('menu')} />;
+      return <ModuloStokes currentUser={currentUser} onBack={handleBack} />;
     }
 
     // fallback sidebar layout for standard dashboard view
@@ -862,7 +1026,7 @@ const App: React.FC = () => {
               {activeLocation && (
                 <button 
                   onClick={() => {
-                    setView('menu');
+                    handleBack();
                   }} 
                   className="flex items-center gap-2 text-[#461D77] hover:text-nucleo font-black text-[10px] uppercase tracking-widest transition-colors group cursor-pointer"
                 >
@@ -873,7 +1037,7 @@ const App: React.FC = () => {
               <button 
                 onClick={() => {
                   setActiveLocation(null);
-                  setView('menu');
+                  navigateTo('menu');
                 }} 
                 className="flex items-center gap-2 text-slate-400 hover:text-slate-600 font-black text-[10px] uppercase tracking-widest transition-colors group cursor-pointer"
               >
@@ -1105,10 +1269,15 @@ const App: React.FC = () => {
           moduleName={passwordRequest.name}
           onSuccess={() => { 
             setIsJefeTurnoUnlocked(true);
-            setView(passwordRequest.view); 
+            navigateTo(passwordRequest.view); 
             setPasswordRequest(null); 
           }}
-          onCancel={() => setPasswordRequest(null)}
+          onCancel={() => {
+            setPasswordRequest(null);
+            if (view === passwordRequest.view) {
+              navigateTo('menu', true);
+            }
+          }}
         />
       )}
 
