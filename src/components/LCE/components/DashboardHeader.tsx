@@ -151,6 +151,11 @@ export function DashboardHeader({
           <p className="text-[9px] lg:text-[10px] font-semibold tracking-[0.4em] text-[#8E9AA6] uppercase mt-1.5">
             SALAR DE ATACAMA
           </p>
+          <div className="inline-flex items-center gap-3 bg-[#F5F2F9] border border-[#D6CADF] px-3 py-1 rounded-full text-[10px] text-[#461D77] font-mono mt-2 shadow-xs">
+            <span className="font-bold">Turno Día:</span> 07:00 a 19:00 hrs
+            <span className="text-[#D6CADF]">&bull;</span>
+            <span className="font-bold">Turno Noche:</span> 19:00 a 07:00 hrs
+          </div>
         </div>
       </div>
 

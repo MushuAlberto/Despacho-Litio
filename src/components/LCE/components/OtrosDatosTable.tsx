@@ -173,6 +173,15 @@ export function OtrosDatosTable({ summary }: OtrosDatosTableProps) {
               <div className="absolute h-full w-[2px] bg-rose-500/80 top-0 left-[65%]" title="Meta de 1.3" />
             </div>
           </div>
+
+          {/* Turnos Operativos Schedule Badge */}
+          <div className="p-2.5 rounded-xl bg-[#F5F2F9] border border-[#D6CADF] flex items-center justify-between text-[11px] font-mono text-[#461D77]">
+            <span className="font-bold">Turnos Operativos:</span>
+            <div className="flex items-center gap-2 text-[10px]">
+              <span className="px-1.5 py-0.5 rounded bg-white font-bold border border-[#D6CADF]">Día 07:00-19:00</span>
+              <span className="px-1.5 py-0.5 rounded bg-white font-bold border border-[#D6CADF]">Noche 19:00-07:00</span>
+            </div>
+          </div>
         </div>
 
       </div>

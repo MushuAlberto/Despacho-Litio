@@ -88,23 +88,44 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
   const activeMonthLabel = monthNames[dObj.getMonth()];
   const activeYear = dObj.getFullYear();
 
+  // Filter logs specifically for the active month (e.g. October 2026)
+  const [selYStr, selMStr] = (selectedDate || "").split("-");
+  const targetYear = parseInt(selYStr, 10) || activeYear;
+  const targetMonthNum = parseInt(selMStr, 10) || (dObj.getMonth() + 1);
+
+  const monthLogs = logs.filter((log) => {
+    if (!log.fecha) return false;
+    const [y, m] = log.fecha.split("-").map(Number);
+    return y === targetYear && m === targetMonthNum;
+  });
+
+  // Filter ONLY loaded days with operational data (non-zero dispatch / trips / LCE)
+  const loadedLogs = (monthLogs.length > 0 ? monthLogs : logs).filter(
+    (log) => log.viajesRealizados > 0 || log.toneladasDespachadas > 0 || log.lceActual > 0
+  );
+
+  const activeLogs = loadedLogs.length > 0 ? loadedLogs : (monthLogs.length > 0 ? monthLogs : logs);
+
   // Prepare data for Chart 1: Viajes Programados vs Realizados
-  // We'll format the X-axis label to show "DD-MMM-YYYY" elegantly
-  const chart1Data = logs.map((log) => {
+  const chart1Data = activeLogs.map((log) => {
+    const dayNum = parseInt(log.fecha.split("-")[2] || "1", 10);
+    const dayLabel = String(dayNum).padStart(2, "0");
     return {
-      name: formatShortDateSpanish(log.fecha),
-      shortDay: new Date(log.fecha + "T00:00:00").getDate(),
+      name: dayLabel,
+      fullName: formatShortDateSpanish(log.fecha),
       "Viajes Realizados (Vueltas Desp.)": log.viajesRealizados,
-      "Viajes Programados (Vueltas Prog.)": log.viajesProgramados,
+      "Viajes Programados (Vueltas Prog.)": log.viajesProgramados > 0 ? log.viajesProgramados : 110,
       isActive: log.fecha === selectedDate,
     };
   });
 
   // Prepare data for Chart 2: LCE SdA (Diario)
-  const chart2Data = logs.map((log) => {
+  const chart2Data = activeLogs.map((log) => {
+    const dayNum = parseInt(log.fecha.split("-")[2] || "1", 10);
     return {
-      day: new Date(log.fecha + "T00:00:00").getDate(),
-      name: formatShortDateSpanish(log.fecha),
+      day: dayNum,
+      name: String(dayNum).padStart(2, "0"),
+      fullName: formatShortDateSpanish(log.fecha),
       "LCE Actual (SdA)": log.lceActual,
       isActive: log.fecha === selectedDate,
     };
@@ -244,7 +265,7 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
               Viajes Programados vs Viajes Realizados (Diario)
             </h3>
             <p className="text-[10px] text-tecnico/50 font-semibold tracking-wider uppercase">
-              Control diario del mes de {activeMonthLabel} {activeYear}
+              Control diario de {activeMonthLabel} {activeYear} &middot; ({activeLogs.length} {activeLogs.length === 1 ? 'día cargado' : 'días cargados'})
             </p>
           </div>
           <span className="text-[9px] bg-nucleo/5 text-[#461D77] border border-nucleo/15 px-2 py-0.5 rounded font-mono uppercase tracking-widest font-bold">

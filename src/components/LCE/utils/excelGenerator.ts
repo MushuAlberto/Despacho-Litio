@@ -199,6 +199,7 @@ function isTotalOrSummaryRow(row: any[]): boolean {
   const keywords = [
     "TOTAL",
     "SUBTOTAL",
+    "SUB TOTAL",
     "ACUMULAD",
     "RESUMEN",
     "PROMEDI",
@@ -210,9 +211,13 @@ function isTotalOrSummaryRow(row: any[]): boolean {
     "CONTROL",
     "MTD",
     "M MTD",
+    "ANTERIOR",
+    "INICIO",
+    "SALDO",
+    "CONSOLID",
   ];
 
-  for (let c = 0; c < Math.min(row.length, 10); c++) {
+  for (let c = 0; c < Math.min(row.length, 12); c++) {
     const val = row[c];
     if (val !== undefined && val !== null) {
       const s = normalizeHeader(val);
@@ -348,11 +353,15 @@ function detectHeaderRowAndIndices(rows: any[][]): {
       // VIAJES PROGRAMADOS
       else if (
         idxViajesProg === -1 &&
-        (h.includes("VIAJES PROGRAMADOS") ||
+        (h.includes("VIAJES PROGRAMAD") ||
           h.includes("VIAJES PROG") ||
           h.includes("CAMIONES PROG") ||
-          h.includes("CAMIONES PROGRAMADOS") ||
-          h.includes("VUELTAS PROG"))
+          h.includes("CAMIONES PROGRAMAD") ||
+          h.includes("VUELTAS PROG") ||
+          h.includes("PROG VIAJES") ||
+          h.includes("PROG CAMIONES") ||
+          h === "PROGRAMADOS" ||
+          h === "PROGRAMADO")
       ) {
         idxViajesProg = c;
         score += 3;
@@ -360,19 +369,36 @@ function detectHeaderRowAndIndices(rows: any[][]): {
       // VIAJES REALIZADOS / DESPACHADOS
       else if (
         idxViajesReal === -1 &&
-        (h.includes("VIAJES REALIZADOS") ||
-          h.includes("VIAJES DESPACHADOS") ||
+        (h.includes("VIAJES REALIZAD") ||
+          h.includes("VIAJES DESPACHAD") ||
+          h.includes("VIAJES EFECTUAD") ||
           h.includes("VIAJES REAL") ||
-          h.includes("CAMIONES REAL") ||
-          h.includes("CAMIONES DESPACHADOS") ||
+          h.includes("CAMIONES REALIZAD") ||
+          h.includes("CAMIONES DESPACHAD") ||
+          h.includes("CAMIONES EFECTIV") ||
           h.includes("CANTIDAD CAMIONES") ||
           h.includes("CANT CAMIONES") ||
+          h.includes("CANT VIAJES") ||
+          h.includes("CANTIDAD VIAJES") ||
           h.includes("VUELTAS REAL") ||
-          h.includes("VIAJES EFECTIVOS") ||
+          h.includes("VUELTAS DESPACHAD") ||
+          h.includes("VIAJES EFECTIV") ||
           h.includes("N VIAJES") ||
+          h.includes("N CAMIONES") ||
+          h === "REALIZADOS" ||
+          h === "REALIZADO" ||
+          h === "EFECTUADOS" ||
+          h === "EFECTUADO" ||
+          h === "EFECTIVOS" ||
+          h === "EFECTIVO" ||
+          h === "DESPACHADOS" ||
+          h === "DESPACHADO" ||
+          h === "REALIZAD" ||
           h === "VIAJES" ||
           h === "CAMIONES" ||
-          h === "VUELTAS")
+          h === "VUELTAS" ||
+          h === "COLUMNA E" ||
+          h === "COL E")
       ) {
         idxViajesReal = c;
         score += 3;
@@ -470,6 +496,17 @@ function detectHeaderRowAndIndices(rows: any[][]): {
   }
 
   if (bestIdx !== -1) {
+    // Si no se encontró el índice de viajes realizados explícitamente:
+    if (bestIndices.viajesReal === -1) {
+      if (bestIndices.tonDesp !== -1 && bestIndices.tonDesp + 1 < rows[bestIdx].length) {
+        // En Base SLIT / Registro Diario, Columna E (índice 4) es Viajes Realizados (justo después de Toneladas Despachadas)
+        bestIndices.viajesReal = bestIndices.tonDesp + 1;
+      } else if (bestIndices.viajesProg !== -1 && bestIndices.viajesProg + 2 < rows[bestIdx].length) {
+        bestIndices.viajesReal = bestIndices.viajesProg + 2;
+      } else if (rows[bestIdx].length > 4) {
+        bestIndices.viajesReal = 4;
+      }
+    }
     return { headerRowIdx: bestIdx, indices: bestIndices };
   }
   return null;
@@ -549,10 +586,14 @@ function parseWorksheetToDailyLogs(worksheet: XLSX.WorkSheet): DailyLog[] | null
       }
     }
 
-    // Filtrar falsos positivos de acumulados mensuales gigantescos en una sola fila
-    if (tonDesp > 25000 || tonProg > 25000 || viajesReal > 800 || viajesProg > 800) {
+    // Filtrar falsos positivos de acumulados MTD o mensuales en una sola fila
+    if (tonDesp > 7500 || tonProg > 7500 || viajesReal > 250 || viajesProg > 250 || lceActualVal > 2500) {
       continue;
     }
+
+    const rowViajesReal = viajesReal > 0 
+      ? viajesReal 
+      : (tonDesp > 100 ? Math.round(tonDesp / 29.01) : (tonDesp > 0 ? 1 : 0));
 
     // Acumular o registrar por fecha
     if (!dateMap.has(dateStr)) {
@@ -560,7 +601,7 @@ function parseWorksheetToDailyLogs(worksheet: XLSX.WorkSheet): DailyLog[] | null
         toneladasProgramadas: tonProg,
         toneladasDespachadas: tonDesp,
         viajesProgramados: viajesProg,
-        viajesRealizados: viajesReal > 0 ? viajesReal : tonDesp > 0 ? 1 : 0,
+        viajesRealizados: rowViajesReal,
         m3Despachados: m3Val,
         lceActual: lceActualVal,
         lceProgramado: lceProgVal,
@@ -572,7 +613,7 @@ function parseWorksheetToDailyLogs(worksheet: XLSX.WorkSheet): DailyLog[] | null
     } else {
       const existing = dateMap.get(dateStr)!;
       existing.toneladasDespachadas += tonDesp;
-      existing.viajesRealizados += viajesReal > 0 ? viajesReal : tonDesp > 0 ? 1 : 0;
+      existing.viajesRealizados += rowViajesReal;
       existing.m3Despachados += m3Val;
       existing.lceActual += lceActualVal;
       if (tonProg > 0 && existing.toneladasProgramadas === 0) existing.toneladasProgramadas = tonProg;
@@ -693,9 +734,9 @@ export async function parseUploadedExcel(file: File): Promise<ParseResult> {
     throw new Error("El archivo no contiene ninguna hoja válida.");
   }
 
-  let overrides: ExcelOverrides | undefined = undefined;
+  // 1. Extraer registros diarios de la mejor hoja disponible
+  let candidateSheets: string[] = [];
 
-  // 1. Extraer overrides de hojas corporativas Químicas, Base SLIT o Resumen si existen
   const quimicasSheetName = findSheetName(workbook, "Químicas");
   const resumenSheetName = findSheetName(workbook, "Resumen");
   const blitSheetName =
@@ -705,67 +746,6 @@ export async function parseUploadedExcel(file: File): Promise<ParseResult> {
       const low = n.toLowerCase();
       return low.includes("slit") || low.includes("blit");
     });
-
-  if (quimicasSheetName || blitSheetName || resumenSheetName) {
-    overrides = {};
-
-    if (quimicasSheetName) {
-      const sh = workbook.Sheets[quimicasSheetName];
-      const rows = XLSX.utils.sheet_to_json<any[]>(sh, { header: 1 });
-      if (rows && rows.length > 0) {
-        // Buscar fila con datos del mes
-        for (let r = 2; r < Math.min(rows.length, 16); r++) {
-          const row = rows[r];
-          if (!row || row.length < 3) continue;
-          const ton = cleanNumeric(row[2]);
-          const m3 = cleanNumeric(row[1]);
-          const avgTon = cleanNumeric(row[3]);
-          const avgM3 = cleanNumeric(row[4]);
-          const viajes = Math.round(cleanNumeric(row[5]));
-
-          if (ton > 0) {
-            overrides.tonelajeAcumulado = ton;
-            if (m3 > 0) overrides.m3Acumulados = m3;
-            if (avgTon > 0) overrides.promedioCamionTon = avgTon;
-            if (avgM3 > 0) overrides.promedioCamionM3 = avgM3;
-            if (viajes > 0) overrides.cantidadCamiones = viajes;
-            break;
-          }
-        }
-      }
-    }
-
-    if (blitSheetName) {
-      const sh = workbook.Sheets[blitSheetName];
-      // Leer celdas directas del informe Base SLIT
-      const prod = getCellValue(sh, "G36");
-      if (prod !== undefined && prod > 0) overrides.productividadMes = prod;
-
-      const lceMVal = getCellValue(sh, "M36");
-      if (lceMVal !== undefined && lceMVal > 0) overrides.lceActualTotal = lceMVal;
-
-      const tonProgCum = getCellValue(sh, "B36");
-      if (tonProgCum !== undefined && tonProgCum > 0) overrides.tonelajeProgramadoAcumulado = tonProgCum;
-
-      const viajesProgCum = getCellValue(sh, "C36");
-      if (viajesProgCum !== undefined && viajesProgCum > 0) overrides.viajesProgramadosAcumulados = Math.round(viajesProgCum);
-    }
-
-    if (resumenSheetName) {
-      const sh = workbook.Sheets[resumenSheetName];
-      const lceProgVal =
-        getCellValue(sh, "F4") ??
-        getCellValue(sh, "G4") ??
-        getCellValue(sh, "H4") ??
-        getCellValue(sh, "I4");
-      if (lceProgVal !== undefined && lceProgVal > 0) {
-        overrides.lceProgramadoTotal = lceProgVal;
-      }
-    }
-  }
-
-  // 2. Extraer registros diarios de la mejor hoja disponible
-  let candidateSheets: string[] = [];
 
   if (blitSheetName) candidateSheets.push(blitSheetName);
 
@@ -807,6 +787,129 @@ export async function parseUploadedExcel(file: File): Promise<ParseResult> {
     throw new Error(
       "No se encontraron registros de días válidos en el archivo. Verifique que la planilla contenga columnas de Fecha y Toneladas/Despacho."
     );
+  }
+
+  // Identificar el mes objetivo activo a partir de los registros parseados (ej. Octubre = mes 10)
+  const activeLog = parsedLogs.find((l) => l.toneladasDespachadas > 0 || l.viajesRealizados > 0) || parsedLogs[parsedLogs.length - 1];
+  const [activeY, activeM] = (activeLog?.fecha || "2026-10-01").split("-").map(Number);
+  const targetMonthIndex = activeM >= 1 && activeM <= 12 ? activeM - 1 : 9; // 0-indexed (9 = Octubre)
+
+  let overrides: ExcelOverrides | undefined = undefined;
+
+  // 2. Extraer overrides de hojas corporativas Químicas, Base SLIT o Resumen si existen
+  if (quimicasSheetName || blitSheetName || resumenSheetName) {
+    overrides = {};
+
+    if (quimicasSheetName) {
+      const sh = workbook.Sheets[quimicasSheetName];
+      const rows = XLSX.utils.sheet_to_json<any[]>(sh, { header: 1 });
+      if (rows && rows.length > 0) {
+        const monthNames = [
+          "enero", "febrero", "marzo", "abril", "mayo", "junio",
+          "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+        ];
+        const targetMonthName = monthNames[targetMonthIndex];
+
+        let targetRow: any[] | null = null;
+
+        // a) Buscar por coincidencia con el nombre del mes en la columna A
+        for (let r = 2; r < Math.min(rows.length, 16); r++) {
+          const row = rows[r];
+          if (!row || row.length < 2) continue;
+          const colA = String(row[0] || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          if (colA.includes(targetMonthName) || colA.includes(targetMonthName.slice(0, 3))) {
+            targetRow = row;
+            break;
+          }
+        }
+
+        // b) Fallback al índice de fila esperado según mes (Enero = fila 3 / idx 2, Octubre = fila 12 / idx 11)
+        if (!targetRow) {
+          const expectedIdx = targetMonthIndex + 2;
+          if (expectedIdx < rows.length && rows[expectedIdx]) {
+            targetRow = rows[expectedIdx];
+          }
+        }
+
+        if (targetRow && targetRow.length >= 2) {
+          const m3 = cleanNumeric(targetRow[1]);
+          const ton = cleanNumeric(targetRow[2]);
+          const avgTon = cleanNumeric(targetRow[3]);
+          const avgM3 = cleanNumeric(targetRow[4]);
+          const viajes = Math.round(cleanNumeric(targetRow[5]));
+
+          if (ton > 0) overrides.tonelajeAcumulado = ton;
+          if (m3 > 0) overrides.m3Acumulados = m3;
+          if (avgTon > 0) overrides.promedioCamionTon = avgTon;
+          if (avgM3 > 0) overrides.promedioCamionM3 = avgM3;
+          if (viajes > 0) overrides.cantidadCamiones = viajes;
+        }
+      }
+    }
+
+    if (blitSheetName) {
+      const sh = workbook.Sheets[blitSheetName];
+      // Leer celdas directas del informe Base SLIT (Fila 36 es la fila oficial de acumulados)
+      let tonRealCum = getCellValue(sh, "D36") ?? getCellValue(sh, "D35") ?? getCellValue(sh, "D37");
+
+      if (tonRealCum === undefined || tonRealCum === 0) {
+        const rows = XLSX.utils.sheet_to_json<any[]>(sh, { header: 1 });
+        if (rows && rows.length > 0) {
+          for (let r = 30; r < Math.min(rows.length, 45); r++) {
+            const row = rows[r];
+            if (!row || !Array.isArray(row)) continue;
+            if (isTotalOrSummaryRow(row)) {
+              const valD = cleanNumeric(row[3]); // Columna D (índice 3)
+              if (valD > 0) {
+                tonRealCum = valD;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (tonRealCum !== undefined && tonRealCum > 0) {
+        overrides.tonelajeAcumulado = tonRealCum;
+      }
+
+      const tonProgCum = getCellValue(sh, "B36") ?? getCellValue(sh, "B35") ?? getCellValue(sh, "B37");
+      if (tonProgCum !== undefined && tonProgCum > 0) {
+        overrides.tonelajeProgramadoAcumulado = tonProgCum;
+      }
+
+      const viajesProgCum = getCellValue(sh, "C36") ?? getCellValue(sh, "C35") ?? getCellValue(sh, "C37");
+      if (viajesProgCum !== undefined && viajesProgCum > 0) {
+        overrides.viajesProgramadosAcumulados = Math.round(viajesProgCum);
+      }
+
+      const viajesRealCum = getCellValue(sh, "E36") ?? getCellValue(sh, "E35") ?? getCellValue(sh, "E37");
+      if (viajesRealCum !== undefined && viajesRealCum > 0) {
+        overrides.cantidadCamiones = Math.round(viajesRealCum);
+      }
+
+      const prod = getCellValue(sh, "G36") ?? getCellValue(sh, "G35") ?? getCellValue(sh, "G37");
+      if (prod !== undefined && prod > 0) {
+        overrides.productividadMes = prod;
+      }
+
+      const lceMVal = getCellValue(sh, "M36") ?? getCellValue(sh, "M35") ?? getCellValue(sh, "M37");
+      if (lceMVal !== undefined && lceMVal > 0) {
+        overrides.lceActualTotal = lceMVal;
+      }
+    }
+
+    if (resumenSheetName) {
+      const sh = workbook.Sheets[resumenSheetName];
+      const lceProgVal =
+        getCellValue(sh, "F4") ??
+        getCellValue(sh, "G4") ??
+        getCellValue(sh, "H4") ??
+        getCellValue(sh, "I4");
+      if (lceProgVal !== undefined && lceProgVal > 0) {
+        overrides.lceProgramadoTotal = lceProgVal;
+      }
+    }
   }
 
   return { logs: parsedLogs, overrides };
