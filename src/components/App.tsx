@@ -36,6 +36,10 @@ import { SystemUser, logActivity } from '../services/firebase';
 import { LoginScreen } from './LoginScreen';
 import { ActivityLogsView } from './ActivityLogsView';
 import { UserManagementView } from './UserManagementView';
+import { GlobalTopBar } from './GlobalTopBar';
+import { CommandPalette } from './CommandPalette';
+import { NotFoundView } from './NotFoundView';
+import { ControlRoomOverlay } from './ControlRoomOverlay';
 
 declare const html2canvas: any;
 declare const jspdf: any;
@@ -55,7 +59,8 @@ export type AppView =
   | 'slit'
   | 'cumplimiento-mq'
   | 'cumplimiento-jorquera'
-  | 'stokes';
+  | 'stokes'
+  | '404';
 
 export const VIEW_TO_PATH: Record<AppView, string> = {
   'menu': '/',
@@ -72,7 +77,8 @@ export const VIEW_TO_PATH: Record<AppView, string> = {
   'slit': '/slit',
   'cumplimiento-mq': '/cumplimiento-mq',
   'cumplimiento-jorquera': '/cumplimiento-jorquera',
-  'stokes': '/stokes'
+  'stokes': '/stokes',
+  '404': '/404'
 };
 
 export const PATH_TO_VIEW: Record<string, AppView> = {
@@ -95,7 +101,8 @@ export const PATH_TO_VIEW: Record<string, AppView> = {
   '/slit': 'slit',
   '/cumplimiento-mq': 'cumplimiento-mq',
   '/cumplimiento-jorquera': 'cumplimiento-jorquera',
-  '/stokes': 'stokes'
+  '/stokes': 'stokes',
+  '/404': '404'
 };
 
 const VIEW_TITLES: Record<AppView, string> = {
@@ -113,7 +120,8 @@ const VIEW_TITLES: Record<AppView, string> = {
   'slit': 'Dashboard SLIT · Despacho Litio',
   'cumplimiento-mq': 'Cumplimiento MQ · Despacho Litio',
   'cumplimiento-jorquera': 'Cumplimiento Jorquera · Despacho Litio',
-  'stokes': 'Reporte Stokes · Despacho Litio'
+  'stokes': 'Reporte Stokes · Despacho Litio',
+  '404': 'Ruta No Encontrada (404) · Despacho Litio'
 };
 
 function getInitialView(): AppView {
@@ -125,6 +133,10 @@ function getInitialView(): AppView {
   const hash = window.location.hash.toLowerCase().replace(/^#\/?/, '/').replace(/\/+$/, '') || '/';
   if (PATH_TO_VIEW[hash]) {
     return PATH_TO_VIEW[hash];
+  }
+  // Unknown route
+  if (pathname !== '/' && pathname !== '') {
+    return '404';
   }
   return 'menu';
 }
@@ -157,6 +169,41 @@ const App: React.FC = () => {
   const [emailCC, setEmailCC] = useState('operaciones@novandino.cl, despacho@novandino.cl');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
+
+  // Enterprise UI Controls: Command Palette and Fullscreen Mode
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [controlRoomZoom, setControlRoomZoom] = useState<number>(1.0);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  // Global keyboard shortcut: Ctrl+K or Cmd+K to toggle Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Browser History Navigation Manager (supports browser back/forward arrows and direct URLs)
   const navigateTo = useCallback((nextView: AppView, replace: boolean = false) => {
@@ -206,7 +253,7 @@ const App: React.FC = () => {
         return;
       }
       const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
-      const matched = PATH_TO_VIEW[currentPath] || 'menu';
+      const matched = PATH_TO_VIEW[currentPath] || (currentPath !== '/' ? '404' : 'menu');
       setView(matched);
       if (VIEW_TITLES[matched]) {
         document.title = VIEW_TITLES[matched];
@@ -1017,6 +1064,17 @@ const App: React.FC = () => {
       return <ModuloStokes currentUser={currentUser} onBack={handleBack} />;
     }
 
+    if (view === '404') {
+      return (
+        <NotFoundView
+          attemptedPath={typeof window !== 'undefined' ? window.location.pathname : ''}
+          onNavigate={navigateTo}
+          onBack={handleBack}
+          onOpenSearch={() => setIsCommandPaletteOpen(true)}
+        />
+      );
+    }
+
     // fallback sidebar layout for standard dashboard view
     return (
       <div className="flex h-screen bg-calido font-sans text-tecnico overflow-hidden">
@@ -1261,8 +1319,44 @@ const App: React.FC = () => {
   }
 
   return (
-    <>
-      {renderCurrentView()}
+    <div className="min-h-screen flex flex-col bg-calido">
+      <GlobalTopBar
+        currentView={view}
+        currentUser={currentUser}
+        activeLocation={activeLocation}
+        onNavigate={navigateTo}
+        onBack={handleBack}
+        onLogout={handleLogout}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+      />
+
+      <div
+        className="flex-1 flex flex-col transition-all duration-150 origin-top"
+        style={isFullscreen && controlRoomZoom !== 1 ? { zoom: controlRoomZoom } : undefined}
+      >
+        {renderCurrentView()}
+      </div>
+
+      <ControlRoomOverlay
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        currentView={view}
+        onNavigate={navigateTo}
+        zoomLevel={controlRoomZoom}
+        onSetZoomLevel={setControlRoomZoom}
+      />
+
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        currentUser={currentUser}
+        onSelectView={navigateTo}
+        onLogout={handleLogout}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+      />
       {passwordRequest && (
         <PasswordPrompt 
           correctPassword="MIRAME"
@@ -1420,7 +1514,7 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

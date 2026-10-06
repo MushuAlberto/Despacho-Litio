@@ -608,16 +608,10 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Radiant ripple when sync finishes successfully */
-@keyframes cloud-success-ripple {
-  0% {
-    transform: scale(0.7);
-    opacity: 0.9;
-  }
-  100% {
-    transform: scale(2.8);
-    opacity: 0;
-  }
+/* Control Room Kiosk Mode: auto-hide cursor on inactivity */
+body.control-room-cursor-hidden,
+body.control-room-cursor-hidden * {
+  cursor: none !important;
 }
 
 /* Gradient background shift for active upload */

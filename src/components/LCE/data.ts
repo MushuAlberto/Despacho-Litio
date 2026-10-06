@@ -270,16 +270,25 @@ export const defaultDailyLogs: DailyLog[] = [
 
 // Helper to compute Month summary for a given selected date
 export function computeSummaryForDate(logs: DailyLog[], selectedDateStr: string): MonthSummary {
-  // Find logs within the same year and month up to and including the selected date
-  const targetDate = new Date(selectedDateStr + "T00:00:00");
-  const targetYear = targetDate.getFullYear();
-  const targetMonth = targetDate.getMonth();
+  // Extract target year and month deterministically from ISO string (YYYY-MM-DD)
+  const [selYearStr, selMonthStr] = (selectedDateStr || "").split("-");
+  const targetYear = parseInt(selYearStr, 10) || 2026;
+  const targetMonth = (parseInt(selMonthStr, 10) || 5) - 1; // 0-indexed month
 
-  // Monthly values are parsed
-  const mtdLogs = logs.filter(log => {
-    const d = new Date(log.fecha + "T00:00:00");
-    return d.getFullYear() === targetYear && d.getMonth() === targetMonth && d.getTime() <= targetDate.getTime();
+  // Filter logs within the same year and month up to and including the selected date
+  let mtdLogs = logs.filter((log) => {
+    if (!log.fecha) return false;
+    const [logYStr, logMStr] = log.fecha.split("-");
+    const logY = parseInt(logYStr, 10);
+    const logM = parseInt(logMStr, 10) - 1;
+    return logY === targetYear && logM === targetMonth && log.fecha <= selectedDateStr;
   });
+
+  // If no logs matched the exact month, fallback to all available logs up to selected date or all logs
+  if (mtdLogs.length === 0) {
+    const fallbackLogs = logs.filter((l) => l.fecha && l.fecha <= selectedDateStr);
+    mtdLogs = fallbackLogs.length > 0 ? fallbackLogs : (logs.length > 0 ? [logs[0]] : []);
+  }
 
   const tonelajeProgramadoAcumulado = mtdLogs.reduce((sum, l) => sum + l.toneladasProgramadas, 0);
   const tonelajeDespachadoAcumulado = mtdLogs.reduce((sum, l) => sum + l.toneladasDespachadas, 0);

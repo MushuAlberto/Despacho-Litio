@@ -12,7 +12,7 @@ interface DashboardHeaderProps {
   selectedDate: string;
   allDates: string[];
   onDateChange: (date: string) => void;
-  onFileUpload: (file: File) => void;
+  onFileUpload: (file: File) => Promise<void> | void;
   onDownloadImage: () => void;
   onResetData: () => void;
   isCustomFileLoaded: boolean;
@@ -69,18 +69,18 @@ export function DashboardHeader({
     
     const file = e.dataTransfer.files[0];
     if (file) {
-      processFile(file);
+      await processFile(file);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      processFile(file);
+      await processFile(file);
     }
   };
 
-  const processFile = (file: File) => {
+  const processFile = async (file: File) => {
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (ext !== "xlsx" && ext !== "xls" && ext !== "xlsm" && ext !== "csv") {
       setUploadStatus("error");
@@ -89,15 +89,21 @@ export function DashboardHeader({
     }
 
     try {
-      onFileUpload(file);
+      setUploadStatus("idle");
+      setStatusMessage("Procesando planilla...");
+      await onFileUpload(file);
       setUploadStatus("success");
       setStatusMessage(`"${file.name}" cargado correctamente.`);
       setTimeout(() => {
         setUploadStatus("idle");
       }, 5000);
-    } catch (err) {
+    } catch (err: any) {
       setUploadStatus("error");
-      setStatusMessage("No se pudo procesar el archivo.");
+      setStatusMessage(err?.message || "No se pudo procesar el archivo.");
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 

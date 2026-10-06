@@ -185,9 +185,12 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
       setIsCustomFileLoaded(true);
       setFileName(file.name);
       
-      // Auto-select the last parsed date so the dashboard isn't blank
-      const lastDate = uniqueLogs[uniqueLogs.length - 1]?.fecha || "2026-05-20";
-      setSelectedDate(lastDate);
+      // Auto-select the most relevant date with actual dispatch data, or the latest date
+      const logsWithData = uniqueLogs.filter(l => l.toneladasDespachadas > 0 || l.viajesRealizados > 0);
+      const targetDate = logsWithData.length > 0
+        ? logsWithData[logsWithData.length - 1].fecha
+        : (uniqueLogs[uniqueLogs.length - 1]?.fecha || "2026-05-20");
+      setSelectedDate(targetDate);
 
       // Record LCE file upload activity log in Firestore
       if (currentUser) {
@@ -199,7 +202,9 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
       }
     } catch (err: any) {
       console.error(err);
-      setErrorNotice(err?.message || err || "Error al procesar el archivo de Excel.");
+      const errMsg = err?.message || String(err) || "Error al procesar el archivo de Excel.";
+      setErrorNotice(errMsg);
+      throw new Error(errMsg);
     }
   };
 
