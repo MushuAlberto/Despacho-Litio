@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { db, logActivity, SystemUser, isFirestoreWriteBlocked } from '../services/firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { User, Lock, KeyRound, Plus, Trash2, ArrowLeft, Loader2, Key, Users, CheckCircle, ShieldAlert, X, Sparkles, Cpu, Save } from 'lucide-react';
+import { authenticatedFetch } from '../auth/authenticatedFetch';
 
 interface UserManagementViewProps {
   currentUser: SystemUser;
@@ -55,7 +56,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
     setTestingAi(model);
     setTestResult(null);
     try {
-      const response = await fetch("/api/test-ai", {
+      const response = await authenticatedFetch("/api/test-ai", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
