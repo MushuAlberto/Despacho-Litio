@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload, Loader2,
   Home, Truck, Image as ImageIcon,
@@ -42,7 +41,6 @@ import { GlobalTopBar } from './GlobalTopBar';
 import { CommandPalette } from './CommandPalette';
 import { NotFoundView } from './NotFoundView';
 import { ControlRoomOverlay } from './ControlRoomOverlay';
-import { ChangePasswordModal } from './ChangePasswordModal';
 
 declare const html2canvas: any;
 declare const jspdf: any;
@@ -180,7 +178,6 @@ const App: React.FC = () => {
 
   // Enterprise UI Controls: Command Palette and Fullscreen Mode
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlRoomZoom, setControlRoomZoom] = useState<number>(1.0);
 
@@ -240,33 +237,6 @@ const App: React.FC = () => {
       navigateTo('menu');
     }
   }, [navigateTo]);
-
-  // Smooth Navigation Feedback & Automatic Scroll to Top
-  const [isNavigating, setIsNavigating] = useState(false);
-  useEffect(() => {
-    setIsNavigating(true);
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    }
-    const timer = setTimeout(() => setIsNavigating(false), 320);
-    return () => clearTimeout(timer);
-  }, [view]);
-
-  // Global navigation hotkey: Alt + ArrowLeft to navigate back smoothly
-  useEffect(() => {
-    const handleNavKeys = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
-        return;
-      }
-      if (e.altKey && e.key === 'ArrowLeft' && view !== 'menu') {
-        e.preventDefault();
-        handleBack();
-      }
-    };
-    window.addEventListener('keydown', handleNavKeys);
-    return () => window.removeEventListener('keydown', handleNavKeys);
-  }, [handleBack, view]);
 
   // Synchronize browser native back/forward buttons (popstate event)
   useEffect(() => {
@@ -359,7 +329,7 @@ const App: React.FC = () => {
                 localStorage.setItem('sqm_raw_data', JSON.stringify(parsed));
                 // Also restore any historical sqm_ keys from backup
                 Object.entries(backup).forEach(([k, v]) => {
-                  if (k.startsWith('sqm_') && typeof v === 'string') {
+                  if (k.startsWith('sqm_') && k !== 'sqm_current_user' && typeof v === 'string') {
                     localStorage.setItem(k, v);
                   }
                 });
@@ -1115,25 +1085,30 @@ const App: React.FC = () => {
     // fallback sidebar layout for standard dashboard view
     return (
       <div className="flex h-screen bg-calido font-sans text-tecnico overflow-hidden relative">
-        {/* PESTAÑA PARA MOSTRAR / OCULTAR */}
-        <button
-          type="button"
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className={`fixed top-20 z-50 bg-[#461D77] text-white hover:bg-[#381660] border border-l-0 border-white/20 rounded-r-2xl p-3 shadow-2xl flex items-center justify-center transition-all duration-300 cursor-pointer no-print group ${
-            isSidebarCollapsed ? 'left-0' : 'left-[300px]'
-          }`}
-          aria-label={isSidebarCollapsed ? 'Mostrar' : 'Ocultar'}
-        >
-          {isSidebarCollapsed ? (
+        {/* PESTAÑA FLOTANTE PARA MOSTRAR EL MENÚ LATERAL CUANDO ESTÁ OCULTO */}
+        {isSidebarCollapsed && (
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed(false)}
+            className="fixed top-20 left-0 z-50 bg-[#461D77] text-white hover:bg-[#381660] border border-l-0 border-white/20 rounded-r-2xl p-3 shadow-2xl flex items-center justify-center transition-all duration-300 cursor-pointer no-print animate-in fade-in slide-in-from-left-2 group"
+            title="Mostrar Menú Lateral"
+          >
             <ChevronRight size={20} className="text-[#4FD1C5] group-hover:translate-x-0.5 transition-transform" />
-          ) : (
-            <ChevronLeft size={20} className="text-[#4FD1C5] group-hover:-translate-x-0.5 transition-transform" />
-          )}
-        </button>
+          </button>
+        )}
 
         <aside className={`bg-levanda border-r border-violeta/20 flex flex-col no-print shrink-0 relative transition-all duration-300 ${
           isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden border-r-0' : 'w-[300px] opacity-100'
         }`}>
+          {/* BOTÓN PARA OCULTAR EL MENÚ LATERAL */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed(true)}
+            className="absolute top-4 right-3 z-30 w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-violeta/20 flex items-center justify-center text-[#461D77] shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer no-print"
+            title="Ocultar Menú Lateral"
+          >
+            <ChevronLeft size={16} />
+          </button>
 
           <div className="p-6 overflow-y-auto flex-1 space-y-8">
             <div className="flex flex-col gap-2 mb-4">
@@ -1376,49 +1351,23 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-calido">
-      {/* Barra de progreso de navegación superior instantánea */}
-      {isNavigating && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-transparent overflow-hidden pointer-events-none">
-          <motion.div
-            initial={{ x: '-100%' }}
-            animate={{ x: '100%' }}
-            transition={{ duration: 0.32, ease: 'easeInOut' }}
-            className="w-full h-full bg-gradient-to-r from-transparent via-[#461D77] to-[#4FD1C5]"
-          />
-        </div>
-      )}
-
       <GlobalTopBar
         currentView={view}
         currentUser={currentUser}
         activeLocation={activeLocation}
         onNavigate={navigateTo}
-        onSelectLocation={setActiveLocation}
         onBack={handleBack}
         onLogout={handleLogout}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
-        onOpenChangePassword={() => setIsChangePasswordModalOpen(true)}
-        onUpdateCurrentUser={setCurrentUser}
       />
 
       <div
-        className="flex-1 flex flex-col transition-all duration-150 origin-top overflow-x-hidden"
+        className="flex-1 flex flex-col transition-all duration-150 origin-top"
         style={isFullscreen && controlRoomZoom !== 1 ? { zoom: controlRoomZoom } : undefined}
       >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={view}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="flex-1 flex flex-col w-full"
-          >
-            {renderCurrentView()}
-          </motion.div>
-        </AnimatePresence>
+        {renderCurrentView()}
       </div>
 
       <ControlRoomOverlay
@@ -1438,20 +1387,7 @@ const App: React.FC = () => {
         onLogout={handleLogout}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
-        onOpenChangePassword={() => {
-          setIsCommandPaletteOpen(false);
-          setIsChangePasswordModalOpen(true);
-        }}
       />
-
-      {isChangePasswordModalOpen && currentUser && (
-        <ChangePasswordModal
-          isOpen={isChangePasswordModalOpen}
-          onClose={() => setIsChangePasswordModalOpen(false)}
-          currentUser={currentUser}
-          onPasswordChanged={setCurrentUser}
-        />
-      )}
       {passwordRequest && (
         <PasswordPrompt 
           correctPassword="MIRAME"
