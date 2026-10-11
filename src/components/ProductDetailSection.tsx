@@ -11,6 +11,7 @@ import {
 import { formatDateToCL, formatNumberWithDecimals } from '../utils/dataProcessor';
 import { db, isQuotaExceededError } from '../services/firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { authenticatedFetch } from '../auth/authenticatedFetch';
 
 // Shared module-level cache to prevent redundant Firestore reads across 15+ product sections
 let cachedGlobalAiSettings: {
@@ -302,7 +303,7 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
       setIsRefining(true);
       setRefineError(null);
 
-      const response = await fetch("/api/refine-justification", {
+      const response = await authenticatedFetch("/api/refine-justification", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
