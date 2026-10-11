@@ -1,4 +1,5 @@
 import { formatDecimalToHHMM } from '../components/CambioAnalisisComparativoChart';
+import { authenticatedFetch } from '../auth/authenticatedFetch';
 
 interface AnalysisData {
   name: string;
@@ -153,7 +154,7 @@ export async function analyzeProductData(
 
   // Intenta utilizar la API de IA Gemini del Servidor Principal
   try {
-    const response = await fetch("/api/analyze-shift", {
+    const response = await authenticatedFetch("/api/analyze-shift", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
