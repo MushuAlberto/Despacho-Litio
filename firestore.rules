@@ -1,12 +1,32 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 1. Global Catch-all safety net
-    match /{document=**} {
-      allow read, write: if false;
+    function signedIn() {
+      return request.auth != null && request.auth.uid is string && request.auth.uid.size() > 0;
     }
 
-    // Helper functions
+    function currentUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function currentRole() {
+      return signedIn() && currentUser().data.active != false
+        ? currentUser().data.role
+        : null;
+    }
+
+    function isAdmin() {
+      return currentRole() == 'admin';
+    }
+
+    function isJefeTurno() {
+      return currentRole() == 'jefe_turno';
+    }
+
+    function isStaff() {
+      return currentRole() in ['admin', 'jefe_turno', 'supervision'];
+    }
+
     function isValidId(id) {
       return id is string && id.size() > 0 && id.size() <= 128;
     }
@@ -15,60 +35,114 @@ service cloud.firestore {
       return request.resource.data;
     }
 
-    function existing() {
-      return resource.data;
+    function validRole(role) {
+      return role in ['admin', 'jefe_turno', 'supervision'];
     }
 
-    // 2. Users Collection
-    match /users/{userId} {
-      allow get: if isValidId(userId);
-      allow list: if true;
-      allow create, update: if isValidId(userId)
-        && incoming().username is string && incoming().username.size() <= 128
-        && incoming().name is string && incoming().name.size() <= 128
-        && incoming().role is string && incoming().role.size() <= 128;
-      allow delete: if isValidId(userId);
+    function validOptionalString(field, maxSize) {
+      return !(field in incoming()) || (incoming()[field] is string && incoming()[field].size() <= maxSize);
     }
 
-    // 3. Activity Logs Collection
-    match /activity_logs/{logId} {
-      allow get: if isValidId(logId);
-      allow list: if true;
-      allow create: if isValidId(logId) 
+    function validOptionalBool(field) {
+      return !(field in incoming()) || incoming()[field] is bool;
+    }
+
+    function validUserProfile() {
+      return incoming().keys().hasOnly([
+          'uid', 'userId', 'entraOid', 'username', 'name', 'email', 'role',
+          'enableAi', 'active', 'lastLogin'
+        ])
+        && incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 128
+        && incoming().role is string && validRole(incoming().role)
+        && validOptionalString('uid', 128)
+        && validOptionalString('userId', 128)
+        && validOptionalString('entraOid', 128)
+        && validOptionalString('username', 128)
+        && validOptionalString('email', 256)
+        && validOptionalString('lastLogin', 64)
+        && validOptionalBool('enableAi')
+        && validOptionalBool('active');
+    }
+
+    function validSelfUserProfile(userId) {
+      return validUserProfile()
+        && request.auth.uid == userId
+        && incoming().role == 'supervision'
+        && incoming().active == true;
+    }
+
+    function validActivityLog(logId) {
+      return isValidId(logId)
+        && incoming().keys().hasOnly(['userId', 'username', 'name', 'role', 'action', 'details', 'timestamp'])
         && incoming().userId is string && incoming().userId.size() <= 128
         && incoming().username is string && incoming().username.size() <= 128
         && incoming().name is string && incoming().name.size() <= 128
         && incoming().role is string && incoming().role.size() <= 128
         && incoming().action is string && incoming().action.size() <= 256
+        && validOptionalString('details', 1000)
         && incoming().timestamp is string && incoming().timestamp.size() <= 64;
-      allow update, delete: if isValidId(logId);
     }
 
-    // 4. System Config Collection
-    match /system_config/{configId} {
-      allow read, write: if true;
-    }
-
-    // 5. Shared Gallery Images
-    match /gallery_images/{imageId} {
-      allow get, list: if true;
-      allow create, update: if isValidId(imageId)
+    function validGalleryImage(imageId) {
+      return isValidId(imageId)
+        && incoming().keys().hasOnly(['url', 'name', 'date', 'createdAt'])
         && incoming().url is string && incoming().url.size() <= 1048500
         && incoming().name is string && incoming().name.size() <= 256
         && incoming().date is string && incoming().date.size() <= 128
         && incoming().createdAt is string && incoming().createdAt.size() <= 64;
-      allow delete: if isValidId(imageId);
     }
 
-    // 6. Operational Reports & History JSON Backups
-    match /operational_reports/{reportId} {
-      allow get, list: if true;
-      allow create, update: if isValidId(reportId)
-        && incoming().id is string && incoming().id.size() <= 128
+    function validOperationalReport(reportId) {
+      return isValidId(reportId)
+        && incoming().keys().hasOnly(['id', 'date', 'backupData', 'updatedAt', 'updatedBy', 'summary'])
+        && incoming().id is string && incoming().id == reportId && incoming().id.size() <= 128
         && incoming().date is string && incoming().date.size() <= 128
         && incoming().backupData is string && incoming().backupData.size() <= 1048500
-        && incoming().updatedAt is string && incoming().updatedAt.size() <= 64;
-      allow delete: if isValidId(reportId);
+        && incoming().updatedAt is string && incoming().updatedAt.size() <= 64
+        && validOptionalString('updatedBy', 128)
+        && validOptionalString('summary', 256);
+    }
+
+    match /users/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if signedIn() && (
+        (validSelfUserProfile(userId)) ||
+        (isAdmin() && isValidId(userId) && validUserProfile())
+      );
+      allow update: if signedIn() && (
+        (request.auth.uid == userId && incoming().diff(resource.data).affectedKeys().hasOnly(['name', 'lastLogin'])) ||
+        (isAdmin() && isValidId(userId) && validUserProfile())
+      );
+      allow delete: if isAdmin() && request.auth.uid != userId;
+    }
+
+    match /activity_logs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if signedIn() && validActivityLog(logId);
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /system_config/{configId} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
+
+    match /gallery_images/{imageId} {
+      allow get, list: if isStaff();
+      allow create, update: if isStaff() && validGalleryImage(imageId);
+      allow delete: if isAdmin() || isJefeTurno();
+    }
+
+    match /operational_reports/{reportId} {
+      allow get, list: if isStaff();
+      allow create, update: if isStaff() && validOperationalReport(reportId);
+      allow delete: if isAdmin() || isJefeTurno();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
