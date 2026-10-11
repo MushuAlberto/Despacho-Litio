@@ -12,6 +12,7 @@ import { db, isQuotaExceededError } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from './Toast';
 import { getCurrentUser } from '../auth/authStore';
+import { authenticatedFetch } from '../auth/authenticatedFetch';
 
 interface ChartData {
   name: string;
@@ -439,7 +440,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
       const user = getCurrentUser();
       const operatorName = user ? user.name : '';
 
-      const response = await fetch('/api/generate-pdf', {
+      const response = await authenticatedFetch('/api/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
