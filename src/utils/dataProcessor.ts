@@ -132,9 +132,11 @@ export const formatDateToCL = (dateStr: string): string => {
  */
 export const downloadBackupJSON = (selectedDate?: string) => {
   const backup: Record<string, string> = {};
+  const excludedBackupKeys = new Set(['sqm_gallery_images', 'sqm_current_user']);
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith('sqm_')) {
+      if (excludedBackupKeys.has(key)) continue;
       backup[key] = localStorage.getItem(key) || '';
     }
   }
@@ -179,11 +181,12 @@ export { safeParseBackupJSON } from '../services/firebase';
  */
 export const syncBackupToFirebase = async (selectedDate?: string): Promise<boolean> => {
   const backup: Record<string, string> = {};
+  const excludedBackupKeys = new Set(['sqm_gallery_images', 'sqm_current_user']);
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith('sqm_')) {
-      // Exclude heavy base64 gallery image cache (images are stored in Firestore gallery_images collection)
-      if (key === 'sqm_gallery_images') continue;
+      // Exclude non-report data from operational backups.
+      if (excludedBackupKeys.has(key)) continue;
       backup[key] = localStorage.getItem(key) || '';
     }
   }
