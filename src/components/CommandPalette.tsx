@@ -19,7 +19,8 @@ import {
   LogOut,
   ArrowRight,
   ShieldAlert,
-  X
+  X,
+  KeyRound
 } from 'lucide-react';
 import { AppView } from './App';
 import { SystemUser } from '../services/firebase';
@@ -46,6 +47,7 @@ interface CommandPaletteProps {
   onLogout: () => void;
   onToggleFullscreen: () => void;
   isFullscreen: boolean;
+  onOpenChangePassword?: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -55,7 +57,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onSelectView,
   onLogout,
   onToggleFullscreen,
-  isFullscreen
+  isFullscreen,
+  onOpenChangePassword
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -158,6 +161,33 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       keywords: ['slit', 'salmuera', 'litio']
     },
     {
+      id: 'cumplimiento-mq',
+      title: 'Cumplimiento M&Q (PQL)',
+      subtitle: 'Control diario de transporte y cumplimiento de camiones M&Q Planta Química',
+      category: 'Operaciones Litio',
+      icon: Truck,
+      view: 'cumplimiento-mq',
+      keywords: ['mq', 'm&q', 'cumplimiento', 'pql', 'transporte', 'planta quimica']
+    },
+    {
+      id: 'cumplimiento-jorquera',
+      title: 'Cumplimiento Jorquera (PQL)',
+      subtitle: 'Control diario de transporte y cumplimiento de camiones Jorquera Planta Química',
+      category: 'Operaciones Litio',
+      icon: Truck,
+      view: 'cumplimiento-jorquera',
+      keywords: ['jorquera', 'cumplimiento', 'pql', 'transporte', 'planta quimica']
+    },
+    {
+      id: 'informe-operativo',
+      title: 'Informe Operativo PQL (SLIT)',
+      subtitle: 'Reporte diario operacional, recepción, descarga y acumulado mensual Planta Química Litio',
+      category: 'Informes y Análisis',
+      icon: FileText,
+      view: 'informe-operativo',
+      keywords: ['informe operativo', 'operativo', 'pql', 'slit', 'planta quimica', 'recepcion', 'descarga']
+    },
+    {
       id: 'users',
       title: 'Gestión de Usuarios',
       subtitle: 'Administración de accesos, roles y contraseñas del sistema',
@@ -195,6 +225,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       action: onToggleFullscreen,
       keywords: ['pantalla', 'completa', 'kiosk', 'monitor', 'fullscreen', 'proyector']
     },
+    ...(onOpenChangePassword ? [{
+      id: 'change-password',
+      title: 'Cambiar mi Contraseña',
+      subtitle: `Actualizar la clave de acceso personal de @${currentUser?.username || currentUser?.userId}`,
+      category: 'Herramientas' as const,
+      icon: KeyRound,
+      action: onOpenChangePassword,
+      keywords: ['password', 'contraseña', 'clave', 'seguridad', 'cambiar clave', 'credenciales']
+    }] : []),
     {
       id: 'logout',
       title: 'Cerrar Sesión Segura',
@@ -204,7 +243,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       action: onLogout,
       keywords: ['cerrar', 'sesion', 'salir', 'logout']
     }
-  ], [currentUser, isFullscreen, onLogout, onToggleFullscreen]);
+  ], [currentUser, isFullscreen, onLogout, onToggleFullscreen, onOpenChangePassword]);
 
   // Filter items based on user role and search query
   const filteredItems = useMemo(() => {

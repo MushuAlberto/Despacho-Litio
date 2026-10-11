@@ -3,6 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { 
   initializeFirestore, 
   doc, 
+  getDoc,
   getDocs, 
   setDoc, 
   deleteDoc,
@@ -421,4 +422,76 @@ export function buildCurrentLocalBackupJSON(): Record<string, string> {
     }
   }
   return backup;
+}
+
+/**
+ * Updates a user's password in Firestore and returns the updated user profile.
+ * Synchronizes with Firestore collection 'users' and updates local session cache.
+ */
+export async function updateUserPassword(
+  user: SystemUser,
+  newPassword: string
+): Promise<SystemUser> {
+  const updatedUser: SystemUser = {
+    ...user,
+    password: newPassword,
+  };
+
+  const userId = user.userId || user.username || user.uid;
+  if (!userId) {
+    throw new Error('Identificador de usuario inválido.');
+  }
+
+  try {
+    if (!isFirestoreWriteBlocked()) {
+      const userDocRef = doc(db, 'users', userId);
+      const snap = await getDoc(userDocRef);
+      if (snap.exists()) {
+        const existingData = snap.data();
+        await setDoc(
+          userDocRef,
+          {
+            ...existingData,
+            password: newPassword,
+            lastPasswordUpdate: new Date().toISOString()
+          },
+          { merge: true }
+        );
+      } else {
+        await setDoc(
+          userDocRef,
+          {
+            ...updatedUser,
+            lastPasswordUpdate: new Date().toISOString()
+          },
+          { merge: true }
+        );
+      }
+    }
+  } catch (err) {
+    console.error('Error writing updated password to Firestore:', err);
+    if (!isQuotaExceededError(err)) {
+      // Non-quota error, handle or report
+    }
+  }
+
+  // Update in localStorage
+  try {
+    localStorage.setItem('sqm_current_user', JSON.stringify(updatedUser));
+  } catch (e) {
+    // Ignore storage quota
+  }
+
+  // Log activity
+  try {
+    await logActivity(
+      updatedUser,
+      'Cambio de Contraseña',
+      `El usuario ${updatedUser.name} (@${updatedUser.username || updatedUser.userId}) actualizó su contraseña de acceso personal.`
+    );
+  } catch (e) {
+    // Ignore logging error
+  }
+
+  return updatedUser;
 }

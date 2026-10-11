@@ -34,7 +34,7 @@ import { NovandinoLogo } from './BrandLogo';
 import { PasswordPrompt } from './PasswordPrompt';
 
 interface MainMenuProps {
-  onSelectView: (view: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'cumplimiento-mq' | 'cumplimiento-jorquera' | 'stokes') => void;
+  onSelectView: (view: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'cumplimiento-mq' | 'cumplimiento-jorquera' | 'informe-operativo' | 'stokes') => void;
   isJefeTurnoUnlocked: boolean;
   onUnlockJefeTurno: () => void;
   currentUser: any;

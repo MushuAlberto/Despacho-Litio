@@ -12,38 +12,44 @@ import {
   Users,
   Shield,
   Sparkles,
-  Command
+  Command,
+  KeyRound
 } from 'lucide-react';
 import { AppView, VIEW_TO_PATH } from './App';
 import { SystemUser } from '../services/firebase';
 import { NovandinoLogo } from './BrandLogo';
 import { useMiningShiftClock } from '../hooks/useControlRoom';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 interface GlobalTopBarProps {
   currentView: AppView;
   currentUser: SystemUser;
   activeLocation?: string | null;
   onNavigate: (view: AppView) => void;
+  onSelectLocation?: (location: string | null) => void;
   onBack: () => void;
   onLogout: () => void;
   onOpenCommandPalette: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  onOpenChangePassword?: () => void;
+  onUpdateCurrentUser?: (user: SystemUser) => void;
 }
 
-const MODULE_NAMES: Partial<Record<AppView, { title: string; parent?: string }>> = {
-  'stokes': { title: 'Reporte Stokes', parent: 'Salar de Atacama' },
-  'cambioTurno': { title: 'Cambio de Turno', parent: 'Salar de Atacama' },
-  'llegada': { title: 'Llegada de Equipos', parent: 'Salar de Atacama' },
-  'lce': { title: 'Control LCE', parent: 'Salar de Atacama' },
-  'ddd': { title: 'Tablero DdD', parent: 'Salar de Atacama' },
-  'informe-novandino': { title: 'Informe Novandino', parent: 'Salar de Atacama' },
-  'informe-sqm': { title: 'Informe SQM NY', parent: 'Salar de Atacama' },
-  'memoria': { title: 'Módulo Memoria', parent: 'Salar de Atacama' },
-  'galeria': { title: 'Galería de Informes', parent: 'Salar de Atacama' },
-  'slit': { title: 'Dashboard SLIT', parent: 'Salar de Atacama' },
-  'cumplimiento-mq': { title: 'Cumplimiento MQ', parent: 'Salar de Atacama' },
-  'cumplimiento-jorquera': { title: 'Cumplimiento Jorquera', parent: 'Salar de Atacama' },
+const MODULE_NAMES: Partial<Record<AppView, { title: string; parent?: string; parentLocation?: string }>> = {
+  'stokes': { title: 'Reporte Stokes', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'cambioTurno': { title: 'Cambio de Turno', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'llegada': { title: 'Llegada de Equipos', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'lce': { title: 'Control LCE', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'ddd': { title: 'Tablero DdD', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'informe-novandino': { title: 'Informe Novandino', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'informe-sqm': { title: 'Informe SQM NY', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'memoria': { title: 'Módulo Memoria', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'galeria': { title: 'Galería de Informes', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'slit': { title: 'Dashboard SLIT', parent: 'Salar de Atacama', parentLocation: 'Salar de Atacama' },
+  'cumplimiento-mq': { title: 'Cumplimiento MQ', parent: 'Planta Química Litio (PQL)', parentLocation: 'PQL' },
+  'cumplimiento-jorquera': { title: 'Cumplimiento Jorquera', parent: 'Planta Química Litio (PQL)', parentLocation: 'PQL' },
+  'informe-operativo': { title: 'Informe Operativo PQL', parent: 'Planta Química Litio (PQL)', parentLocation: 'PQL' },
   'users': { title: 'Gestión de Usuarios', parent: 'Administración' },
   'logs': { title: 'Bitácora de Auditoría', parent: 'Administración' },
   '404': { title: 'Ruta No Encontrada (404)', parent: 'Navegación' }
@@ -54,13 +60,17 @@ export const GlobalTopBar: React.FC<GlobalTopBarProps> = ({
   currentUser,
   activeLocation,
   onNavigate,
+  onSelectLocation,
   onBack,
   onLogout,
   onOpenCommandPalette,
   isFullscreen,
-  onToggleFullscreen
+  onToggleFullscreen,
+  onOpenChangePassword,
+  onUpdateCurrentUser
 }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [internalChangePasswordOpen, setInternalChangePasswordOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const shiftInfo = useMiningShiftClock();
 
@@ -130,9 +140,22 @@ export const GlobalTopBar: React.FC<GlobalTopBarProps> = ({
             {!isMenu && (
               <>
                 <ChevronRight size={13} className="text-slate-300 shrink-0" />
-                <span className="text-slate-400 truncate hidden md:inline">
-                  {moduleInfo?.parent || locationLabel}
-                </span>
+                {moduleInfo?.parentLocation ? (
+                  <button
+                    onClick={() => {
+                      if (onSelectLocation) onSelectLocation(moduleInfo.parentLocation!);
+                      onNavigate('menu');
+                    }}
+                    className="text-slate-400 hover:text-[#461D77] hover:bg-slate-100 px-1.5 py-0.5 rounded transition-colors truncate hidden md:inline cursor-pointer"
+                    title={`Ir a ${moduleInfo.parent}`}
+                  >
+                    {moduleInfo?.parent}
+                  </button>
+                ) : (
+                  <span className="text-slate-400 truncate hidden md:inline">
+                    {moduleInfo?.parent || locationLabel}
+                  </span>
+                )}
 
                 <ChevronRight size={13} className="text-slate-300 shrink-0 hidden md:inline" />
 
@@ -257,6 +280,22 @@ export const GlobalTopBar: React.FC<GlobalTopBarProps> = ({
                     <span className="text-[10px] font-mono text-slate-400">Ctrl+K</span>
                   </button>
 
+                  {/* Opción Cambiar Contraseña para cualquier usuario */}
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      if (onOpenChangePassword) {
+                        onOpenChangePassword();
+                      } else {
+                        setInternalChangePasswordOpen(true);
+                      }
+                    }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors"
+                  >
+                    <KeyRound size={14} className="text-[#461D77]" />
+                    <span>Cambiar mi Contraseña</span>
+                  </button>
+
                   {currentUser?.role === 'admin' && (
                     <button
                       onClick={() => {
@@ -302,6 +341,14 @@ export const GlobalTopBar: React.FC<GlobalTopBarProps> = ({
         </div>
 
       </div>
+
+      {/* Modal para cambio de contraseña */}
+      <ChangePasswordModal
+        isOpen={internalChangePasswordOpen}
+        onClose={() => setInternalChangePasswordOpen(false)}
+        currentUser={currentUser}
+        onPasswordChanged={onUpdateCurrentUser}
+      />
     </header>
   );
 };
