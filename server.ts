@@ -3,6 +3,9 @@ import path from "path";
 import dotenv from "dotenv";
 import PDFDocument from "pdfkit";
 import * as XLSX from "xlsx";
+import crypto from "crypto";
+import firebaseConfig from "./firebase-applet-config.json";
+import type { NextFunction, Request, Response } from "express";
 // @ts-ignore
 import httpntlm from "httpntlm";
 
@@ -10,6 +13,177 @@ dotenv.config();
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
+
+type AuthenticatedRequest = Request & {
+  auth?: {
+    uid: string;
+    email?: string;
+  };
+};
+
+type FirebaseCertCache = {
+  expiresAt: number;
+  certs: Record<string, string>;
+};
+
+const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId;
+let firebaseCertCache: FirebaseCertCache | null = null;
+
+const MAX_AI_BODY_CHARS = 150_000;
+const MAX_PDF_ROWS = 150;
+const MAX_ANALYSIS_CHARS = 20_000;
+const MAX_STOKES_PARAM_CHARS = 128;
+
+const decodeBase64Url = (value: string): Buffer => {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), '=');
+  return Buffer.from(padded, 'base64');
+};
+
+const safeJsonParse = <T,>(value: string): T | null => {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+};
+
+const jsonSize = (value: unknown): number => {
+  try {
+    return Buffer.byteLength(JSON.stringify(value), 'utf8');
+  } catch {
+    return Number.MAX_SAFE_INTEGER;
+  }
+};
+
+const cleanText = (value: unknown, maxLength: number): string => {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, maxLength);
+};
+
+const cleanFilenamePart = (value: unknown, fallback = 'SQM'): string => {
+  const cleaned = cleanText(value, 80).replace(/[^\w\s.-]/g, '').replace(/\s+/g, '_');
+  return cleaned || fallback;
+};
+
+const toFiniteNumber = (value: unknown, fallback = 0): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const sanitizeOperationalRows = (rows: unknown, maxRows = MAX_PDF_ROWS): any[] => {
+  if (!Array.isArray(rows)) return [];
+  return rows.slice(0, maxRows).map((item) => {
+    const row = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+    return {
+      name: cleanText(row.name || row.producto, 120),
+      producto: cleanText(row.producto || row.name, 120),
+      Ton_Prog: toFiniteNumber(row.Ton_Prog),
+      Ton_Real: toFiniteNumber(row.Ton_Real),
+      Eq_Prog: toFiniteNumber(row.Eq_Prog),
+      Eq_Real: toFiniteNumber(row.Eq_Real),
+      faenaMetaHours: toFiniteNumber(row.faenaMetaHours),
+      faenaRealHours: toFiniteNumber(row.faenaRealHours)
+    };
+  });
+};
+
+const sanitizeComplianceRows = (rows: unknown): any[] => {
+  if (!Array.isArray(rows)) return [];
+  return rows.slice(0, 15).map((item) => {
+    const row = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+    return {
+      fecha: cleanText(row.fecha || row.date || row.Fecha, 32),
+      producto: cleanText(row.producto || row.Producto || row.title, 120),
+      justificacion: cleanText(row.justificacion || row.comentarios || row["JUSTIFICACIÓN DE DESEMPEÑO"], 1200)
+    };
+  }).filter(row => row.justificacion);
+};
+
+const isAllowedModel = (model: unknown): model is 'gemini' | 'glm' => {
+  return model === 'gemini' || model === 'glm';
+};
+
+const getFirebasePublicCerts = async (): Promise<Record<string, string>> => {
+  if (firebaseCertCache && firebaseCertCache.expiresAt > Date.now()) {
+    return firebaseCertCache.certs;
+  }
+
+  const response = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
+  if (!response.ok) {
+    throw new Error('No se pudieron obtener los certificados públicos de Firebase.');
+  }
+
+  const cacheControl = response.headers.get('cache-control') || '';
+  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+  const maxAgeMs = maxAgeMatch ? Number(maxAgeMatch[1]) * 1000 : 60 * 60 * 1000;
+  const certs = await response.json() as Record<string, string>;
+  firebaseCertCache = {
+    certs,
+    expiresAt: Date.now() + Math.max(maxAgeMs - 60_000, 60_000)
+  };
+  return certs;
+};
+
+const verifyFirebaseIdToken = async (token: string): Promise<{ uid: string; email?: string }> => {
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    throw new Error('Token malformado.');
+  }
+
+  const header = safeJsonParse<{ alg?: string; kid?: string }>(decodeBase64Url(parts[0]).toString('utf8'));
+  const payload = safeJsonParse<{
+    aud?: string;
+    iss?: string;
+    sub?: string;
+    exp?: number;
+    iat?: number;
+    email?: string;
+  }>(decodeBase64Url(parts[1]).toString('utf8'));
+
+  if (!header || !payload || header.alg !== 'RS256' || !header.kid) {
+    throw new Error('Token no válido.');
+  }
+
+  const certs = await getFirebasePublicCerts();
+  const cert = certs[header.kid];
+  if (!cert) {
+    throw new Error('Certificado Firebase desconocido.');
+  }
+
+  const verifier = crypto.createVerify('RSA-SHA256');
+  verifier.update(`${parts[0]}.${parts[1]}`);
+  verifier.end();
+
+  if (!verifier.verify(cert, decodeBase64Url(parts[2]))) {
+    throw new Error('Firma de token no válida.');
+  }
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (payload.aud !== firebaseProjectId) throw new Error('Audiencia de token inválida.');
+  if (payload.iss !== `https://securetoken.google.com/${firebaseProjectId}`) throw new Error('Emisor de token inválido.');
+  if (!payload.sub || payload.sub.length > 128) throw new Error('Usuario de token inválido.');
+  if (!payload.exp || payload.exp <= nowSeconds) throw new Error('Token expirado.');
+  if (!payload.iat || payload.iat > nowSeconds + 300) throw new Error('Token emitido en el futuro.');
+
+  return { uid: payload.sub, email: payload.email };
+};
+
+const requireFirebaseAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization || '';
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match) {
+    return res.status(401).json({ error: 'Autenticación requerida.' });
+  }
+
+  try {
+    req.auth = await verifyFirebaseIdToken(match[1]);
+    return next();
+  } catch (error) {
+    console.warn('Rejected API request with invalid Firebase token:', error instanceof Error ? error.message : error);
+    return res.status(401).json({ error: 'Token de autenticación inválido o expirado.' });
+  }
+};
 
   // Helper to run Gemini models in sequence via OpenRouter (using OpenRouter API Key)
   const callGemini = async (prompt: string): Promise<string | null> => {
@@ -115,9 +289,9 @@ app.use(express.json({ limit: '10mb' }));
   // API routes FIRST
   app.use('/sda', express.static(path.join(process.cwd(), 'sda')));
 
-  app.post("/api/test-ai", async (req, res) => {
+  app.post("/api/test-ai", requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      const { model } = req.body;
+      const model = isAllowedModel(req.body?.model) ? req.body.model : 'gemini';
       const startTime = Date.now();
       const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
 
@@ -182,9 +356,20 @@ app.use(express.json({ limit: '10mb' }));
     }
   });
 
-  app.post("/api/analyze-shift", async (req, res) => {
+  app.post("/api/analyze-shift", requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      const { title, data, complianceData, model } = req.body;
+      if (jsonSize(req.body) > MAX_AI_BODY_CHARS) {
+        return res.status(413).json({ error: "La solicitud de análisis excede el tamaño permitido." });
+      }
+
+      const title = cleanText(req.body?.title, 120) || 'Operación';
+      const data = sanitizeOperationalRows(req.body?.data, 80);
+      const complianceData = sanitizeComplianceRows(req.body?.complianceData);
+      const model = isAllowedModel(req.body?.model) ? req.body.model : 'gemini';
+
+      if (data.length === 0) {
+        return res.status(400).json({ error: "No hay datos operativos válidos para analizar." });
+      }
       
       const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
       if (!apiKey) {
@@ -264,9 +449,17 @@ Reglas:
   });
 
   // NEW: Refine performance justification with AI secure endpoint
-  app.post("/api/refine-justification", async (req, res) => {
+  app.post("/api/refine-justification", requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      const { text, product, stats, model } = req.body;
+      if (jsonSize(req.body) > 40_000) {
+        return res.status(413).json({ error: "La solicitud de formalización excede el tamaño permitido." });
+      }
+
+      const text = cleanText(req.body?.text, 2000);
+      const product = cleanText(req.body?.product, 120) || 'Producto no informado';
+      const rawStats = req.body?.stats && typeof req.body.stats === 'object' ? req.body.stats : {};
+      const stats = jsonSize(rawStats) <= 8_000 ? rawStats : {};
+      const model = isAllowedModel(req.body?.model) ? req.body.model : 'gemini';
 
       const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
       if (!apiKey) {
@@ -327,9 +520,18 @@ REGLAS CRÍTICAS DE REDACCIÓN:
   };
 
   // SERVER-SIDE HIGH-PRECISION PDF GENERATION
-  app.post("/api/generate-pdf", async (req, res) => {
+  app.post("/api/generate-pdf", requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      const { title, data = [], range = { start: '', end: '' }, analysis = '', operatorName = '' } = req.body;
+      const title = cleanText(req.body?.title, 80) || 'SQM';
+      const data = sanitizeOperationalRows(req.body?.data, MAX_PDF_ROWS);
+      const rawRange = req.body?.range && typeof req.body.range === 'object' ? req.body.range : {};
+      const range = {
+        start: cleanText((rawRange as Record<string, unknown>).start, 32),
+        end: cleanText((rawRange as Record<string, unknown>).end, 32)
+      };
+      const analysis = cleanText(req.body?.analysis, MAX_ANALYSIS_CHARS);
+      const operatorName = cleanText(req.body?.operatorName, 80);
+      const filenameTitle = cleanFilenamePart(title);
 
       // Create PDF Document in A4 with safe margins
       const doc = new PDFDocument({
@@ -343,7 +545,7 @@ REGLAS CRÍTICAS DE REDACCIÓN:
       doc.on('end', () => {
         const pdfBuffer = Buffer.concat(chunks);
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="Reporte_Turno_Servidor_${title || 'SQM'}.pdf"`);
+        res.setHeader('Content-Disposition', `attachment; filename="Reporte_Turno_Servidor_${filenameTitle}.pdf"`);
         res.status(200).send(pdfBuffer);
       });
 
@@ -632,8 +834,12 @@ REGLAS CRÍTICAS DE REDACCIÓN:
     });
   };
 
-  app.post('/api/reporte-stokes', async (req, res) => {
-    const { username, password, domain = '', fechaInicio, fechaFin, serverUrl } = req.body;
+  app.post('/api/reporte-stokes', requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
+    const username = cleanText(req.body?.username, MAX_STOKES_PARAM_CHARS);
+    const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, 256) : '';
+    const domain = cleanText(req.body?.domain, MAX_STOKES_PARAM_CHARS);
+    const fechaInicio = cleanText(req.body?.fechaInicio, 32);
+    const fechaFin = cleanText(req.body?.fechaFin, 32);
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Usuario y contraseña corporativa requeridos' });
@@ -649,20 +855,20 @@ REGLAS CRÍTICAS DE REDACCIÓN:
       cleanUsername = parts[1];
     } else if (cleanUsername.includes('@')) {
       const parts = cleanUsername.split('@');
-      cleanDomain = parts[0];
-      cleanUsername = parts[1];
+      cleanUsername = parts[0];
+      cleanDomain = parts[1];
     }
 
-    const baseServerUrl = serverUrl || REPORT_SERVER_URL;
+    const baseServerUrl = REPORT_SERVER_URL;
     let urlReporte = `${baseServerUrl}?${encodeURIComponent(REPORT_PATH)}&rs:Command=Render&rs:Format=EXCELOPENXML`;
-    if (fechaInicio) {
+    if (fechaInicio && /^\d{4}-\d{2}-\d{2}$/.test(fechaInicio)) {
       urlReporte += `&FechaInicio=${encodeURIComponent(fechaInicio)}`;
     }
-    if (fechaFin) {
+    if (fechaFin && /^\d{4}-\d{2}-\d{2}$/.test(fechaFin)) {
       urlReporte += `&FechaFin=${encodeURIComponent(fechaFin)}`;
     }
 
-    console.log(`[Stokes Proxy] Conectando a ReportServer (${baseServerUrl}) con usuario '${cleanUsername}' (dominio: '${cleanDomain}')...`);
+    console.log(`[Stokes Proxy] Conectando a ReportServer corporativo autorizado (${baseServerUrl}).`);
 
     httpntlm.get({
       url: urlReporte,
