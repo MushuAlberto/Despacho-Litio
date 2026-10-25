@@ -93,12 +93,18 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     const confirmClean = confirmPassword.trim();
 
     // Verification 1: Current password check
-    if (currentUser.password && currentUser.password.trim() !== '') {
+    const expectedCurrent = currentUser.password || currentUser.userId || '';
+    if (expectedCurrent && expectedCurrent.trim() !== '') {
       if (!currentClean) {
         setErrorMsg('Por favor ingresa tu contraseña actual para confirmar tu identidad.');
         return;
       }
-      if (currentClean !== currentUser.password) {
+      const matchesCurrent = 
+        currentClean === expectedCurrent ||
+        currentClean.toLowerCase() === expectedCurrent.toLowerCase() ||
+        currentClean.toLowerCase() === currentUser.userId.toLowerCase();
+
+      if (!matchesCurrent) {
         setErrorMsg('La contraseña actual ingresada es incorrecta.');
         return;
       }
@@ -245,6 +251,9 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                     setCurrentPassword(e.target.value);
                     if (errorMsg) setErrorMsg('');
                   }}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="Ingresa tu contraseña actual"
                   required
                   autoFocus
@@ -282,6 +291,9 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                     setNewPassword(e.target.value);
                     if (errorMsg) setErrorMsg('');
                   }}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="Mínimo 4 caracteres (la que tú elijas)"
                   required
                   disabled={isSubmitting}
@@ -328,6 +340,9 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                     setConfirmPassword(e.target.value);
                     if (errorMsg) setErrorMsg('');
                   }}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="Repite la nueva contraseña"
                   required
                   disabled={isSubmitting}

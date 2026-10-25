@@ -131,6 +131,10 @@ export const INITIAL_PREDEFINED_USERS: SystemUser[] = [
   { userId: 'marevalo', username: 'marevalo', password: 'marevalo', name: 'Marcelo Arevalo', role: 'supervision', enableAi: true },
   { userId: 'rogalde', username: 'rogalde', password: 'rogalde', name: 'Roberto Ogalde', role: 'supervision', enableAi: true },
   { userId: 'wcastillo', username: 'wcastillo', password: 'wcastillo', name: 'Walter Castillo', role: 'supervision', enableAi: true },
+  { userId: 'ccampos', username: 'ccampos', password: 'ccampos', name: 'Claudio Campos', role: 'supervision', enableAi: true },
+  { userId: 'eoyanader', username: 'eoyanader', password: 'eoyanader', name: 'Erwin Oyanader', role: 'supervision', enableAi: true },
+  { userId: 'fogalde', username: 'fogalde', password: 'fogalde', name: 'Felipe Ogalde', role: 'supervision', enableAi: true },
+  { userId: 'parce', username: 'parce', password: 'parce', name: 'Patricio Arce', role: 'supervision', enableAi: true },
 ];
 
 export async function bootstrapPredefinedUsers() {
@@ -495,3 +499,78 @@ export async function updateUserPassword(
   return updatedUser;
 }
 
+/**
+ * Resets a user's password back to the default initial credential (their username/userId)
+ * in Firestore and localStorage. Useful when a user forgot their password or had issues logging in.
+ */
+export async function resetUserPasswordToDefault(
+  userId: string,
+  userProfile?: SystemUser
+): Promise<{ success: boolean; defaultPassword: string; message: string }> {
+  const cleanId = (userId || '').trim();
+  if (!cleanId) {
+    return { success: false, defaultPassword: '', message: 'Identificador de usuario inválido.' };
+  }
+
+  const defaultPassword = cleanId;
+
+  try {
+    const userDocRef = doc(db, 'users', cleanId);
+    const snap = await getDoc(userDocRef);
+
+    const existingData = snap.exists() ? snap.data() : null;
+    const name = existingData?.name || userProfile?.name || cleanId;
+    const role = existingData?.role || userProfile?.role || 'supervision';
+
+    const payload = {
+      ...(existingData || {}),
+      userId: cleanId,
+      username: existingData?.username || cleanId,
+      name,
+      role,
+      password: defaultPassword,
+      lastPasswordUpdate: new Date().toISOString()
+    };
+
+    if (!isFirestoreWriteBlocked()) {
+      await setDoc(userDocRef, payload, { merge: true });
+    }
+
+    // Update localStorage if currently stored
+    try {
+      const stored = localStorage.getItem('sqm_current_user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.userId === cleanId || parsed.uid === cleanId) {
+          localStorage.setItem('sqm_current_user', JSON.stringify({ ...parsed, password: defaultPassword }));
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    // Log the reset
+    try {
+      await logActivity(
+        { userId: cleanId, username: cleanId, name, role },
+        'Restablecimiento de Contraseña',
+        `La contraseña del usuario ${name} (@${cleanId}) fue restablecida a su valor inicial por defecto.`
+      );
+    } catch (e) {
+      // Ignore
+    }
+
+    return {
+      success: true,
+      defaultPassword,
+      message: `Contraseña restablecida exitosamente para @${cleanId}. Su clave inicial es: ${defaultPassword}`
+    };
+  } catch (error: any) {
+    console.error('Error resetting password to default:', error);
+    return {
+      success: false,
+      defaultPassword,
+      message: `No se pudo sincronizar el restablecimiento con la base de datos: ${error?.message || error}`
+    };
+  }
+}
