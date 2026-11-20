@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 import path from "path";
 import dotenv from "dotenv";
 import PDFDocument from "pdfkit";
@@ -1065,13 +1066,18 @@ REGLAS CRÍTICAS DE REDACCIÓN:
   if (process.env.VERCEL !== "1") {
     const PORT = 3000;
     if (process.env.NODE_ENV !== "production") {
+      const httpServer = http.createServer(app);
       import("vite").then(({ createServer: createViteServer }) => {
         createViteServer({
-          server: { middlewareMode: true },
+          server: {
+            middlewareMode: true,
+            hmr: { server: httpServer },
+            watch: process.env.DISABLE_HMR === 'true' ? null : undefined,
+          },
           appType: "spa",
         }).then((vite) => {
           app.use(vite.middlewares);
-          app.listen(PORT, "0.0.0.0", () => {
+          httpServer.listen(PORT, "0.0.0.0", () => {
             console.log(`Server running on http://localhost:${PORT}`);
           });
         });

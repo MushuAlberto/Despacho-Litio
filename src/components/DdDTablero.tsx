@@ -1,16 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
-    ArrowLeft, Clock, Calendar, BarChart3, TrendingUp,
-    Target, AlertCircle, ChevronRight, Gauge, Layers, Info, Scale,
-    FileText, Image as ImageIcon, Loader2
+    Clock, BarChart3, TrendingUp,
+    Target, AlertCircle, Layers, Scale
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, LineChart, Line, Legend, ReferenceLine, ComposedChart, Area, Cell, AreaChart, LabelList
 } from 'recharts';
-import { formatHoursToTime, formatDateToCL } from '../utils/dataProcessor';
-
-declare const html2canvas: any;
+import { formatHoursToTime } from '../utils/dataProcessor';
 
 interface DdDDataRow {
     Fecha: string;
@@ -30,7 +27,7 @@ interface DdDDataRow {
 interface DdDTableroProps {
     data: DdDDataRow[];
     selectedDate: string;
-    onBack: () => void;
+    onBack?: () => void;
 }
 
 // --- SUB-COMPONENTE: TARJETA DE MÉTRICA EJECUTIVA ---
@@ -109,8 +106,7 @@ const SegmentChart: React.FC<{ title: string; data: any[]; color: string }> = Re
     </div>
 ));
 
-export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selectedDate, onBack }) => {
-    const [isExportingImage, setIsExportingImage] = useState(false);
+export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selectedDate }) => {
 
     // 1. Filtrar datos del día seleccionado para la tabla
     const dayData = useMemo(() => data.filter(r => r.Fecha === selectedDate), [data, selectedDate]);
@@ -238,38 +234,6 @@ export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selecte
     };
 
 
-    const handleExportImage = async () => {
-        if (isExportingImage) return;
-        setIsExportingImage(true);
-        const element = document.getElementById('ddd-dashboard-capture');
-        if (!element) return;
-        try {
-            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-            const link = document.createElement('a');
-            link.download = `Captura_DdD_${selectedDate}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-
-            // Record download audit log
-            try {
-                const { getCurrentUser } = await import('../auth/authStore');
-                const user = getCurrentUser();
-                if (user) {
-                    const { logActivity } = await import('../services/firebase');
-                    await logActivity(
-                        user,
-                        'Descargó Imagen',
-                        `Descargó captura gráfica del tablero DdD de la fecha ${formatDateToCL(selectedDate)}.`
-                    );
-                }
-            } catch (err) {
-                console.error('Error logging DdD image download:', err);
-            }
-        } finally {
-            setIsExportingImage(false);
-        }
-    };
-
     return (
         <div className="min-h-screen bg-calido p-4 md:p-8 pb-32 animate-in fade-in duration-700">
             <div className="max-w-[1700px] mx-auto space-y-8" id="ddd-dashboard-capture">
@@ -279,12 +243,6 @@ export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selecte
                     <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-48 -mt-48 opacity-10 animate-pulse" />
                     
                     <div className="flex items-center gap-8 relative z-10">
-                        <button
-                            onClick={onBack}
-                            className="p-5 bg-white/10 hover:bg-ionizado rounded-[2rem] transition-all duration-500 text-white/50 hover:text-white shadow-xl active:scale-90 border border-white/10 hover:border-ionizado"
-                        >
-                            <ArrowLeft size={32} />
-                        </button>
                         <div>
                             <div className="flex items-center gap-3 mb-2">
                                 <span className="px-3 py-1 bg-ionizado text-[11px] font-black rounded-lg uppercase tracking-widest shadow-lg shadow-ionizado/20">Tablero M1</span>
@@ -302,15 +260,14 @@ export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selecte
                                 <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Jornada Reportada</p>
                                 <span className="text-xl font-black capitalize tracking-tighter italic">{formatDate(selectedDate)}</span>
                             </div>
-                            
-                                <button 
-                                    onClick={handleExportImage}
-                                    disabled={isExportingImage}
-                                    className="p-3 bg-ionizado hover:bg-ionizado/80 rounded-2xl transition-all text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-ionizado/20 border border-white/5 disabled:opacity-50"
-                                >
-                                    {isExportingImage ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
-                                    <span className="hidden lg:inline">Imagen</span>
-                                </button>
+
+                            <div className="bg-white/95 px-4 py-2 rounded-2xl shadow-lg border border-white/20 flex items-center justify-center shrink-0">
+                                <img
+                                    src="/novandino.png"
+                                    alt="Novandino"
+                                    className="h-9 w-auto object-contain"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
