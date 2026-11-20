@@ -77,7 +77,7 @@ interface ProductCardProps {
   data: Array<RawChartData & { formattedDate: string }>;
 }
 
-const ProductIndividualCard: React.FC<ProductCardProps> = ({ productName, data }) => {
+const ProductIndividualCard: React.FC<ProductCardProps> = React.memo(({ productName, data }) => {
   const tableRows = useMemo(() => {
     return data.map((item, idx) => {
       const compliance = item.Ton_Prog > 0 ? (item.Ton_Real / item.Ton_Prog) * 100 : 0;
@@ -173,11 +173,11 @@ const ProductIndividualCard: React.FC<ProductCardProps> = ({ productName, data }
               <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '10px', fontWeight: '900' }} iconType="circle" />
 
               {/* Barras de Tonelaje */}
-              <Bar yAxisId="left" dataKey="Ton_Prog" fill={COLORS.progTon} name="Prog. Ton" barSize={12} radius={[2, 2, 0, 0]}>
+              <Bar yAxisId="left" dataKey="Ton_Prog" fill={COLORS.progTon} name="Prog. Ton" barSize={12} radius={[2, 2, 0, 0]} isAnimationActive={false}>
                  <LabelList dataKey="Ton_Prog" position="top" style={{ fontSize: '8px', fontWeight: '900', fill: COLORS.progTon }} formatter={(v: any) => Math.round(v)} />
               </Bar>
               
-              <Bar yAxisId="left" dataKey="Ton_Real" fill={COLORS.realTon} name="Real Ton" barSize={12} radius={[2, 2, 0, 0]}>
+              <Bar yAxisId="left" dataKey="Ton_Real" fill={COLORS.realTon} name="Real Ton" barSize={12} radius={[2, 2, 0, 0]} isAnimationActive={false}>
                  <LabelList dataKey="Ton_Real" position="top" style={{ fontSize: '8px', fontWeight: '900', fill: COLORS.realTon }} formatter={(v: any) => Math.round(v)} />
               </Bar>
 
@@ -190,6 +190,7 @@ const ProductIndividualCard: React.FC<ProductCardProps> = ({ productName, data }
                 name="Meta Hrs" 
                 strokeWidth={2} 
                 dot={{ r: 3, fill: '#fff', strokeWidth: 2 }}
+                isAnimationActive={false}
               >
                 <LabelList dataKey="faenaMetaHours" position="top" style={{ fontSize: '8px', fontWeight: '800', fill: COLORS.metaHrs }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={10} />
               </Line>
@@ -202,6 +203,7 @@ const ProductIndividualCard: React.FC<ProductCardProps> = ({ productName, data }
                 name="Real Hrs" 
                 strokeWidth={2} 
                 dot={{ r: 4, fill: '#fff', strokeWidth: 2 }}
+                isAnimationActive={false}
               >
                 <LabelList dataKey="faenaRealHours" position="top" style={{ fontSize: '8px', fontWeight: '900', fill: COLORS.realHrs }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={10} />
               </Line>
@@ -263,7 +265,7 @@ const ProductIndividualCard: React.FC<ProductCardProps> = ({ productName, data }
       </div>
     </div>
   );
-};
+});
 
 const CambioAnalisisProductoChart: React.FC<Props> = ({ allData, range, visibleProducts }) => {
   // Ordenar productos alfabéticamente
@@ -336,4 +338,4 @@ const CambioAnalisisProductoChart: React.FC<Props> = ({ allData, range, visibleP
   );
 };
 
-export default CambioAnalisisProductoChart;
+export default React.memo(CambioAnalisisProductoChart);

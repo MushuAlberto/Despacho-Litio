@@ -8,11 +8,37 @@ import firebaseConfig from "./firebase-applet-config.json";
 import type { NextFunction, Request, Response } from "express";
 // @ts-ignore
 import httpntlm from "httpntlm";
+import {
+  securityHeadersMiddleware,
+  createCorsAllowlistMiddleware,
+  sanitizeInputMiddleware,
+  createRateLimiter
+} from "./server/securityMiddleware";
+import {
+  withExponentialBackoff,
+  HttpServiceError,
+  defaultShouldRetry
+} from "./server/resilience";
 
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
+
+const extraCorsOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const apiGeneralLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 60, keyPrefix: 'api-general' });
+const aiEndpointLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 15, keyPrefix: 'api-ai' });
+const stokesEndpointLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 10, keyPrefix: 'api-stokes' });
+
+app.use(securityHeadersMiddleware);
+app.use('/api', createCorsAllowlistMiddleware(extraCorsOrigins));
 app.use(express.json({ limit: '10mb' }));
+app.use('/api', sanitizeInputMiddleware);
+app.use('/api', apiGeneralLimiter);
 
 type AuthenticatedRequest = Request & {
   auth?: {
@@ -109,20 +135,32 @@ const getFirebasePublicCerts = async (): Promise<Record<string, string>> => {
     return firebaseCertCache.certs;
   }
 
-  const response = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
-  if (!response.ok) {
-    throw new Error('No se pudieron obtener los certificados públicos de Firebase.');
-  }
+  return withExponentialBackoff(
+    async (signal) => {
+      const response = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com', {
+        signal
+      });
+      if (!response.ok) {
+        throw new HttpServiceError('No se pudieron obtener los certificados públicos de Firebase.', response.status);
+      }
 
-  const cacheControl = response.headers.get('cache-control') || '';
-  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
-  const maxAgeMs = maxAgeMatch ? Number(maxAgeMatch[1]) * 1000 : 60 * 60 * 1000;
-  const certs = await response.json() as Record<string, string>;
-  firebaseCertCache = {
-    certs,
-    expiresAt: Date.now() + Math.max(maxAgeMs - 60_000, 60_000)
-  };
-  return certs;
+      const cacheControl = response.headers.get('cache-control') || '';
+      const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+      const maxAgeMs = maxAgeMatch ? Number(maxAgeMatch[1]) * 1000 : 60 * 60 * 1000;
+      const certs = await response.json() as Record<string, string>;
+      firebaseCertCache = {
+        certs,
+        expiresAt: Date.now() + Math.max(maxAgeMs - 60_000, 60_000)
+      };
+      return certs;
+    },
+    {
+      maxRetries: 2,
+      baseDelayMs: 200,
+      maxDelayMs: 2000,
+      timeoutMs: 8000
+    }
+  );
 };
 
 const verifyFirebaseIdToken = async (token: string): Promise<{ uid: string; email?: string }> => {
@@ -204,33 +242,48 @@ const requireFirebaseAuth = async (req: AuthenticatedRequest, res: Response, nex
     for (const modelName of modelsToTry) {
       try {
         console.log(`Calling OpenRouter (Gemini Route) with model ${modelName}...`);
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-            "HTTP-Referer": "https://sqm-litio.vercel.app",
-            "X-Title": "SQM Logistics Dashboard"
-          },
-          body: JSON.stringify({
-            model: modelName,
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.3,
-            max_tokens: 2048
-          })
-        });
+        const content = await withExponentialBackoff(
+          async (signal) => {
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+              method: "POST",
+              signal,
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+                "HTTP-Referer": "https://sqm-litio.vercel.app",
+                "X-Title": "SQM Logistics Dashboard"
+              },
+              body: JSON.stringify({
+                model: modelName,
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.3,
+                max_tokens: 2048
+              })
+            });
 
-        if (response.ok) {
-          const json = await response.json();
-          const content = json.choices?.[0]?.message?.content;
-          if (content) {
-            return content;
+            if (!response.ok) {
+              throw new HttpServiceError(`OpenRouter Gemini HTTP ${response.status}`, response.status);
+            }
+
+            const json = await response.json();
+            return json.choices?.[0]?.message?.content || null;
+          },
+          {
+            maxRetries: 2,
+            baseDelayMs: 300,
+            maxDelayMs: 2500,
+            timeoutMs: 12000,
+            onRetry: (_err, attempt, delayMs) => {
+              console.warn(`[OpenRouter Gemini] Reintento #${attempt} para ${modelName} en ${delayMs}ms...`);
+            }
           }
-        } else {
-          console.log(`[OpenRouter Gemini Fallback] Model ${modelName} status is ${response.status}. Trying next...`);
+        );
+
+        if (content) {
+          return content;
         }
       } catch (e) {
-        console.log(`[OpenRouter Gemini Fallback] Problem calling ${modelName}. Trying next...`);
+        console.log(`[OpenRouter Gemini Fallback] Problem calling ${modelName}: ${e instanceof Error ? e.message : e}. Trying next...`);
       }
     }
     return null;
@@ -253,34 +306,48 @@ const requireFirebaseAuth = async (req: AuthenticatedRequest, res: Response, nex
     for (const modelName of modelsToTry) {
       try {
         console.log(`Calling OpenRouter with model ${modelName}...`);
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-            "HTTP-Referer": "https://sqm-litio.vercel.app",
-            "X-Title": "SQM Logistics Dashboard"
-          },
-          body: JSON.stringify({
-            model: modelName,
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.3,
-            max_tokens: 2048
-          })
-        });
+        const content = await withExponentialBackoff(
+          async (signal) => {
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+              method: "POST",
+              signal,
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+                "HTTP-Referer": "https://sqm-litio.vercel.app",
+                "X-Title": "SQM Logistics Dashboard"
+              },
+              body: JSON.stringify({
+                model: modelName,
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.3,
+                max_tokens: 2048
+              })
+            });
 
-        if (response.ok) {
-          const json = await response.json();
-          const content = json.choices?.[0]?.message?.content;
-          if (content) {
-            return { text: content, modelUsed: modelName };
+            if (!response.ok) {
+              throw new HttpServiceError(`OpenRouter HTTP ${response.status}`, response.status);
+            }
+
+            const json = await response.json();
+            return json.choices?.[0]?.message?.content || null;
+          },
+          {
+            maxRetries: 2,
+            baseDelayMs: 300,
+            maxDelayMs: 2500,
+            timeoutMs: 12000,
+            onRetry: (_err, attempt, delayMs) => {
+              console.warn(`[OpenRouter Recovery] Reintento #${attempt} para ${modelName} en ${delayMs}ms...`);
+            }
           }
-        } else {
-          const statusVal = response.status;
-          console.log(`[OpenRouter Recovery] Model ${modelName} status is ${statusVal}. Attempting fallback...`);
+        );
+
+        if (content) {
+          return { text: content, modelUsed: modelName };
         }
       } catch (e) {
-        console.log(`[OpenRouter Recovery] Problem calling ${modelName}. Attempting fallback...`);
+        console.log(`[OpenRouter Recovery] Problem calling ${modelName}: ${e instanceof Error ? e.message : e}. Attempting fallback...`);
       }
     }
     return null;
@@ -289,7 +356,7 @@ const requireFirebaseAuth = async (req: AuthenticatedRequest, res: Response, nex
   // API routes FIRST
   app.use('/sda', express.static(path.join(process.cwd(), 'sda')));
 
-  app.post("/api/test-ai", requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/test-ai", aiEndpointLimiter, requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const model = isAllowedModel(req.body?.model) ? req.body.model : 'gemini';
       const startTime = Date.now();
@@ -356,7 +423,7 @@ const requireFirebaseAuth = async (req: AuthenticatedRequest, res: Response, nex
     }
   });
 
-  app.post("/api/analyze-shift", requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/analyze-shift", aiEndpointLimiter, requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
     try {
       if (jsonSize(req.body) > MAX_AI_BODY_CHARS) {
         return res.status(413).json({ error: "La solicitud de análisis excede el tamaño permitido." });
@@ -449,7 +516,7 @@ Reglas:
   });
 
   // NEW: Refine performance justification with AI secure endpoint
-  app.post("/api/refine-justification", requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/refine-justification", aiEndpointLimiter, requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
     try {
       if (jsonSize(req.body) > 40_000) {
         return res.status(413).json({ error: "La solicitud de formalización excede el tamaño permitido." });
@@ -834,7 +901,7 @@ REGLAS CRÍTICAS DE REDACCIÓN:
     });
   };
 
-  app.post('/api/reporte-stokes', requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/reporte-stokes', stokesEndpointLimiter, requireFirebaseAuth, async (req: AuthenticatedRequest, res) => {
     const username = cleanText(req.body?.username, MAX_STOKES_PARAM_CHARS);
     const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, 256) : '';
     const domain = cleanText(req.body?.domain, MAX_STOKES_PARAM_CHARS);
@@ -870,60 +937,54 @@ REGLAS CRÍTICAS DE REDACCIÓN:
 
     console.log(`[Stokes Proxy] Conectando a ReportServer corporativo autorizado (${baseServerUrl}).`);
 
-    httpntlm.get({
-      url: urlReporte,
-      username: cleanUsername,
-      password: password,
-      workstation: '',
-      domain: cleanDomain,
-      binary: true
-    }, async (err: any, response: any) => {
-      if (err) {
-        const errMsg = String(err.message || err);
-        const isDnsOrUnreachable = 
-          err.code === 'EAI_AGAIN' || 
-          err.code === 'ENOTFOUND' || 
-          err.code === 'ECONNREFUSED' || 
-          err.code === 'ETIMEDOUT' ||
-          errMsg.includes('EAI_AGAIN') ||
-          errMsg.includes('clanfdbsw06');
-
-        if (isDnsOrUnreachable) {
-          console.log(`[Stokes Proxy] Host interno 'clanfdbsw06' no es resoluble directamente desde este contenedor en la nube (requiere Intranet/VPN SQM). Cargando el universo completo de las 112 guías reales normalizadas.`);
-          
-          try {
-            const { DATOS_REALES_STOKES } = await import('./src/data/datosStokesHistoricos.js');
-            return res.json({
-              totalRegistros: DATOS_REALES_STOKES.length,
-              data: DATOS_REALES_STOKES,
-              isContingency: true,
-              message: 'Servidor clanfdbsw06 requiere intranet SQM o VPN. Se ha cargado el universo completo de las 112 guías reales del reporte oficial de Microsoft ReportServer con variantes MOP 1-6 unificadas a "Salar".'
-            });
-          } catch (importErr) {
-            return res.json({
-              totalRegistros: 0,
-              data: [],
-              isContingency: true,
-              message: 'Conexión con clanfdbsw06 no disponible en nube pública.'
-            });
+    const executeNtlmRequest = () =>
+      new Promise<any>((resolve, reject) => {
+        httpntlm.get(
+          {
+            url: urlReporte,
+            username: cleanUsername,
+            password,
+            workstation: '',
+            domain: cleanDomain,
+            binary: true
+          },
+          (err: any, response: any) => {
+            if (err) return reject(err);
+            if (response.statusCode === 401) {
+              return reject(new HttpServiceError('Credenciales corporativas rechazadas (Error 401: No autorizado)', 401, false));
+            }
+            if (response.statusCode >= 500 || response.statusCode === 429) {
+              return reject(new HttpServiceError(`ReportServer HTTP ${response.statusCode}`, response.statusCode, true));
+            }
+            resolve(response);
           }
+        );
+      });
+
+    try {
+      const response = await withExponentialBackoff(executeNtlmRequest, {
+        maxRetries: 2,
+        baseDelayMs: 350,
+        maxDelayMs: 3000,
+        timeoutMs: 20000,
+        shouldRetry: (err) => {
+          const errObj = err as { code?: string; message?: string };
+          const msg = String(errObj?.message || err || '');
+          if (
+            errObj?.code === 'EAI_AGAIN' ||
+            errObj?.code === 'ENOTFOUND' ||
+            errObj?.code === 'ECONNREFUSED' ||
+            msg.includes('EAI_AGAIN') ||
+            msg.includes('clanfdbsw06')
+          ) {
+            return false;
+          }
+          return defaultShouldRetry(err);
+        },
+        onRetry: (_err, attempt, delayMs) => {
+          console.warn(`[Stokes Proxy] Reintento NTLM #${attempt} en ${delayMs}ms...`);
         }
-
-        console.warn('[Stokes Proxy] Aviso NTLM / Conexión:', errMsg);
-        return res.status(502).json({ 
-          error: 'Error de conexión con ReportServer (clanfdbsw06)', 
-          detail: errMsg,
-          isConnectionError: true,
-          hint: 'El host clanfdbsw06 es un servidor interno de la intranet SQM. Si accede fuera de la red/VPN corporativa, puede cargar el archivo Excel manualmente o utilizar los datos oficiales del reporte.'
-        });
-      }
-
-      if (response.statusCode === 401) {
-        return res.status(401).json({
-          error: 'Credenciales corporativas rechazadas (Error 401: No autorizado)',
-          detail: 'Verifique su usuario de red y contraseña en ReportServer.'
-        });
-      }
+      });
 
       if (response.statusCode !== 200) {
         return res.status(response.statusCode || 500).json({
@@ -944,15 +1005,58 @@ REGLAS CRÍTICAS DE REDACCIÓN:
           totalRegistros: despachosProcesados.length,
           data: despachosProcesados
         });
-
       } catch (parseError: any) {
         console.warn('[Stokes Proxy] Error al procesar Excel descargado:', parseError.message);
-        return res.status(500).json({ 
-          error: 'Error al procesar el archivo Excel descargado desde ReportServer', 
-          detail: parseError.message 
+        return res.status(500).json({
+          error: 'Error al procesar el archivo Excel descargado desde ReportServer',
+          detail: parseError.message
         });
       }
-    });
+    } catch (err: any) {
+      if (err instanceof HttpServiceError && err.status === 401) {
+        return res.status(401).json({
+          error: 'Credenciales corporativas rechazadas (Error 401: No autorizado)',
+          detail: 'Verifique su usuario de red y contraseña en ReportServer.'
+        });
+      }
+
+      const errMsg = String(err?.message || err);
+      const isDnsOrUnreachable =
+        err?.code === 'EAI_AGAIN' ||
+        err?.code === 'ENOTFOUND' ||
+        err?.code === 'ECONNREFUSED' ||
+        err?.code === 'ETIMEDOUT' ||
+        errMsg.includes('EAI_AGAIN') ||
+        errMsg.includes('clanfdbsw06');
+
+      if (isDnsOrUnreachable) {
+        console.log(`[Stokes Proxy] Host interno 'clanfdbsw06' no es resoluble directamente desde este contenedor en la nube (requiere Intranet/VPN SQM). Cargando contingencia oficial.`);
+        try {
+          const { DATOS_REALES_STOKES } = await import('./src/data/datosStokesHistoricos.js');
+          return res.json({
+            totalRegistros: DATOS_REALES_STOKES.length,
+            data: DATOS_REALES_STOKES,
+            isContingency: true,
+            message: 'Servidor clanfdbsw06 requiere intranet SQM o VPN. Se ha cargado el universo completo de las guías reales con variantes MOP 1-6 unificadas a "Salar".'
+          });
+        } catch {
+          return res.json({
+            totalRegistros: 0,
+            data: [],
+            isContingency: true,
+            message: 'Conexión con clanfdbsw06 no disponible en nube pública.'
+          });
+        }
+      }
+
+      console.warn('[Stokes Proxy] Aviso NTLM / Conexión:', errMsg);
+      return res.status(502).json({
+        error: 'Error de conexión con ReportServer (clanfdbsw06)',
+        detail: errMsg,
+        isConnectionError: true,
+        hint: 'El host clanfdbsw06 es un servidor interno de la intranet SQM. Si accede fuera de la red/VPN corporativa, puede cargar el archivo Excel manualmente o utilizar los datos oficiales del reporte.'
+      });
+    }
   });
 
   // Export the Express app for Vercel Serverless Functions

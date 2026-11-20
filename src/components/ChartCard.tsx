@@ -38,7 +38,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
   title,
   aggregation = 'sum'
 }) => {
-  const yAxes = Array.isArray(yAxis) ? yAxis : [yAxis];
+  const yAxes = useMemo(() => (Array.isArray(yAxis) ? yAxis : [yAxis]), [yAxis]);
 
   const aggregatedData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -69,7 +69,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
       })
       .sort((a: any, b: any) => (b[yAxes[1]] || 0) - (a[yAxes[1]] || 0))
       .slice(0, 10);
-  }, [data, xAxis, yAxis, aggregation]);
+  }, [data, xAxis, yAxes, aggregation]);
 
   const renderChart = () => {
     if (aggregatedData.length === 0) return <div className="h-full flex items-center justify-center text-slate-300 font-bold uppercase text-[10px]">Sin datos para graficar</div>;
@@ -270,4 +270,4 @@ const ChartCard: React.FC<ChartCardProps> = ({
   );
 };
 
-export default ChartCard;
+export default React.memo(ChartCard);

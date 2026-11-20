@@ -95,6 +95,7 @@ export const normalizeCompanyName = (name: any): string => {
 
   const equivalencias: Record<string, string> = {
     "JORQUERA TRANSPORTE S A": "JORQUERA TRANSPORTE S.A.",
+    "JORQUERA TRANSPORTE SA": "JORQUERA TRANSPORTE S.A.",
     "MINING SERVICES AND DERIVATES": "M S & D SPA",
     "MINING SERVICES AND DERIVATES SPA": "M S & D SPA",
     "M S AND D": "M S & D SPA",
@@ -216,10 +217,42 @@ export const syncBackupToFirebase = async (selectedDate?: string): Promise<boole
   try {
     const savedUser = localStorage.getItem('sqm_current_user');
     const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+    const { saveOperationalSnapshot, enqueueOfflineMutation } = await import('../services/offlineDb');
+    await saveOperationalSnapshot('operational_report_latest', { date: dateStr, backup });
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      await enqueueOfflineMutation('report', `Informe Operativo ${dateStr}`, {
+        date: dateStr,
+        backupDataObj: backup,
+        user: parsedUser,
+      });
+      return true;
+    }
+
     const { saveOperationalReportToFirebase } = await import('../services/firebase');
-    return await saveOperationalReportToFirebase(dateStr, backup, parsedUser);
+    const saved = await saveOperationalReportToFirebase(dateStr, backup, parsedUser);
+    if (!saved) {
+      await enqueueOfflineMutation('report', `Informe Operativo ${dateStr}`, {
+        date: dateStr,
+        backupDataObj: backup,
+        user: parsedUser,
+      });
+    }
+    return saved;
   } catch (err) {
-    console.error('Error syncing backup to Firebase:', err);
+    console.error('Error syncing backup to Firebase, enqueued offline:', err);
+    try {
+      const savedUser = localStorage.getItem('sqm_current_user');
+      const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+      const { enqueueOfflineMutation } = await import('../services/offlineDb');
+      await enqueueOfflineMutation('report', `Informe Operativo ${dateStr}`, {
+        date: dateStr,
+        backupDataObj: backup,
+        user: parsedUser,
+      });
+    } catch {
+      // Ignore secondary offline queue error
+    }
     return false;
   }
 };

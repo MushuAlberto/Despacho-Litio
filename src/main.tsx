@@ -166,6 +166,25 @@ try {
   console.warn("Failed to apply html2canvas oklab fallback patch:", e);
 }
 
+import { registerSW } from 'virtual:pwa-register';
+import { initOfflineSyncLifecycle } from './services/offlineDb';
+
+// Inicializar Workbox Service Worker y cola de sincronización Offline-First (IndexedDB)
+try {
+  registerSW({
+    immediate: true,
+    onOfflineReady() {
+      console.info('[PWA] Despacho-Litio listo para operar sin conexión.');
+    },
+    onRegisterError(error) {
+      console.warn('[PWA] Error registrando Service Worker:', error);
+    },
+  });
+  initOfflineSyncLifecycle();
+} catch (swErr) {
+  console.warn('[PWA] Inicialización offline diferida:', swErr);
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
@@ -173,3 +192,4 @@ createRoot(document.getElementById('root')!).render(
     </AuthProvider>
   </StrictMode>,
 );
+

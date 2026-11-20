@@ -40,7 +40,7 @@ const MetricCard: React.FC<{
     subtitle?: string;
     icon: React.ReactNode;
     color: string;
-}> = ({ title, value, subtitle, icon, color }) => (
+}> = React.memo(({ title, value, subtitle, icon, color }) => (
     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden group hover:shadow-xl transition-all duration-500">
         <div className={`absolute top-0 right-0 w-24 h-24 ${color} opacity-5 rounded-bl-[4rem] -mr-8 -mt-8 group-hover:scale-110 transition-transform`} />
         
@@ -52,13 +52,64 @@ const MetricCard: React.FC<{
 
         <div className="mt-4 relative z-10">
             <p className="text-[10px] font-black text-black uppercase tracking-widest leading-none mb-1">{title}</p>
-            <h3 className="text-3xl font-black text-black tracking-tighter italic">{value}</h3>
+            <h3 className="text-3xl font-black text-black tracking-tighter italic tabular-nums">{value}</h3>
             {subtitle && <p className="text-[10px] text-black font-bold mt-1 uppercase tracking-tighter">{subtitle}</p>}
         </div>
     </div>
-);
+));
 
-export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBack }) => {
+const SegmentChart: React.FC<{ title: string; data: any[]; color: string }> = React.memo(({ title, data, color }) => (
+    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+            <h5 className="text-[11px] font-black text-slate-800 uppercase tracking-widest italic">{title}</h5>
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+        </div>
+        <div className="h-[200px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={data} margin={{ top: 20, right: 5, left: 5, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                        dataKey="fecha" 
+                        tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94a3b8' }}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <YAxis yAxisId="left" hide domain={[0, 120]} />
+                    <YAxis yAxisId="right" hide orientation="right" domain={[24, 32]} />
+                    <Tooltip
+                        contentStyle={{ borderRadius: '15px', border: 'none', fontSize: '10px', fontWeight: 'bold' }}
+                        formatter={(v: number) => [v.toFixed(1), ""]}
+                    />
+                    <ReferenceLine yAxisId="left" y={90} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} />
+                    <Bar yAxisId="left" dataKey="cumplimiento" fill={color} opacity={0.6} radius={[4, 4, 0, 0]} name="% Cumpl." isAnimationActive={false}>
+                        <LabelList 
+                            dataKey="cumplimiento" 
+                            position="top" 
+                            formatter={(v: number) => `${v.toFixed(0)}%`}
+                            style={{ fontSize: '10px', fontWeight: 'bold', fill: '#475569' }}
+                        />
+                    </Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="promTon" stroke={color} strokeWidth={3} dot={{ r: 3, fill: color }} name="Tms/Eq" isAnimationActive={false}>
+                        <LabelList 
+                            dataKey="promTon" 
+                            position="top" 
+                            formatter={(v: number) => v.toFixed(1)}
+                            style={{ fontSize: '9px', fontWeight: 'bold', fill: color }}
+                        />
+                    </Line>
+                </ComposedChart>
+            </ResponsiveContainer>
+        </div>
+        <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+            <span>Últimos 10 días</span>
+            <span className="text-slate-200">|</span>
+            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: color }} /> Cumplimiento</span>
+            <span className="flex items-center gap-1"><div className="w-3 h-0.5" style={{ backgroundColor: color }} /> Ton/Eq</span>
+        </div>
+    </div>
+));
+
+export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selectedDate, onBack }) => {
     const [isExportingImage, setIsExportingImage] = useState(false);
 
     // 1. Filtrar datos del día seleccionado para la tabla
@@ -179,57 +230,6 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
             bischofita: getStatsForFilter(r => r.Producto.toUpperCase().includes('BISCHOFITA'))
         };
     }, [data]);
-
-    const SegmentChart: React.FC<{ title: string; data: any[]; color: string }> = ({ title, data, color }) => (
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-50 pb-4">
-                <h5 className="text-[11px] font-black text-slate-800 uppercase tracking-widest italic">{title}</h5>
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-            </div>
-            <div className="h-[200px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={data} margin={{ top: 20, right: 5, left: 5, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis 
-                            dataKey="fecha" 
-                            tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94a3b8' }}
-                            axisLine={false}
-                            tickLine={false}
-                        />
-                        <YAxis yAxisId="left" hide domain={[0, 120]} />
-                        <YAxis yAxisId="right" hide orientation="right" domain={[24, 32]} />
-                        <Tooltip
-                            contentStyle={{ borderRadius: '15px', border: 'none', fontSize: '10px', fontWeight: 'bold' }}
-                            formatter={(v: number) => [v.toFixed(1), ""]}
-                        />
-                        <ReferenceLine yAxisId="left" y={90} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} />
-                        <Bar yAxisId="left" dataKey="cumplimiento" fill={color} opacity={0.6} radius={[4, 4, 0, 0]} name="% Cumpl.">
-                            <LabelList 
-                                dataKey="cumplimiento" 
-                                position="top" 
-                                formatter={(v: number) => `${v.toFixed(0)}%`}
-                                style={{ fontSize: '10px', fontWeight: 'bold', fill: '#475569' }}
-                            />
-                        </Bar>
-                        <Line yAxisId="right" type="monotone" dataKey="promTon" stroke={color} strokeWidth={3} dot={{ r: 3, fill: color }} name="Tms/Eq">
-                            <LabelList 
-                                dataKey="promTon" 
-                                position="top" 
-                                formatter={(v: number) => v.toFixed(1)}
-                                style={{ fontSize: '9px', fontWeight: 'bold', fill: color }}
-                            />
-                        </Line>
-                    </ComposedChart>
-                </ResponsiveContainer>
-            </div>
-            <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-tighter">
-                <span>Últimos 10 días</span>
-                <span className="text-slate-200">|</span>
-                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: color }} /> Cumplimiento</span>
-                <span className="flex items-center gap-1"><div className="w-3 h-0.5" style={{ backgroundColor: color }} /> Ton/Eq</span>
-            </div>
-        </div>
-    );
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return '';
@@ -499,6 +499,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                             fillOpacity={1} 
                                             fill="url(#colorSda)" 
                                             name="Promedio SdA"
+                                            isAnimationActive={false}
                                         />
                                         <Area 
                                             type="monotone" 
@@ -508,6 +509,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                             fillOpacity={1} 
                                             fill="url(#colorPang)" 
                                             name="Promedio N. Y."
+                                            isAnimationActive={false}
                                         />
                                         <ReferenceLine y={2} stroke="#ef4444" strokeDasharray="6 6" strokeWidth={2} label={{ position: 'right', value: 'META', fill: '#ef4444', fontSize: 12, fontWeight: 'black' }} />
                                     </AreaChart>
@@ -589,10 +591,10 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                     labelStyle={{ fontWeight: 'black', color: '#1e293b' }}
                                 />
                                 <Legend verticalAlign="top" height={36} iconType="diamond" wrapperStyle={{ paddingTop: '0px', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase' }} />
-                                <Bar yAxisId="left" dataKey="cumplimiento" fill="url(#barGradient)" radius={[8, 8, 0, 0]} barSize={45} name="% Cumplimiento">
+                                <Bar yAxisId="left" dataKey="cumplimiento" fill="url(#barGradient)" radius={[8, 8, 0, 0]} barSize={45} name="% Cumplimiento" isAnimationActive={false}>
                                     <LabelList dataKey="cumplimiento" position="top" formatter={(val: number) => `${Math.round(val)}%`} style={{ fill: '#4FD1C5', fontSize: 10, fontWeight: 'black' }} />
                                 </Bar>
-                                <Line yAxisId="right" type="stepAfter" dataKey="promTonReal" stroke="#3FAA88" strokeWidth={4} dot={{ r: 6, fill: '#3FAA88', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} name="Eficiencia Tms/Eq">
+                                <Line yAxisId="right" type="stepAfter" dataKey="promTonReal" stroke="#3FAA88" strokeWidth={4} dot={{ r: 6, fill: '#3FAA88', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} name="Eficiencia Tms/Eq" isAnimationActive={false}>
                                     <LabelList dataKey="promTonReal" position="top" formatter={(val: number) => val.toFixed(1)} style={{ fill: '#3FAA88', fontSize: 10, fontWeight: 'black' }} offset={10} />
                                 </Line>
                                 <ReferenceLine yAxisId="left" y={90} stroke="#4FD1C5" strokeDasharray="5 5" strokeWidth={2} label={{ position: 'insideTopLeft', value: 'META CARGA 90%', fill: '#4FD1C5', fontSize: 10, fontWeight: 'black' }} />
@@ -611,6 +613,6 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
             </div>
         </div>
     );
-};
+});
 
 export default DdDTablero;

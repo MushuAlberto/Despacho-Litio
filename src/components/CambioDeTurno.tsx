@@ -13,6 +13,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from './Toast';
 import { getCurrentUser } from '../auth/authStore';
 import { authenticatedFetch } from '../auth/authenticatedFetch';
+import { enqueueOfflineMutation, getOperationalSnapshot, saveOperationalSnapshot } from '../services/offlineDb';
 
 interface ChartData {
   name: string;
@@ -45,6 +46,330 @@ const PRODUCTS_B = [
 interface CambioDeTurnoProps {
   onBack: () => void;
 }
+
+interface GlobalAiSettings {
+  activeAi: 'gemini' | 'glm';
+  enableGemini: boolean;
+  enableGlm: boolean;
+  enableShiftAnalysis: boolean;
+  enableJustificationRefinement: boolean;
+}
+
+interface AnalysisPanelProps {
+  title: string;
+  data: any[];
+  allData: ChartData[];
+  uniqueDates: string[];
+  range: { start: string; end: string };
+  setRange: React.Dispatch<React.SetStateAction<{ start: string; end: string }>>;
+  colorIdx: number;
+  complianceData?: any[];
+  analysis: string | null;
+  setAnalysis: (val: string | null) => void;
+  globalAiSettings: GlobalAiSettings;
+  userAiEnabled: boolean;
+}
+
+const AnalysisPanel: React.FC<AnalysisPanelProps> = React.memo(({
+  title,
+  data,
+  allData,
+  uniqueDates,
+  range,
+  setRange,
+  colorIdx,
+  complianceData,
+  analysis,
+  setAnalysis,
+  globalAiSettings,
+  userAiEnabled
+}) => {
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [aiEngine, setAiEngine] = useState<'gemini' | 'glm'>(globalAiSettings.activeAi);
+
+  useEffect(() => {
+    setAiEngine(globalAiSettings.activeAi);
+  }, [globalAiSettings.activeAi]);
+
+  const handleRunAnalysis = async () => {
+    if (data.length === 0) return;
+    setIsAnalyzing(true);
+    setAnalysis("");
+    setIsEditing(false);
+    try {
+      if (!globalAiSettings.enableShiftAnalysis || !userAiEnabled || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+
+        const totalProg = data.reduce((acc, item) => acc + (item.Ton_Prog || 0), 0);
+        const totalReal = data.reduce((acc, item) => acc + (item.Ton_Real || 0), 0);
+        const pctCumplimiento = totalProg > 0 ? (totalReal / totalProg) * 100 : 0;
+
+        let text = `### **Resumen Ejecutivo - ${title}**\n\n`;
+        text += `Durante el periodo seleccionado de la faena **${title}**, se planificó un total de **${Math.round(totalProg).toLocaleString()} Ton** de carga, alcanzando una ejecución de carga real de **${Math.round(totalReal).toLocaleString()} Ton** (que representa un **${pctCumplimiento.toFixed(1)}% de cumplimiento**).\n\n`;
+
+        if (pctCumplimiento >= 100) {
+          text += `La operación superó la meta definida con un excelente flujo de carguío y tránsito libre en boleterías y pesajes.\n\n`;
+        } else if (pctCumplimiento >= 90) {
+          text += `Se registra un ritmo constante dentro de los límites aceptables de la tolerancia operativa ordinaria, alcanzando un progreso cercano al óptimo.\n\n`;
+        } else {
+          text += `Se evidencia una desviación operativa con un cumplimiento inferior a la meta programada. Se recomienda revisar tiempos de demora no identificados y cuellos de botella.\n\n`;
+        }
+
+        text += `### **Análisis de Desviaciones de Desempeño**\n\n`;
+        text += typeof navigator !== 'undefined' && !navigator.onLine
+          ? `📡 *Nota: Análisis generado en modo local sin conexión. El resumen fue almacenado en IndexedDB para respaldo operativo.*`
+          : `⚠️ *Nota: La funcionalidad de Inteligencia Artificial para análisis extendido ha sido desactivada temporalmente por el Administrador de la plataforma o para su usuario. Para volver a habilitar reportes enriquecidos con IA, active el interruptor correspondiente en el Panel de Usuarios o consulte con el Administrador.*`;
+
+        setAnalysis(text);
+      } else {
+        await analyzeProductData(title, data, (partial) => {
+          setAnalysis(partial);
+        }, complianceData, range, aiEngine);
+      }
+    } catch (err) {
+      console.error(err);
+      setAnalysis(`Error al generar análisis: ${err instanceof Error ? err.message : 'Error desconocido'}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div id={`chart-table-container-${title.replace(/\s+/g, '_')}`} className="space-y-6 flex flex-col">
+        <div className="bg-white p-4 rounded-2xl border border-violeta/10 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h2 className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-tighter ${colorIdx === 1 ? 'bg-nucleo/10 text-nucleo' : 'bg-mineral/10 text-mineral'}`}>
+          {title}
+        </h2>
+        {uniqueDates.length > 0 && (
+          <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100 w-full sm:w-auto">
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black text-slate-400 uppercase px-2">Desde</span>
+              <input 
+                type="date"
+                value={range.start}
+                min={uniqueDates[0]}
+                max={uniqueDates[uniqueDates.length - 1]}
+                onChange={(e) => setRange({ ...range, start: e.target.value })}
+                className="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 cursor-pointer [color-scheme:light]"
+              />
+            </div>
+            <div className="w-px h-4 bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black text-slate-400 uppercase px-2">Hasta</span>
+              <input 
+                type="date"
+                value={range.end}
+                min={range.start || uniqueDates[0]}
+                max={uniqueDates[uniqueDates.length - 1]}
+                onChange={(e) => setRange({ ...range, end: e.target.value })}
+                className="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 cursor-pointer [color-scheme:light]"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <CambioAnalisisComparativoChart data={data} title={title} />
+
+      <div className="bg-white rounded-[2.5rem] border border-violeta/10 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">RESUMEN POR PRODUCTO</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[750px]">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Prod.</th>
+                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Prog. Ton</th>
+                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Ton</th>
+                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Meta Hrs</th>
+                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Hrs</th>
+                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Estado / Semáforo</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 tabular-nums">
+              {data.map((item) => {
+                const progTon = item.Ton_Prog || 0;
+                const realTon = item.Ton_Real || 0;
+                const metaTime = item.faenaMetaHours || 0;
+                const realTime = item.faenaRealHours || 0;
+
+                let alertType: 'red' | 'orange' | 'green' = 'green';
+                let alertMessage = '🟢 Dentro de Rango';
+
+                if (realTon > 0 && realTime <= 0) {
+                  alertType = 'orange';
+                  alertMessage = '🔶 Falla MIGTRA';
+                } else if (progTon > 0 && realTon < (progTon * 0.90)) {
+                  alertType = 'red';
+                  alertMessage = '🔴 Bajo Ton. (<90%)';
+                } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
+                  alertType = 'red';
+                  alertMessage = '🔴 Exc. Tiempo (>10m)';
+                }
+
+                let badgeStyle = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+                if (alertType === 'red') {
+                  badgeStyle = "bg-rose-50 text-rose-700 border border-rose-200 animate-pulse";
+                } else if (alertType === 'orange') {
+                  badgeStyle = "bg-amber-50 text-amber-700 border border-amber-200 font-extrabold";
+                }
+
+                return (
+                  <tr key={item.name} className="hover:bg-slate-50/30 transition-colors">
+                    <td className="px-4 py-3 text-[11px] font-bold text-slate-700">{item.name}</td>
+                    <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
+                      {Math.round(progTon).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-[11px] font-bold text-right">
+                      <span className="text-violeta">{Math.round(realTon).toLocaleString()}</span>
+                    </td>
+                    <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
+                      {formatDecimalToHHMM(metaTime)}
+                    </td>
+                    <td className="px-4 py-3 text-[11px] font-bold text-right text-mineral">
+                      {formatDecimalToHHMM(realTime)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap ${badgeStyle}`}>
+                        {alertMessage}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+              {data.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400 font-medium italic text-xs">Sin datos</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </div>
+
+      {/* Gráfico y tabla de tendencia diario del producto */}
+      {data.length > 0 && (
+        <CambioAnalisisProductoChart 
+          allData={allData} 
+          range={range} 
+          visibleProducts={data.map(item => item.name)} 
+        />
+      )}
+
+      {/* Panel de Análisis Operativo Local */}
+      <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+          <FileText className="w-24 h-24 text-white" />
+        </div>
+        
+        <div className="relative z-10 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-violeta p-2 rounded-xl">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h4 className="text-white text-sm font-black uppercase tracking-widest">Resumen y Análisis Operativo</h4>
+                <p className="text-slate-400 text-[10px] font-bold">Cálculos analíticos automáticos basados en datos de faena</p>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              {(globalAiSettings.enableGemini || globalAiSettings.enableGlm) && (
+                <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-white/5 mr-1">
+                  {globalAiSettings.enableGemini && (
+                    <button
+                      type="button"
+                      onClick={() => setAiEngine('gemini')}
+                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
+                        aiEngine === 'gemini'
+                          ? 'bg-violeta text-white'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Gemini 3.5
+                    </button>
+                  )}
+                  {globalAiSettings.enableGlm && (
+                    <button
+                      type="button"
+                      onClick={() => setAiEngine('glm')}
+                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
+                        aiEngine === 'glm'
+                          ? 'bg-amber-500 text-slate-950'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Gemma (OpenRouter)
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {analysis && !isAnalyzing && (
+                <button 
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="px-4 py-2 bg-slate-800 text-white text-[10px] font-black rounded-xl hover:bg-slate-700 transition-all uppercase tracking-widest"
+                >
+                  {isEditing ? 'Vista Previa' : 'Editar Texto'}
+                </button>
+              )}
+              <button 
+                onClick={() => generateShiftReportPDF({ title, data, range, analysis })}
+                disabled={data.length === 0}
+                className="px-4 py-2 bg-violeta text-white text-[10px] font-black rounded-xl hover:bg-violeta/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2 uppercase tracking-widest"
+              >
+                <Download className="w-3.5 h-3.5" /> Descargar PDF
+              </button>
+              <button 
+                onClick={handleRunAnalysis}
+                disabled={isAnalyzing || data.length === 0}
+                className="px-6 py-2 bg-white text-slate-900 text-xs font-black rounded-xl hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4" />
+                    Generar Reporte
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="min-h-[100px] bg-slate-800/50 rounded-2xl p-6 border border-white/5">
+            {analysis ? (
+              isEditing ? (
+                <textarea
+                  value={analysis}
+                  onChange={(e) => setAnalysis(e.target.value)}
+                  className="w-full h-[300px] bg-transparent text-slate-300 text-sm font-medium leading-relaxed outline-none border-none resize-none focus:ring-0"
+                  placeholder="Edita el análisis aquí..."
+                />
+              ) : (
+                <div className="prose prose-invert prose-sm max-w-full text-slate-300 leading-relaxed">
+                  <SimpleMarkdown content={analysis} />
+                </div>
+              )
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full py-8 text-slate-500 italic space-y-2">
+                <p className="text-xs font-medium">Haz clic en "Generar Reporte" para compilar el resumen operativo automático.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   const { success, error: toastError, warning, info } = useToast();
@@ -115,38 +440,64 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   const [novandinoAnalysis, setNovandinoAnalysis] = useState<string | null>(null);
   const [sqmAnalysis, setSqmAnalysis] = useState<string | null>(null);
 
-  // Intentar cargar datos existentes desde localStorage al inicializar
+  // Intentar cargar datos existentes desde localStorage / IndexedDB al inicializar
   useEffect(() => {
-    const savedData = localStorage.getItem('sqm_raw_data');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (parsed && parsed.length > 0) {
-          const mapped: ChartData[] = parsed.map((item: any) => ({
-            name: item.Producto || 'SIN PRODUCTO',
-            producto: item.Producto || 'SIN PRODUCTO',
-            dateKey: item.Fecha,
-            Ton_Prog: Number(item.Ton_Prog) || 0,
-            Ton_Real: Number(item.Ton_Real) || 0,
-            faenaMetaHours: Number(item.faenaMetaHours) || 0,
-            faenaRealHours: Number(item.faenaRealHours) || 0,
-            destino: item.Destino || 'N/A'
-          }));
-          setAllData(mapped);
-          
-          const dates = mapped.map(d => d.dateKey).filter(Boolean).sort();
-          if (dates.length > 0) {
-            setRange1({ start: dates[0], end: dates[dates.length - 1] });
-            setRange2({ start: dates[0], end: dates[dates.length - 1] });
+    const hydrateInitialData = async () => {
+      const savedData = localStorage.getItem('sqm_raw_data');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          if (parsed && parsed.length > 0) {
+            const mapped: ChartData[] = parsed.map((item: any) => ({
+              name: item.Producto || 'SIN PRODUCTO',
+              producto: item.Producto || 'SIN PRODUCTO',
+              dateKey: item.Fecha,
+              Ton_Prog: Number(item.Ton_Prog) || 0,
+              Ton_Real: Number(item.Ton_Real) || 0,
+              faenaMetaHours: Number(item.faenaMetaHours) || 0,
+              faenaRealHours: Number(item.faenaRealHours) || 0,
+              destino: item.Destino || 'N/A'
+            }));
+            setAllData(mapped);
+
+            const dates = mapped.map(d => d.dateKey).filter(Boolean).sort();
+            if (dates.length > 0) {
+              setRange1({ start: dates[0], end: dates[dates.length - 1] });
+              setRange2({ start: dates[0], end: dates[dates.length - 1] });
+            }
+            setFileName("Historial cargado automáticamente");
+            setStatus('success');
           }
-          setFileName("Historial cargado automáticamente");
-          setStatus('success');
+        } catch (e) {
+          console.error("Error al cargar datos de localStorage:", e);
         }
-      } catch (e) {
-        console.error("Error al cargar datos de localStorage:", e);
       }
-    }
+
+      const draft = await getOperationalSnapshot<{
+        novandinoAnalysis?: string | null;
+        sqmAnalysis?: string | null;
+      }>('shift_handoff_draft');
+      if (draft?.data) {
+        if (draft.data.novandinoAnalysis) setNovandinoAnalysis(draft.data.novandinoAnalysis);
+        if (draft.data.sqmAnalysis) setSqmAnalysis(draft.data.sqmAnalysis);
+      }
+    };
+
+    void hydrateInitialData();
   }, []);
+
+  // Respaldo automático en IndexedDB de los análisis de cambio de turno
+  useEffect(() => {
+    if (novandinoAnalysis || sqmAnalysis) {
+      void saveOperationalSnapshot('shift_handoff_draft', {
+        range1,
+        range2,
+        novandinoAnalysis,
+        sqmAnalysis,
+        fileName,
+      });
+    }
+  }, [novandinoAnalysis, sqmAnalysis, range1, range2, fileName]);
 
   const processFile = useCallback((file: File) => {
     const reader = new FileReader();
@@ -254,20 +605,28 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
         }
 
         setAllData(mappedData);
-        
-        // Record Cambio De Turno excel upload activity log in Firestore
-        try {
-          const user = getCurrentUser();
-          if (user) {
+        void saveOperationalSnapshot('shift_handoff_data', mappedData, mappedData.length);
+
+        const user = getCurrentUser();
+        const handoffSummary = `Cargó archivo base Excel (${file.name}) con ${mappedData.length} registros para Cambio de Turno.`;
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          await enqueueOfflineMutation('shift_handoff', `Cambio de Turno (${file.name})`, {
+            user,
+            title: 'Cambio de Turno',
+            summaryText: handoffSummary,
+          });
+        } else if (user) {
+          try {
             const { logActivity } = await import('../services/firebase');
-            await logActivity(
+            await logActivity(user, 'Carga de Datos', handoffSummary);
+          } catch (err) {
+            console.error('Error logging Cambio de Turno excel upload, queueing offline:', err);
+            await enqueueOfflineMutation('shift_handoff', `Cambio de Turno (${file.name})`, {
               user,
-              'Carga de Datos',
-              `Cargó de archivo base Excel (${file.name}) con ${mappedData.length} registros para Cambio de Turno.`
-            );
+              title: 'Cambio de Turno',
+              summaryText: handoffSummary,
+            });
           }
-        } catch (err) {
-          console.error('Error logging Cambio de Turno excel upload:', err);
         }
         
         const dates = mappedData.map(d => d.dateKey).sort();
@@ -557,306 +916,6 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
       });
   };
 
-  const AnalysisPanel = ({ title, data, range, setRange, colorIdx, complianceData, analysis, setAnalysis }: { 
-    title: string, 
-    data: any[], 
-    range: {start: string, end: string}, 
-    setRange: any,
-    colorIdx: number,
-    complianceData?: any[],
-    analysis: string | null,
-    setAnalysis: (val: string | null) => void
-  }) => {
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [aiEngine, setAiEngine] = useState<'gemini' | 'glm'>(globalAiSettings.activeAi);
-
-    useEffect(() => {
-      setAiEngine(globalAiSettings.activeAi);
-    }, [globalAiSettings.activeAi]);
-
-    const handleRunAnalysis = async () => {
-      if (data.length === 0) return;
-      setIsAnalyzing(true);
-      setAnalysis(""); 
-      setIsEditing(false); 
-      try {
-        if (!globalAiSettings.enableShiftAnalysis || !userAiEnabled) {
-          // Fallback deterministic local summary when AI is deactivated by the Admin or for the user
-          await new Promise((resolve) => setTimeout(resolve, 800));
-
-          const totalProg = data.reduce((acc, item) => acc + (item.Ton_Prog || 0), 0);
-          const totalReal = data.reduce((acc, item) => acc + (item.Ton_Real || 0), 0);
-          const pctCumplimiento = totalProg > 0 ? (totalReal / totalProg) * 100 : 0;
-          
-          let text = `### **Resumen Ejecutivo - ${title}**\n\n`;
-          text += `Durante el periodo seleccionado de la faena **${title}**, se planificó un total de **${Math.round(totalProg).toLocaleString()} Ton** de carga, alcanzando una ejecución de carga real de **${Math.round(totalReal).toLocaleString()} Ton** (que representa un **${pctCumplimiento.toFixed(1)}% de cumplimiento**).\n\n`;
-          
-          if (pctCumplimiento >= 100) {
-            text += `La operación superó la meta definida con un excelente flujo de carguío y tránsito libre en boleterías y pesajes.\n\n`;
-          } else if (pctCumplimiento >= 90) {
-            text += `Se registra un ritmo constante dentro de los límites aceptables de la tolerancia operativa ordinaria, alcanzando un progreso cercano al óptimo.\n\n`;
-          } else {
-            text += `Se evidencia una desviación operativa con un cumplimiento inferior a la meta programada. Se recomienda revisar tiempos de de demora no identificados y cuellos de botella.\n\n`;
-          }
-          
-          text += `### **Análisis de Desviaciones de Desempeño**\n\n`;
-          text += `⚠️ *Nota: La funcionalidad de Inteligencia Artificial para análisis extendido ha sido desactivada temporalmente por el Administrador de la plataforma o para su usuario. Para volver a habilitar reportes enriquecidos con IA, active el interruptor correspondiente en el Panel de Usuarios o consulte con el Administrador.*`;
-
-          setAnalysis(text);
-        } else {
-          await analyzeProductData(title, data, (partial) => {
-            setAnalysis(partial);
-          }, complianceData, range, aiEngine);
-        }
-      } catch (err) {
-        console.error(err);
-        setAnalysis(`Error al generar análisis: ${err instanceof Error ? err.message : 'Error desconocido'}`);
-      } finally {
-        setIsAnalyzing(false);
-      }
-    };
-
-    return (
-      <div className="space-y-6">
-        <div id={`chart-table-container-${title.replace(/\s+/g, '_')}`} className="space-y-6 flex flex-col">
-          <div className="bg-white p-4 rounded-2xl border border-violeta/10 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h2 className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-tighter ${colorIdx === 1 ? 'bg-nucleo/10 text-nucleo' : 'bg-mineral/10 text-mineral'}`}>
-            {title}
-          </h2>
-          {uniqueDates.length > 0 && (
-            <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100 w-full sm:w-auto">
-              <div className="flex flex-col">
-                <span className="text-[8px] font-black text-slate-400 uppercase px-2">Desde</span>
-                <input 
-                  type="date"
-                  value={range.start}
-                  min={uniqueDates[0]}
-                  max={uniqueDates[uniqueDates.length - 1]}
-                  onChange={(e) => setRange({ ...range, start: e.target.value })}
-                  className="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 cursor-pointer [color-scheme:light]"
-                />
-              </div>
-              <div className="w-px h-4 bg-slate-200" />
-              <div className="flex flex-col">
-                <span className="text-[8px] font-black text-slate-400 uppercase px-2">Hasta</span>
-                <input 
-                  type="date"
-                  value={range.end}
-                  min={range.start || uniqueDates[0]}
-                  max={uniqueDates[uniqueDates.length - 1]}
-                  onChange={(e) => setRange({ ...range, end: e.target.value })}
-                  className="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 cursor-pointer [color-scheme:light]"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <CambioAnalisisComparativoChart data={data} title={title} />
-
-        <div className="bg-white rounded-[2.5rem] border border-violeta/10 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-            <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">RESUMEN POR PRODUCTO</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[750px]">
-              <thead>
-                <tr className="bg-slate-50/50">
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Prod.</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Prog. Ton</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Ton</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Meta Hrs</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Hrs</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Estado / Semáforo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {data.map((item) => {
-                  const progTon = item.Ton_Prog || 0;
-                  const realTon = item.Ton_Real || 0;
-                  const metaTime = item.faenaMetaHours || 0;
-                  const realTime = item.faenaRealHours || 0;
-
-                  // Reglas de negocio estrictas:
-                  // 1. Alerta Naranja (Gobernanza) si Tonelaje > 0 pero Tiempo es igual a 0:00 (Inconsistencia)
-                  // 2. Alerta Roja si realTon < progTon * 0.90 (inferior al 90% de lo planificado)
-                  // 3. Alerta Roja si realTime > metaTime + 10 min (mayor por más de 10 minutos respecto a meta)
-                  let alertType: 'red' | 'orange' | 'green' = 'green';
-                  let alertMessage = '🟢 Dentro de Rango';
-
-                  if (realTon > 0 && realTime <= 0) {
-                    alertType = 'orange';
-                    alertMessage = '🔶 Falla MIGTRA';
-                  } else if (progTon > 0 && realTon < (progTon * 0.90)) {
-                    alertType = 'red';
-                    alertMessage = '🔴 Bajo Ton. (<90%)';
-                  } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
-                    alertType = 'red';
-                    alertMessage = '🔴 Exc. Tiempo (>10m)';
-                  }
-
-                  let badgeStyle = "bg-emerald-50 text-emerald-700 border border-emerald-200";
-                  if (alertType === 'red') {
-                    badgeStyle = "bg-rose-50 text-rose-700 border border-rose-200 animate-pulse";
-                  } else if (alertType === 'orange') {
-                    badgeStyle = "bg-amber-50 text-amber-700 border border-amber-200 font-extrabold";
-                  }
-
-                  return (
-                    <tr key={item.name} className="hover:bg-slate-50/30 transition-colors">
-                      <td className="px-4 py-3 text-[11px] font-bold text-slate-700">{item.name}</td>
-                      <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
-                        {Math.round(progTon).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-[11px] font-bold text-right">
-                        <span className="text-violeta">{Math.round(realTon).toLocaleString()}</span>
-                      </td>
-                      <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
-                        {formatDecimalToHHMM(metaTime)}
-                      </td>
-                      <td className="px-4 py-3 text-[11px] font-bold text-right text-mineral">
-                        {formatDecimalToHHMM(realTime)}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap ${badgeStyle}`}>
-                          {alertMessage}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {data.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-400 font-medium italic text-xs">Sin datos</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        </div>
-
-        {/* Gráfico y tabla de tendencia diario del producto */}
-        {data.length > 0 && (
-          <CambioAnalisisProductoChart 
-            allData={allData} 
-            range={range} 
-            visibleProducts={data.map(item => item.name)} 
-          />
-        )}
-
-        {/* Panel de Análisis Operativo Local */}
-        <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-            <FileText className="w-24 h-24 text-white" />
-          </div>
-          
-          <div className="relative z-10 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-violeta p-2 rounded-xl">
-                  <TrendingUp className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="text-white text-sm font-black uppercase tracking-widest">Resumen y Análisis Operativo</h4>
-                  <p className="text-slate-400 text-[10px] font-bold">Cálculos analíticos automáticos basados en datos de faena</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-2">
-                {(globalAiSettings.enableGemini || globalAiSettings.enableGlm) && (
-                  <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-white/5 mr-1">
-                    {globalAiSettings.enableGemini && (
-                      <button
-                        type="button"
-                        onClick={() => setAiEngine('gemini')}
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
-                          aiEngine === 'gemini'
-                            ? 'bg-violeta text-white'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Gemini 3.5
-                      </button>
-                    )}
-                    {globalAiSettings.enableGlm && (
-                      <button
-                        type="button"
-                        onClick={() => setAiEngine('glm')}
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
-                          aiEngine === 'glm'
-                            ? 'bg-amber-500 text-slate-950'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Gemma (OpenRouter)
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {analysis && !isAnalyzing && (
-                  <button 
-                    onClick={() => setIsEditing(!isEditing)}
-                    className="px-4 py-2 bg-slate-800 text-white text-[10px] font-black rounded-xl hover:bg-slate-700 transition-all uppercase tracking-widest"
-                  >
-                    {isEditing ? 'Vista Previa' : 'Editar Texto'}
-                  </button>
-                )}
-                <button 
-                  onClick={() => generateShiftReportPDF({ title, data, range, analysis })}
-                  disabled={data.length === 0}
-                  className="px-4 py-2 bg-violeta text-white text-[10px] font-black rounded-xl hover:bg-violeta/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2 uppercase tracking-widest"
-                >
-                  <Download className="w-3.5 h-3.5" /> Descargar PDF
-                </button>
-                <button 
-                  onClick={handleRunAnalysis}
-                  disabled={isAnalyzing || data.length === 0}
-                  className="px-6 py-2 bg-white text-slate-900 text-xs font-black rounded-xl hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <div className="w-3 h-3 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                      Procesando...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4" />
-                      Generar Reporte
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="min-h-[100px] bg-slate-800/50 rounded-2xl p-6 border border-white/5">
-              {analysis ? (
-                isEditing ? (
-                  <textarea
-                    value={analysis}
-                    onChange={(e) => setAnalysis(e.target.value)}
-                    className="w-full h-[300px] bg-transparent text-slate-300 text-sm font-medium leading-relaxed outline-none border-none resize-none focus:ring-0"
-                    placeholder="Edita el análisis aquí..."
-                  />
-                ) : (
-                  <div className="prose prose-invert prose-sm max-w-full text-slate-300 leading-relaxed">
-                    <SimpleMarkdown content={analysis} />
-                  </div>
-                )
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full py-8 text-slate-500 italic space-y-2">
-                  <p className="text-xs font-medium">Haz clic en "Generar Reporte" para compilar el resumen operativo automático.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div 
       onDragOver={handleDragOver}
@@ -1037,22 +1096,30 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           <AnalysisPanel 
             title="NOVANDINO" 
             data={aggregatedData1} 
+            allData={allData}
+            uniqueDates={uniqueDates}
             range={range1} 
             setRange={setRange1} 
             colorIdx={1} 
             complianceData={complianceData} 
             analysis={novandinoAnalysis}
             setAnalysis={setNovandinoAnalysis}
+            globalAiSettings={globalAiSettings}
+            userAiEnabled={userAiEnabled}
           />
           <AnalysisPanel 
             title="SQM N.Y." 
             data={aggregatedData2} 
+            allData={allData}
+            uniqueDates={uniqueDates}
             range={range2} 
             setRange={setRange2} 
             colorIdx={2} 
             complianceData={complianceData} 
             analysis={sqmAnalysis}
             setAnalysis={setSqmAnalysis}
+            globalAiSettings={globalAiSettings}
+            userAiEnabled={userAiEnabled}
           />
         </main>
       )}

@@ -20,6 +20,7 @@ import { SystemUser } from '../services/firebase';
 import { NovandinoLogo } from './BrandLogo';
 import { useMiningShiftClock } from '../hooks/useControlRoom';
 import { ChangePasswordModal } from './ChangePasswordModal';
+import { PWAInstallButton } from './PWAStatusControls';
 
 interface GlobalTopBarProps {
   currentView: AppView;
@@ -220,6 +221,8 @@ export const GlobalTopBar: React.FC<GlobalTopBarProps> = ({
             <span className="text-slate-300">&bull;</span>
             <span className="font-mono text-[11px] text-[#461D77] font-bold">{shiftInfo.timeString}</span>
           </div>
+
+          <PWAInstallButton />
 
           {/* Fullscreen Toggle */}
           <button

@@ -41,6 +41,8 @@ import { GlobalTopBar } from './GlobalTopBar';
 import { CommandPalette } from './CommandPalette';
 import { NotFoundView } from './NotFoundView';
 import { ControlRoomOverlay } from './ControlRoomOverlay';
+import { OfflineIndicator } from './PWAStatusControls';
+import { getOperationalSnapshot, saveOperationalSnapshot } from '../services/offlineDb';
 
 declare const html2canvas: any;
 declare const jspdf: any;
@@ -327,6 +329,7 @@ const App: React.FC = () => {
                 setRawData(parsed);
                 setSelectedDate(latest.date);
                 localStorage.setItem('sqm_raw_data', JSON.stringify(parsed));
+                void saveOperationalSnapshot('operational_raw', parsed, parsed.length);
                 // Also restore any historical sqm_ keys from backup
                 Object.entries(backup).forEach(([k, v]) => {
                   if (k.startsWith('sqm_') && k !== 'sqm_current_user' && typeof v === 'string') {
@@ -338,6 +341,12 @@ const App: React.FC = () => {
           }
         } catch (e) {
           console.error("Error auto-fetching reports from Firebase on startup:", e);
+          const offlineSnapshot = await getOperationalSnapshot<any[]>('operational_raw');
+          if (offlineSnapshot?.data && Array.isArray(offlineSnapshot.data) && offlineSnapshot.data.length > 0) {
+            setRawData(offlineSnapshot.data);
+            const dates = [...new Set(offlineSnapshot.data.map((r: any) => r.Fecha))].sort().reverse();
+            if (dates.length > 0) setSelectedDate(dates[0] as string);
+          }
         }
       })();
     }
@@ -687,6 +696,7 @@ const App: React.FC = () => {
         localStorage.removeItem('sqm_raw_data');
         setRawData(processed);
         localStorage.setItem('sqm_raw_data', JSON.stringify(processed));
+        void saveOperationalSnapshot('operational_raw', processed, processed.length);
         const dates = [...new Set(processed.map(r => r.Fecha))].sort().reverse();
         if (dates.length > 0) setSelectedDate(dates[0]);
         
@@ -1388,6 +1398,8 @@ const App: React.FC = () => {
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
       />
+
+      <OfflineIndicator />
       {passwordRequest && (
         <PasswordPrompt 
           correctPassword="MIRAME"

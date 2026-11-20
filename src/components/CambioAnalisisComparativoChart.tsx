@@ -133,11 +133,11 @@ const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
             <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '25px', fontSize: '11px', fontWeight: '900' }} iconType="circle" />
 
             {/* Barras de Tonelaje */}
-            <Bar yAxisId="left" dataKey="Ton_Prog" fill={COLORS.progTon} name="Prog. Ton" barSize={22} radius={[4, 4, 0, 0]}>
+            <Bar yAxisId="left" dataKey="Ton_Prog" fill={COLORS.progTon} name="Prog. Ton" barSize={22} radius={[4, 4, 0, 0]} isAnimationActive={false}>
                <LabelList dataKey="Ton_Prog" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: COLORS.progTon }} formatter={(v: any) => Math.round(v)} />
             </Bar>
             
-            <Bar yAxisId="left" dataKey="Ton_Real" fill={COLORS.realTon} name="Real Ton" barSize={22} radius={[4, 4, 0, 0]}>
+            <Bar yAxisId="left" dataKey="Ton_Real" fill={COLORS.realTon} name="Real Ton" barSize={22} radius={[4, 4, 0, 0]} isAnimationActive={false}>
                <LabelList dataKey="Ton_Real" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: COLORS.realTon }} formatter={(v: any) => Math.round(v)} />
             </Bar>
 
@@ -150,6 +150,7 @@ const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
               name="Meta Hrs" 
               strokeWidth={2} 
               dot={{ r: 4, fill: '#fff', strokeWidth: 2 }}
+              isAnimationActive={false}
             >
               <LabelList dataKey="faenaMetaHours" position="top" style={{ fontSize: '9px', fontWeight: '800', fill: COLORS.metaHrs }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={12} />
             </Line>
@@ -162,6 +163,7 @@ const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
               name="Real Hrs" 
               strokeWidth={3} 
               dot={{ r: 5, fill: '#fff', strokeWidth: 3 }}
+              isAnimationActive={false}
             >
               <LabelList dataKey="faenaRealHours" position="top" style={{ fontSize: '10px', fontWeight: '900', fill: COLORS.realHrs }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={12} />
             </Line>
@@ -173,4 +175,4 @@ const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
   );
 };
 
-export default CambioAnalisisComparativoChart;
+export default React.memo(CambioAnalisisComparativoChart);
