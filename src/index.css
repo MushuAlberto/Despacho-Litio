@@ -186,6 +186,52 @@
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
 }
 
+/* Compatibility classes mapped to classic Nov 19 soft-glass aesthetic */
+.surface-card {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1.75rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.surface-card-interactive {
+  background-color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1.75rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.surface-card-interactive:hover {
+  background-color: #ffffff;
+  border-color: rgba(70, 29, 119, 0.25);
+  box-shadow: 0 20px 40px rgba(70, 29, 119, 0.06);
+  transform: translateY(-2px);
+}
+
+.surface-well {
+  background-color: rgba(248, 250, 252, 0.85);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1.25rem;
+}
+
+.surface-anchor-dark {
+  background: linear-gradient(135deg, #1e1b4b 0%, #311042 60%, #110e2e 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.75rem;
+  box-shadow: 0 20px 40px rgba(30, 27, 75, 0.18);
+}
+
+.surface-anchor-violet {
+  background: linear-gradient(135deg, #461D77 0%, #311042 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 1.75rem;
+  box-shadow: 0 20px 40px rgba(70, 29, 119, 0.2);
+}
+
 /* Premium Desktop Interactive Elements */
 .premium-hover-card {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -400,7 +446,6 @@ input:focus, select:focus, textarea:focus {
    Excel Upload & Completion Animations (Cargar Datos / Base Excel)
    ========================================================================== */
 
-/* Laser scanner beam effect */
 @keyframes excel-laser-scanner {
   0% {
     top: -10%;
@@ -418,7 +463,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Success expanding ripple ring */
 @keyframes success-ripple-wave {
   0% {
     transform: scale(0.6);
@@ -430,7 +474,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Shimmer on progress bar */
 @keyframes progress-shimmer {
   0% {
     transform: translateX(-100%);
@@ -440,7 +483,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Floating data particle ascending */
 @keyframes data-particle-ascend {
   0% {
     transform: translateY(12px) scale(0.5);
@@ -456,7 +498,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Spring pop for success badge */
 @keyframes success-pop-bounce {
   0% {
     transform: scale(0) rotate(-45deg);
@@ -475,7 +516,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Subtle border marching dash */
 @keyframes border-dash-crawl {
   to {
     stroke-dashoffset: -40;
@@ -486,7 +526,6 @@ input:focus, select:focus, textarea:focus {
    File Download & Export Animations (PDF & PNG Buttons)
    ========================================================================== */
 
-/* Downward arrow plunge into tray */
 @keyframes download-arrow-plunge {
   0% {
     transform: translateY(-8px);
@@ -505,7 +544,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Tray bounce responding to arrow arrival */
 @keyframes download-tray-bounce {
   0%, 100% {
     transform: scaleX(1) scaleY(1);
@@ -518,7 +556,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Paper feed animation for PDF generation */
 @keyframes paper-sheet-slide {
   0% {
     transform: translateY(-10px) scale(0.85);
@@ -538,7 +575,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Camera snapshot flash */
 @keyframes camera-shutter-flash {
   0% {
     opacity: 0;
@@ -554,7 +590,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Shimmer gleam for hover and processing */
 @keyframes button-sweep-gleam {
   0% {
     transform: translateX(-120%) skewX(-20deg);
@@ -568,7 +603,6 @@ input:focus, select:focus, textarea:focus {
    Firebase Cloud Sync Animations (Guardar Historial en Firebase)
    ========================================================================== */
 
-/* Cloud gently floating with micro bounce */
 @keyframes cloud-float-bounce {
   0%, 100% {
     transform: translateY(0);
@@ -578,7 +612,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Upward data pulse entering the cloud */
 @keyframes cloud-data-ascend {
   0% {
     transform: translateY(8px) scale(0.6);
@@ -598,7 +631,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Luminous cloud aura pulse during sync */
 @keyframes cloud-energy-pulse {
   0%, 100% {
     box-shadow: 0 0 0 0 rgba(113, 119, 236, 0.4), inset 0 0 12px rgba(255, 255, 255, 0.1);
@@ -614,7 +646,6 @@ body.control-room-cursor-hidden * {
   cursor: none !important;
 }
 
-/* Gradient background shift for active upload */
 @keyframes gradient-cloud-flow {
   0% {
     background-position: 0% 50%;
@@ -626,5 +657,3 @@ body.control-room-cursor-hidden * {
     background-position: 0% 50%;
   }
 }
-
-

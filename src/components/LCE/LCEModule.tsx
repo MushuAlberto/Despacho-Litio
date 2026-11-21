@@ -10,7 +10,7 @@ import { KPICards } from "./components/KPICards";
 import { OtrosDatosTable } from "./components/OtrosDatosTable";
 import { DashboardCharts } from "./components/DashboardCharts";
 import { downloadExcelTemplate, parseUploadedExcel } from "./utils/excelGenerator";
-import { BarChart3, ListFilter, AlertCircle, Sparkles, Home, ArrowLeft, Download, CheckCircle2 } from "lucide-react";
+import { BarChart3, AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ExcelOverrides } from "./types";
 import { NovandinoLogo } from "../BrandLogo";
@@ -316,7 +316,7 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
         window.getComputedStyle = makeCustomGetComputedStyle(originalGetComputedStyle, window);
 
         const canvas = await html2canvas(element, {
-          backgroundColor: "#FAF5E6", // Match --color-calido
+          backgroundColor: "#FAF8F5",
           scale: 2.0, // Crisp image resolution without extra lag
           useCORS: true,
           logging: false,
@@ -379,7 +379,7 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
             if (clonedEl) {
               clonedEl.style.width = "1240px";
               clonedEl.style.padding = "32px";
-              clonedEl.style.borderRadius = "16px";
+              clonedEl.style.borderRadius = "8px";
             }
           }
         });
@@ -399,7 +399,6 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
         setTimeout(() => setDownloadToast(null), 3500);
 
         // Record download audit log
-        // Record download audit log (before trigger to avoid frame blockages)
         if (currentUser) {
           const [y, m, d] = selectedDate.split('-');
           const formattedDate = `${d}/${m}/${y}`;
@@ -438,37 +437,34 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
   };
 
   return (
-    <div className="min-h-screen bg-calido text-tecnico p-4 sm:p-6 lg:p-8 font-sans antialiased selection:bg-nucleo/10 relative">
-      
-      {/* Subtle modern corporate radial highlight in brand purple / aquamarine */}
-      <div className="absolute top-0 left-1/4 w-[35rem] h-[35rem] bg-nucleo/5 rounded-full blur-[120px] pointer-events-none -translate-y-1/2" />
-      <div className="absolute bottom-1/4 right-0 w-[20rem] h-[20rem] bg-litio/10 rounded-full blur-[100px] pointer-events-none" />
-
+    <div className="min-h-screen bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] text-slate-800 p-4 sm:p-6 lg:p-8 font-sans antialiased selection:bg-[#461D77]/10 relative">
       {/* Main Container */}
       <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-        
+
         {/* Navigation Action Area */}
         <div className="flex justify-start items-center no-print">
           <button
             onClick={onBack}
-            className="group flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-[#461D77] hover:bg-black rounded-full shadow-md hover:shadow-lg transition-all duration-300 uppercase tracking-widest active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-700 bg-white/90 hover:bg-white rounded-xl border border-slate-200/80 shadow-sm transition-all duration-150 ease-out cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
           >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <ArrowLeft className="w-4 h-4 text-[#461D77]" />
             <span>Volver al Menú Principal</span>
           </button>
         </div>
-        
+
         {/* Error Alert Display */}
         {errorNotice && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-900 px-6 py-4 rounded-xl flex items-center gap-4 shadow-md">
-            <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
-            <div className="flex-1">
-              <h4 className="font-bold text-xs uppercase tracking-widest text-rose-950">Error de Estructura de Datos</h4>
+          <div className="bg-rose-50 border border-rose-200 text-slate-800 px-5 py-3.5 rounded-2xl flex items-center gap-3 shadow-sm">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-xs text-rose-900">
+                Error de estructura de datos
+              </h4>
               <p className="text-xs text-rose-700 mt-0.5">{errorNotice}</p>
             </div>
-            <button 
+            <button
               onClick={() => setErrorNotice(null)}
-              className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 bg-rose-100 hover:bg-rose-200 rounded border border-rose-200 active:scale-95 transition-all text-rose-900"
+              className="text-xs font-bold px-3 py-1.5 bg-white hover:bg-rose-50 rounded-xl border border-rose-200 transition-colors text-rose-800 cursor-pointer"
             >
               Descartar
             </button>
@@ -494,30 +490,23 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
         <AnimatePresence>
           {isCapturing && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: -24 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: -24 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-[#461D77]/95 backdrop-blur-md text-white px-6 py-3.5 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-4 pointer-events-none"
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-[#461D77] to-[#311042] text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3 pointer-events-none"
             >
-              <div className="relative flex items-center justify-center">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
-                  className="w-8 h-8 border-2 border-white/20 border-t-[#3FAA88] rounded-full"
-                />
-                <Download className="w-3.5 h-3.5 text-[#FAF5E6] absolute" />
-              </div>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-[#4FD1C5] rounded-full animate-spin shrink-0" />
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black tracking-widest uppercase text-[#FAF5E6]">
-                    Generando Descarga
+                  <span className="text-xs font-bold text-white">
+                    Generando captura
                   </span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[#3FAA88]/20 text-[#3FAA88] font-bold rounded border border-[#3FAA88]/40">
-                    PNG HD
+                  <span className="text-[11px] font-mono text-purple-200">
+                    PNG
                   </span>
                 </div>
-                <span className="text-[11px] text-white/80 font-medium">
+                <span className="text-[11px] text-purple-200/90">
                   Capturando tablero y gráficos del reporte...
                 </span>
               </div>
@@ -529,70 +518,53 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
         <AnimatePresence>
           {downloadToast && (
             <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className="fixed bottom-6 right-6 z-50 bg-white text-[#171717] px-5 py-3.5 rounded-xl shadow-2xl border border-[#CBE9DE] flex items-center gap-3.5 select-none"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed bottom-6 right-6 z-50 bg-white/95 backdrop-blur-md text-slate-800 px-4 py-3 rounded-2xl shadow-xl border border-slate-200 flex items-center gap-3 select-none"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#EBF7F3] flex items-center justify-center text-[#3FAA88] shrink-0 border border-[#CBE9DE]">
-                <CheckCircle2 className="w-5 h-5" />
+              <div className="w-7 h-7 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0 border border-emerald-200">
+                <CheckCircle2 className="w-4 h-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-[#171717] uppercase tracking-wide">Descarga Exitosa</span>
-                <span className="text-[11px] text-[#525252] font-mono">{downloadToast}</span>
+                <span className="text-xs font-bold text-slate-800">Descarga exitosa</span>
+                <span className="text-[11px] text-slate-500 font-mono">{downloadToast}</span>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Captured Content Wrapper representing everything requested in the attached image */}
-        <div 
-          id="dashboard-capture-area" 
-          className={`flex flex-col gap-6 bg-calido relative transition-all ${isCapturing ? "w-[1240px] p-8 mx-auto" : "w-full"}`}
+        {/* Captured Content Wrapper */}
+        <div
+          id="dashboard-capture-area"
+          className={`flex flex-col gap-6 bg-transparent relative ${isCapturing ? "w-[1240px] p-8 mx-auto bg-[#FAF8F5] rounded-3xl" : "w-full"}`}
         >
-          {/* Animated visual scan beam during capture - ignored by html2canvas */}
-          {isCapturing && (
-            <div 
-              data-html2canvas-ignore="true" 
-              className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-2xl"
-            >
-              <motion.div
-                initial={{ top: "0%" }}
-                animate={{ top: "100%" }}
-                transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                className="absolute left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[#7177EC] to-transparent shadow-[0_0_20px_4px_rgba(113,119,236,0.6)]"
-              />
-            </div>
-          )}
           {/* SECTION: Quick Status Overview Title */}
-          <div className="flex flex-col gap-4 select-none items-center justify-center text-center">
-            {/* High-Fidelity Professional Novandino Logo Image */}
+          <div className="flex flex-col gap-3 select-none items-center justify-center text-center pb-4 border-b border-slate-200/80">
             <div className="flex items-center justify-center w-full">
-              <NovandinoLogo className="h-32 sm:h-36 w-[450px] max-w-full" variant="large" />
+              <NovandinoLogo className="h-28 sm:h-32 w-[420px] max-w-full" variant="large" />
             </div>
 
-            {/* Custom Brand Header Text block matching user upload */}
             <div className="flex flex-col items-center justify-center gap-1 select-none">
-              <h1 className="text-xl lg:text-2xl font-bold tracking-[0.05em] uppercase flex items-center justify-center flex-wrap gap-x-2.5">
-                <span className="text-[#461D77] font-extrabold">DESPACHO DIARIO</span>
-                <span className="text-[#DFD5E7] font-light">|</span>
-                <span className="text-[#4E7A9F] font-light">CLORURO DE LITIO</span>
+              <h1 className="text-xl lg:text-2xl font-black tracking-tight flex items-center justify-center flex-wrap gap-x-2">
+                <span className="text-[#461D77]">DESPACHO DIARIO</span>
+                <span className="text-slate-300 font-normal">|</span>
+                <span className="text-slate-800 font-bold">CLORURO DE LITIO</span>
               </h1>
-              <p className="text-[11px] lg:text-xs font-bold tracking-[0.05em] text-[#461D77] mt-1 uppercase flex items-center justify-center gap-1.5">
-                <span>SUBGERENCIA LOGÍSTICA LITIO</span>
-                <span className="text-[#461D77]/80">&middot;</span>
-                <span>DESPACHO LITIO</span>
-              </p>
-              <p className="text-[9px] lg:text-[10px] font-semibold tracking-[0.4em] text-[#8E9AA6] uppercase mt-1">
-                SALAR DE ATACAMA
+              <p className="text-xs font-medium text-slate-500 flex items-center justify-center gap-2">
+                <span>Subgerencia Logística Litio</span>
+                <span aria-hidden="true" className="text-slate-300">·</span>
+                <span>Despacho Litio</span>
+                <span aria-hidden="true" className="text-slate-300">·</span>
+                <span>Salar de Atacama</span>
               </p>
             </div>
 
-            <div className="flex items-center justify-center gap-2 mt-2">
-              <BarChart3 className="w-4 h-4 text-nucleo" />
-              <h2 className="text-xs font-bold tracking-[0.2em] text-nucleo uppercase">
-                Estadísticas e Indicadores Clave (KPI)
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <BarChart3 className="w-4 h-4 text-[#461D77]" />
+              <h2 className="text-xs font-bold tracking-wider text-[#461D77] uppercase">
+                Estadísticas e Indicadores Clave
               </h2>
             </div>
           </div>
@@ -614,10 +586,10 @@ export default function LCEModule({ currentUser, onBack }: { currentUser: System
           <DashboardCharts logs={logs} selectedDate={selectedDate} isCapturing={isCapturing} />
         </div>
 
-        {/* Sticky Executive Footer with general helpful notes */}
-        <footer className="pt-8 pb-4 text-center border-t border-nucleo/15 select-none text-[9px] tracking-[0.3em] text-tecnico/40 uppercase">
-          <p className="font-sans">
-            Tablero Gerencial de Control &bull; Novandino Litio &copy; {new Date().getFullYear()} &bull; Confidencial e Interno
+        {/* Footer */}
+        <footer className="pt-6 pb-4 text-center border-t border-slate-200/80 select-none text-xs font-mono text-slate-400">
+          <p>
+            Tablero Gerencial de Control · Novandino Litio © {new Date().getFullYear()} · Uso Interno
           </p>
         </footer>
 

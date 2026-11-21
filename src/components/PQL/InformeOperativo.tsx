@@ -6,29 +6,24 @@
 import React, { useState, useMemo, useRef } from "react";
 import * as XLSX from "xlsx";
 import {
-  FileText, Upload, Download, ArrowLeft, CheckCircle2, AlertTriangle,
-  TrendingUp, Calendar, Clock, ShieldAlert, Award, Layers, Scale,
-  Truck, Check, RefreshCw, Mail, FileSpreadsheet, Activity, ChevronRight,
-  Eye, Edit3, Plus, Trash2, Sliders
+  FileText, Upload, Download, ArrowLeft, CheckCircle2,
+  TrendingUp, Calendar, ShieldAlert, Award, Layers,
+  Mail, FileSpreadsheet, Activity
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, Area
+  CartesianGrid, Tooltip, Legend
 } from "recharts";
 
 declare const html2canvas: any;
 declare const jspdf: any;
 
 // Brand Color Constants
-const PURPLE = "#4B1F82";
-const GREEN = "#42B68E";
-const DARK = "#172033";
-const MUTED = "#7C879D";
-const LIGHT = "#F6F8FB";
-const GRID = "#E7ECF3";
-const RED = "#E84A5F";
-const AMBER = "#C99635";
+const PURPLE = "#461D77";
+const GREEN = "#15803D";
+const RED = "#B91C1C";
+const AMBER = "#B45309";
 
 // Interface for Operational Day Record
 export interface DayRecord {
@@ -501,43 +496,44 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
   }, [monthRecords]);
 
   return (
-    <div className="min-h-screen bg-[#FAF5E6] text-tecnico font-sans p-4 md:p-8 space-y-8 select-none">
+    <div className="min-h-screen bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] text-slate-800 font-sans p-4 md:p-8 space-y-6 select-none">
       
       {/* SUCCESS TOAST OVERLAY */}
       <AnimatePresence>
         {downloadSuccessToast && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 font-bold text-sm"
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.15 }}
+            className="fixed top-6 right-6 z-50 bg-gradient-to-r from-[#461D77] to-[#311042] text-white border border-white/15 shadow-xl px-4 py-3 rounded-2xl flex items-center gap-2.5 font-bold text-xs"
           >
-            <CheckCircle2 className="w-5 h-5 text-emerald-200" />
+            <CheckCircle2 className="w-4 h-4 text-[#4FD1C5]" />
             <span>{downloadSuccessToast}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* TOP HEADER & NAVIGATION */}
-      <div className="bg-white rounded-3xl p-6 border border-[#D6CADF] shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div>
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-[#461D77] hover:text-nucleo font-black text-xs uppercase tracking-widest transition-colors mb-3 group cursor-pointer"
+            className="flex items-center gap-2 text-[#461D77] hover:text-[#311042] font-bold text-xs uppercase tracking-wider transition-colors duration-150 mb-3 cursor-pointer"
           >
-            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft size={15} />
             Volver a Módulo PQL
           </button>
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#4B1F82] text-white flex items-center justify-center font-black text-xl shadow-md">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#461D77] to-[#7177EC] text-white flex items-center justify-center shadow-md shadow-[#461D77]/20">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-black tracking-widest text-[#42B68E] uppercase">
-                PLANTA QUÍMICA LITIO &bull; PQL
+              <span className="text-[11px] font-mono font-bold tracking-wider text-slate-500 uppercase">
+                Planta Química Litio · PQL
               </span>
-              <h1 className="text-2xl font-black text-[#172033] tracking-tight">
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
                 Informe Operativo SLIT
               </h1>
             </div>
@@ -545,17 +541,17 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
         </div>
 
         {/* DATE SELECTOR & EXPORT TOOLBAR */}
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+        <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
           {/* Date Picker */}
           <div className="flex flex-col gap-1 min-w-[180px]">
-            <label className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-[#4B1F82]" />
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-[#461D77]" />
               Fecha Jornada
             </label>
             <select
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-[#F6F8FB] border border-[#D6CADF] rounded-xl px-3 py-2 text-xs font-bold text-[#172033] focus:outline-none focus:border-[#4B1F82] cursor-pointer shadow-inner"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-[#461D77] cursor-pointer transition-colors duration-150 h-[38px]"
             >
               {availableDates.map((dateStr) => {
                 const [y, m, d] = dateStr.split("-");
@@ -568,14 +564,14 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
             </select>
           </div>
 
-          {/* Excel File Upload Dropzone / Button */}
+          {/* Excel File Upload Button */}
           <div className="flex flex-col gap-1">
-            <label className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider flex items-center gap-1">
-              <FileSpreadsheet className="w-3 h-3 text-[#42B68E]" />
-              Cargar Archivo Excel
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <FileSpreadsheet className="w-3 h-3 text-[#461D77]" />
+              Archivo Excel
             </label>
-            <label className="flex items-center gap-2 bg-[#F6F8FB] hover:bg-[#EBF7F3] border border-[#D6CADF] hover:border-[#42B68E] rounded-xl px-4 py-2 text-xs font-extrabold text-[#4B1F82] transition-colors cursor-pointer shadow-xs">
-              <Upload className="w-3.5 h-3.5 text-[#42B68E]" />
+            <label className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200/70 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 transition-colors duration-150 cursor-pointer h-[38px]">
+              <Upload className="w-3.5 h-3.5 text-[#461D77]" />
               <span>{fileName ? "Cambiar Archivo" : "Cargar Excel SLIT"}</span>
               <input
                 type="file"
@@ -589,22 +585,22 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
           {/* Export Email Image PNG Button */}
           <button
             onClick={handleExportEmailPng}
-            disabled={isExportingPng}
-            className="flex items-center gap-2 bg-[#42B68E] hover:bg-[#349e7b] text-white rounded-xl px-4 py-2 text-xs font-extrabold shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer mt-auto h-[38px]"
+            disabled={isExportingPng || isUploading}
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold transition-colors duration-150 shadow-sm disabled:opacity-50 cursor-pointer h-[38px]"
             title="Genera y descarga la imagen optimizada para pegar en el cuerpo del correo"
           >
-            <Mail className="w-3.5 h-3.5" />
+            <Mail className="w-3.5 h-3.5 text-[#461D77]" />
             <span>{isExportingPng ? "Generando..." : "Imagen Correo (PNG)"}</span>
           </button>
 
           {/* Export PDF Report Button */}
           <button
             onClick={handleExportPdf}
-            disabled={isExportingPdf}
-            className="flex items-center gap-2 bg-[#4B1F82] hover:bg-[#3b1767] text-white rounded-xl px-4 py-2 text-xs font-extrabold shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer mt-auto h-[38px]"
+            disabled={isExportingPdf || isUploading}
+            className="flex items-center gap-2 bg-gradient-to-r from-[#461D77] to-[#7177EC] hover:opacity-95 text-white rounded-xl px-4 py-2 text-xs font-bold transition-all duration-150 shadow-md shadow-[#461D77]/20 disabled:opacity-50 cursor-pointer h-[38px]"
             title="Genera el informe operacional gerencial completo en formato PDF"
           >
-            <Download className="w-3.5 h-3.5 text-[#42B68E]" />
+            <Download className="w-3.5 h-3.5" />
             <span>{isExportingPdf ? "Generando..." : "Descargar PDF"}</span>
           </button>
         </div>
@@ -612,180 +608,167 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
 
       {/* STATUS NOTICE BANNER */}
       {statusNotice && (
-        <div className="bg-indigo-50 border border-indigo-200 text-indigo-900 px-4 py-3 rounded-2xl flex items-center justify-between text-xs font-semibold">
+        <div className="bg-[#461D77]/10 border border-[#461D77]/20 text-slate-900 px-4 py-3 rounded-2xl flex items-center justify-between text-xs font-bold shadow-sm">
           <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-[#4B1F82]" />
+            <Activity className="w-4 h-4 text-[#461D77]" />
             <span>{statusNotice}</span>
           </div>
-          <button onClick={() => setStatusNotice(null)} className="text-slate-400 hover:text-slate-600 font-bold">
+          <button onClick={() => setStatusNotice(null)} className="text-slate-500 hover:text-slate-900 font-bold cursor-pointer">
             ✕
           </button>
         </div>
       )}
 
-      {/* AREA CAPTURABLE: IMAGEN DE CORREO (FORMATO V25 EXACTO) */}
+      {/* AREA CAPTURABLE: IMAGEN DE CORREO */}
       <div className="space-y-6" id="report-export-area" ref={fullReportRef}>
         
-        {/* EMAIL PREVIEW CARD CONTAINER */}
+        {/* EMAIL PREVIEW CONTAINER */}
         <div
           ref={emailPreviewRef}
           id="email-image-preview"
-          className="bg-white rounded-3xl p-6 md:p-8 border border-[#D6CADF] shadow-lg space-y-6 max-w-5xl mx-auto"
+          className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40 p-6 md:p-8 space-y-6 max-w-5xl mx-auto"
         >
           {/* HEADER EMBEDDED IN IMAGE */}
-          <div className="flex flex-wrap items-center justify-between pb-4 border-b border-[#E7ECF3] gap-4">
+          <div className="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200 gap-4">
             <div>
-              <span className="text-xs font-black tracking-[0.25em] text-[#4B1F82] uppercase">
-                NOVANDINO
+              <span className="text-[11px] font-mono font-bold tracking-[0.2em] text-[#461D77] uppercase">
+                Novandino
               </span>
-              <h2 className="text-2xl font-black text-[#4B1F82] tracking-tight">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
                 INFORME OPERACIONAL SLIT
               </h2>
-              <p className="text-[10px] font-bold text-[#7C879D] tracking-widest uppercase mt-0.5">
-                SUBGERENCIA LOGÍSTICA LITIO
+              <p className="text-[11px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">
+                Subgerencia Logística Litio
               </p>
             </div>
 
-            <div className="text-right bg-[#F6F8FB] px-5 py-2.5 rounded-2xl border border-[#E7ECF3]">
-              <span className="text-[9px] font-extrabold text-[#7C879D] uppercase tracking-widest block">
-                FECHA JORNADA
+            <div className="text-right bg-gradient-to-br from-[#461D77] to-[#311042] text-white px-5 py-2.5 rounded-2xl shadow-lg shadow-[#461D77]/20 border border-white/15">
+              <span className="text-[10px] font-mono font-bold text-[#4FD1C5] uppercase tracking-wider block">
+                Fecha Jornada
               </span>
-              <span className="text-lg font-black text-[#42B68E] font-mono">
+              <span className="text-base font-black text-white font-mono tabular-nums">
                 {currentRecord.fecha.split("-").reverse().join("-")}
               </span>
             </div>
           </div>
 
           {/* MAIN STATUS & KPIS CONTAINER */}
-          <div className="bg-[#FAF5E6]/40 rounded-2xl p-6 border border-[#D6CADF] relative overflow-hidden">
-            <div
-              className="absolute top-0 left-0 bottom-0 w-2.5"
-              style={{ backgroundColor: statusInfo.color }}
-            />
-
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-5 border-b border-[#D6CADF]/60">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-200">
               <div>
-                <span className="text-[10px] font-extrabold text-[#42B68E] tracking-widest uppercase block">
-                  KPIS OPERACIONALES
+                <span className="text-[11px] font-bold text-slate-500 tracking-wider uppercase block">
+                  KPIs Operacionales
                 </span>
-                <h3 className="text-xl font-black text-[#4B1F82] flex items-center gap-2">
-                  <span>ESTADO GENERAL:</span>
-                  <span className={`px-3 py-0.5 rounded-xl border text-sm font-black ${statusInfo.bg}`}>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2.5 mt-0.5">
+                  <span>Estado General:</span>
+                  <span className={`px-3 py-0.5 rounded-full border text-xs font-bold uppercase ${statusInfo.bg}`}>
                     {statusInfo.text}
                   </span>
                 </h3>
               </div>
 
               <div className="text-right">
-                <span className="text-xs font-bold text-[#7C879D]">Cumplimiento Diario:</span>
-                <span className="text-2xl font-black font-mono text-[#4B1F82] ml-2">
+                <span className="text-xs font-bold text-slate-500">Cumplimiento Diario:</span>
+                <span className="text-3xl font-black font-mono tabular-nums text-[#461D77] ml-2">
                   {fmtPct(currentRecord.cumplimiento)}
                 </span>
               </div>
             </div>
 
-            {/* 8 KPI GRID CARDS */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {/* Card 1: Cumplimiento carga */}
-              <div className="bg-white p-3.5 rounded-xl border border-[#E7ECF3] shadow-2xs">
-                <span className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider block">
+            {/* 8 KPI GRID */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Cumplimiento carga
                 </span>
-                <span className="text-base font-black text-[#172033] font-mono block my-0.5">
+                <span className="text-lg font-black text-slate-900 font-mono tabular-nums block my-1">
                   {fmtPct(currentRecord.cumplimiento)}
                 </span>
-                <span className="text-[10px] font-bold text-[#42B68E] block">
+                <span className="text-[11px] font-mono tabular-nums text-slate-500 block">
                   vs día anterior {deltaCompliance}
                 </span>
               </div>
 
-              {/* Card 2: Carga real */}
-              <div className="bg-white p-3.5 rounded-xl border border-[#E7ECF3] shadow-2xs">
-                <span className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider block">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Carga real
                 </span>
-                <span className="text-base font-black text-[#172033] font-mono block my-0.5">
+                <span className="text-lg font-black text-slate-900 font-mono tabular-nums block my-1">
                   {fmtNum(currentRecord.real_ton_carga)} Ton
                 </span>
-                <span className="text-[10px] font-bold text-[#42B68E] block">
+                <span className="text-[11px] font-mono tabular-nums text-slate-500 block">
                   plan {fmtNum(currentRecord.plan_ton)}
                 </span>
               </div>
 
-              {/* Card 3: Recepción real */}
-              <div className="bg-white p-3.5 rounded-xl border border-[#E7ECF3] shadow-2xs">
-                <span className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider block">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Recepción real
                 </span>
-                <span className="text-base font-black text-[#172033] font-mono block my-0.5">
+                <span className="text-lg font-black text-slate-900 font-mono tabular-nums block my-1">
                   {fmtNum(currentRecord.recepcion_ton)} Ton
                 </span>
-                <span className="text-[10px] font-bold text-[#42B68E] block">
+                <span className="text-[11px] font-mono tabular-nums text-slate-500 block">
                   {fmtInt(currentRecord.recepcion_eq)} EQ
                 </span>
               </div>
 
-              {/* Card 4: Equipos carga */}
-              <div className="bg-white p-3.5 rounded-xl border border-[#E7ECF3] shadow-2xs">
-                <span className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider block">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Equipos carga
                 </span>
-                <span className="text-base font-black text-[#172033] font-mono block my-0.5">
+                <span className="text-lg font-black text-slate-900 font-mono tabular-nums block my-1">
                   {fmtInt(currentRecord.real_eq_carga)} EQ
                 </span>
-                <span className="text-[10px] font-bold text-[#4B1F82] block">
+                <span className="text-[11px] font-mono tabular-nums text-[#461D77] font-bold block">
                   plan {fmtInt(currentRecord.plan_eq)}
                 </span>
               </div>
 
-              {/* Card 5: Productividad */}
-              <div className="bg-white p-3.5 rounded-xl border border-[#E7ECF3] shadow-2xs">
-                <span className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider block">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Productividad
                 </span>
-                <span className="text-base font-black text-[#172033] font-mono block my-0.5">
+                <span className="text-lg font-black text-slate-900 font-mono tabular-nums block my-1">
                   {fmtNum(currentRecord.productividad, 2)} v/eq
                 </span>
-                <span className="text-[10px] font-bold text-[#4B1F82] block">
+                <span className="text-[11px] font-mono tabular-nums text-[#461D77] font-bold block">
                   factor {fmtNum(currentRecord.factor_carga, 1)}
                 </span>
               </div>
 
-              {/* Card 6: Tiempo descarga */}
-              <div className="bg-white p-3.5 rounded-xl border border-[#E7ECF3] shadow-2xs">
-                <span className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider block">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Tiempo descarga
                 </span>
-                <span className="text-base font-black text-[#172033] font-mono block my-0.5">
+                <span className="text-lg font-black text-slate-900 font-mono tabular-nums block my-1">
                   {fmtMinutes(currentRecord.descarga_min)}
                 </span>
-                <span className={`text-[10px] font-bold block ${(currentRecord.descarga_min || 99) <= 35 ? "text-[#42B68E]" : "text-[#E84A5F]"}`}>
+                <span className={`text-[11px] font-mono tabular-nums font-bold block ${(currentRecord.descarga_min || 99) <= 35 ? "text-emerald-600" : "text-rose-600"}`}>
                   meta 35 min
                 </span>
               </div>
 
-              {/* Card 7: Tiempo faena */}
-              <div className="bg-white p-3.5 rounded-xl border border-[#E7ECF3] shadow-2xs">
-                <span className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider block">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Tiempo faena
                 </span>
-                <span className="text-base font-black text-[#172033] font-mono block my-0.5">
+                <span className="text-lg font-black text-slate-900 font-mono tabular-nums block my-1">
                   {fmtMinutes(currentRecord.total_faena)}
                 </span>
-                <span className={`text-[10px] font-bold block ${(currentRecord.total_faena || 99) <= 55 ? "text-[#42B68E]" : "text-[#E84A5F]"}`}>
+                <span className={`text-[11px] font-mono tabular-nums font-bold block ${(currentRecord.total_faena || 99) <= 55 ? "text-emerald-600" : "text-rose-600"}`}>
                   meta 55 min
                 </span>
               </div>
 
-              {/* Card 8: Nivel pozas */}
-              <div className="bg-white p-3.5 rounded-xl border border-[#E7ECF3] shadow-2xs">
-                <span className="text-[9px] font-bold text-[#7C879D] uppercase tracking-wider block">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Nivel pozas
                 </span>
-                <span className="text-base font-black text-[#172033] font-mono block my-0.5 truncate">
+                <span className="text-lg font-black text-slate-900 font-mono tabular-nums block my-1 truncate">
                   {currentRecord.nivel_pozas || "S/Inf."}
                 </span>
-                <span className="text-[10px] font-bold text-[#42B68E] block">
+                <span className="text-[11px] text-slate-500 block">
                   control planta
                 </span>
               </div>
@@ -793,28 +776,28 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
           </div>
 
           {/* COMPARATIVE ANALYSIS CHARTS IN EMAIL IMAGE */}
-          <div className="bg-white rounded-2xl p-5 border border-[#E7ECF3] space-y-4">
-            <h4 className="text-xs font-black text-[#4B1F82] uppercase tracking-wider flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-[#42B68E]" />
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
+            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-slate-200">
+              <TrendingUp className="w-4 h-4 text-[#461D77]" />
               Análisis Comparativo de la Jornada
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Chart 1: Plan vs Real Bar Chart */}
               <div className="space-y-2">
-                <span className="text-[10px] font-bold text-[#172033] block">
+                <span className="text-xs font-bold text-slate-600 block">
                   Carga Toneladas: Plan vs Real
                 </span>
                 <div className="h-44 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={chart1Data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid stroke="#E7ECF3" strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" stroke="#7C879D" fontSize={10} axisLine={false} tickLine={false} />
-                      <YAxis stroke="#7C879D" fontSize={10} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v: any) => [`${fmtNum(v)} Ton`, ""]} />
+                      <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" stroke="#64748b" fontSize={10} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#64748b" fontSize={10} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v: any) => [`${fmtNum(v)} Ton`, ""]} contentStyle={{ backgroundColor: "#FFFFFF", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "12px" }} />
                       <Legend wrapperStyle={{ fontSize: "10px" }} />
-                      <Bar dataKey="Plan (Ton)" fill={PURPLE} radius={[4, 4, 0, 0]} barSize={40} />
-                      <Bar dataKey="Real (Ton)" fill={GREEN} radius={[4, 4, 0, 0]} barSize={40} />
+                      <Bar dataKey="Plan (Ton)" fill={PURPLE} radius={[6, 6, 0, 0]} barSize={40} />
+                      <Bar dataKey="Real (Ton)" fill={GREEN} radius={[6, 6, 0, 0]} barSize={40} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -822,17 +805,17 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
 
               {/* Chart 2: Cumplimiento Últimos 7 Días Line Chart */}
               <div className="space-y-2">
-                <span className="text-[10px] font-bold text-[#172033] block">
+                <span className="text-xs font-bold text-slate-600 block">
                   Cumplimiento (%) Últimos 7 Días
                 </span>
                 <div className="h-44 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={chart2Data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid stroke="#E7ECF3" strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="fecha" stroke="#7C879D" fontSize={10} axisLine={false} tickLine={false} />
-                      <YAxis stroke="#7C879D" fontSize={10} domain={[80, 120]} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v: any) => [`${fmtNum(v, 1)}%`, "Cumplimiento"]} />
-                      <Line type="monotone" dataKey="Cumplimiento" stroke={PURPLE} strokeWidth={2.5} dot={{ r: 4, fill: PURPLE }} />
+                      <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="fecha" stroke="#64748b" fontSize={10} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#64748b" fontSize={10} domain={[80, 120]} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v: any) => [`${fmtNum(v, 1)}%`, "Cumplimiento"]} contentStyle={{ backgroundColor: "#FFFFFF", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "12px" }} />
+                      <Line type="monotone" dataKey="Cumplimiento" stroke={PURPLE} strokeWidth={2.5} dot={{ r: 3.5, fill: PURPLE }} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -841,39 +824,39 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
           </div>
 
           {/* DAY SUMMARY TABLE */}
-          <div className="bg-white rounded-2xl p-5 border border-[#E7ECF3] space-y-3">
-            <h4 className="text-xs font-black text-[#4B1F82] uppercase tracking-wider">
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-3">
+            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
               Resumen Operativo del Día
             </h4>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+              <table className="w-full text-left text-xs font-mono tabular-nums">
                 <thead>
-                  <tr className="border-b border-[#E7ECF3] text-[9px] font-bold text-[#7C879D] uppercase tracking-wider">
-                    <th className="py-2 px-3">Item</th>
-                    <th className="py-2 px-3">Plan Ton</th>
-                    <th className="py-2 px-3">Real Ton</th>
-                    <th className="py-2 px-3">Estado / Detalle</th>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-sans font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="py-2.5 px-3">Item</th>
+                    <th className="py-2.5 px-3">Plan Ton</th>
+                    <th className="py-2.5 px-3">Real Ton</th>
+                    <th className="py-2.5 px-3">Estado / Detalle</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E7ECF3] font-semibold text-[#172033]">
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                   <tr>
-                    <td className="py-2.5 px-3 font-bold">Carga</td>
-                    <td className="py-2.5 px-3 font-mono">{fmtNum(currentRecord.plan_ton)}</td>
-                    <td className="py-2.5 px-3 font-mono text-[#42B68E] font-bold">{fmtNum(currentRecord.real_ton_carga)}</td>
-                    <td className="py-2.5 px-3 font-bold text-[#4B1F82]">{fmtPct(currentRecord.cumplimiento)}</td>
+                    <td className="py-2.5 px-3 font-sans font-bold">Carga</td>
+                    <td className="py-2.5 px-3">{fmtNum(currentRecord.plan_ton)}</td>
+                    <td className="py-2.5 px-3 text-emerald-600 font-bold">{fmtNum(currentRecord.real_ton_carga)}</td>
+                    <td className="py-2.5 px-3 font-bold text-[#461D77]">{fmtPct(currentRecord.cumplimiento)}</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-bold">Recepción</td>
-                    <td className="py-2.5 px-3 font-mono text-slate-400">-</td>
-                    <td className="py-2.5 px-3 font-mono text-[#42B68E] font-bold">{fmtNum(currentRecord.recepcion_ton)}</td>
-                    <td className="py-2.5 px-3 font-bold text-[#4B1F82]">{fmtInt(currentRecord.recepcion_eq)} EQ</td>
+                    <td className="py-2.5 px-3 font-sans font-bold">Recepción</td>
+                    <td className="py-2.5 px-3 text-slate-400">-</td>
+                    <td className="py-2.5 px-3 text-emerald-600 font-bold">{fmtNum(currentRecord.recepcion_ton)}</td>
+                    <td className="py-2.5 px-3 font-bold text-[#461D77]">{fmtInt(currentRecord.recepcion_eq)} EQ</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-bold">Acumulado Mes</td>
-                    <td className="py-2.5 px-3 font-mono text-slate-400">-</td>
-                    <td className="py-2.5 px-3 font-mono text-[#42B68E] font-bold">{fmtNum(currentRecord.acum_ton)}</td>
-                    <td className="py-2.5 px-3 font-bold text-[#4B1F82]">Brecha eq {fmtInt(currentRecord.brecha_eq)}</td>
+                    <td className="py-2.5 px-3 font-sans font-bold">Acumulado Mes</td>
+                    <td className="py-2.5 px-3 text-slate-400">-</td>
+                    <td className="py-2.5 px-3 text-emerald-600 font-bold">{fmtNum(currentRecord.acum_ton)}</td>
+                    <td className="py-2.5 px-3 font-bold text-[#461D77]">Brecha eq {fmtInt(currentRecord.brecha_eq)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -881,67 +864,67 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
           </div>
 
           {/* FOOTER CONFIDENTIAL BRAND BANNER */}
-          <div className="pt-4 border-t border-[#E7ECF3] flex justify-between items-center text-[9px] font-bold text-[#7C879D] uppercase tracking-widest">
-            <span>SUBGERENCIA LOGÍSTICA LITIO</span>
-            <span>DOCUMENTO INTERNO &bull; CONFIDENCIAL</span>
+          <div className="pt-4 border-t border-slate-200 flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <span>Subgerencia Logística Litio</span>
+            <span>Documento Interno &middot; Confidencial</span>
           </div>
         </div>
 
         {/* DETALLE OPERACIONAL DE PLANTA & TENDENCIA 7 DÍAS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
           
           {/* CONTROL DE PLANTA */}
-          <div className="bg-white rounded-3xl p-6 border border-[#D6CADF] shadow-sm space-y-4">
-            <h3 className="text-sm font-black text-[#4B1F82] uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-[#E7ECF3]">
-              <Layers className="w-4 h-4 text-[#42B68E]" />
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 space-y-4">
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-slate-200">
+              <Layers className="w-4 h-4 text-[#461D77]" />
               Control de Planta & Faena
             </h3>
 
-            <div className="space-y-2.5 text-xs font-semibold">
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#F6F8FB]">
-                <span className="text-[#7C879D]">Día Seguridad:</span>
-                <span className="font-bold text-[#172033]">{currentRecord.seguridad}</span>
+            <div className="divide-y divide-slate-100 text-xs">
+              <div className="flex justify-between items-center py-2.5 gap-4">
+                <span className="text-slate-500">Día Seguridad</span>
+                <span className="font-bold text-slate-900 text-right">{currentRecord.seguridad}</span>
               </div>
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#F6F8FB]">
-                <span className="text-[#7C879D]">Descarga Camiones:</span>
-                <span className="font-bold text-[#172033]">{currentRecord.descarga_poza}</span>
+              <div className="flex justify-between items-center py-2.5 gap-4">
+                <span className="text-slate-500">Descarga Camiones</span>
+                <span className="font-bold text-slate-900 text-right">{currentRecord.descarga_poza}</span>
               </div>
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#F6F8FB]">
-                <span className="text-[#7C879D]">Alimentación:</span>
-                <span className="font-bold text-[#172033]">{currentRecord.alimentacion}</span>
+              <div className="flex justify-between items-center py-2.5 gap-4">
+                <span className="text-slate-500">Alimentación</span>
+                <span className="font-bold text-slate-900 text-right">{currentRecord.alimentacion}</span>
               </div>
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#F6F8FB]">
-                <span className="text-[#7C879D]">Recepción (m³):</span>
-                <span className="font-bold font-mono text-[#4B1F82]">{fmtInt(currentRecord.recepcion_m3)} m³</span>
+              <div className="flex justify-between items-center py-2.5 gap-4">
+                <span className="text-slate-500">Recepción (m³)</span>
+                <span className="font-bold font-mono tabular-nums text-[#461D77]">{fmtInt(currentRecord.recepcion_m3)} m³</span>
               </div>
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#F6F8FB]">
-                <span className="text-[#7C879D]">Densidad SLIT:</span>
-                <span className="font-bold font-mono text-[#42B68E]">{fmtNum(currentRecord.densidad, 2)}</span>
+              <div className="flex justify-between items-center py-2.5 gap-4">
+                <span className="text-slate-500">Densidad SLIT</span>
+                <span className="font-bold font-mono tabular-nums text-emerald-600">{fmtNum(currentRecord.densidad, 2)}</span>
               </div>
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#F6F8FB]">
-                <span className="text-[#7C879D]">Regulaciones:</span>
-                <span className="font-bold font-mono text-[#4B1F82]">{fmtPct(currentRecord.regulaciones)}</span>
+              <div className="flex justify-between items-center py-2.5 gap-4">
+                <span className="text-slate-500">Regulaciones</span>
+                <span className="font-bold font-mono tabular-nums text-[#461D77]">{fmtPct(currentRecord.regulaciones)}</span>
               </div>
             </div>
           </div>
 
           {/* TENDENCIA ÚLTIMOS 7 DÍAS (DOUBLE BAR) */}
-          <div className="bg-white rounded-3xl p-6 border border-[#D6CADF] shadow-sm space-y-4">
-            <h3 className="text-sm font-black text-[#4B1F82] uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-[#E7ECF3]">
-              <TrendingUp className="w-4 h-4 text-[#42B68E]" />
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 space-y-4">
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-slate-200">
+              <TrendingUp className="w-4 h-4 text-[#461D77]" />
               Tendencia Toneladas (Últimos 7 Días)
             </h3>
 
             <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chart3Data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid stroke="#E7ECF3" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="fecha" stroke="#7C879D" fontSize={10} axisLine={false} tickLine={false} />
-                  <YAxis stroke="#7C879D" fontSize={10} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(v: any) => [`${fmtNum(v)} Ton`, ""]} />
+                  <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="fecha" stroke="#64748b" fontSize={10} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={10} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(v: any) => [`${fmtNum(v)} Ton`, ""]} contentStyle={{ backgroundColor: "#FFFFFF", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "12px" }} />
                   <Legend wrapperStyle={{ fontSize: "10px" }} />
-                  <Bar dataKey="Plan (Ton)" fill={PURPLE} radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="Real (Ton)" fill={GREEN} radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="Plan (Ton)" fill={PURPLE} radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Real (Ton)" fill={GREEN} radius={[6, 6, 0, 0]} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -950,24 +933,24 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
         </div>
 
         {/* OBSERVACIONES RELEVANTES & ACUMULADO MENSUAL */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           
           {/* OBSERVACIONES */}
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-[#D6CADF] shadow-sm space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-[#E7ECF3]">
-              <h3 className="text-sm font-black text-[#4B1F82] uppercase tracking-wider flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-[#42B68E]" />
+          <div className="lg:col-span-2 bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-[#461D77]" />
                 Observaciones Relevantes del Turno
               </h3>
             </div>
 
-            <div className="space-y-3">
+            <div className="divide-y divide-slate-100">
               {observations.map((obs) => (
-                <div key={obs.id} className="p-3 rounded-2xl bg-[#F6F8FB] border border-[#E7ECF3] space-y-1">
-                  <span className="text-[10px] font-black text-[#4B1F82] uppercase tracking-wider block">
+                <div key={obs.id} className="py-3 first:pt-0 last:pb-0 space-y-1">
+                  <span className="text-[11px] font-bold text-[#461D77] uppercase tracking-wider block">
                     {obs.label}
                   </span>
-                  <p className="text-xs font-semibold text-[#172033] leading-relaxed">
+                  <p className="text-xs text-slate-700 leading-relaxed">
                     {obs.text}
                   </p>
                 </div>
@@ -976,36 +959,36 @@ export function InformeOperativo({ onBack }: { onBack: () => void }) {
           </div>
 
           {/* ACUMULADO MENSUAL */}
-          <div className="bg-white rounded-3xl p-6 border border-[#D6CADF] shadow-sm space-y-4">
-            <h3 className="text-sm font-black text-[#4B1F82] uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-[#E7ECF3]">
-              <Award className="w-4 h-4 text-[#42B68E]" />
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 space-y-4">
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-slate-200">
+              <Award className="w-4 h-4 text-[#461D77]" />
               Acumulado Mensual
             </h3>
 
-            <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-2xl bg-[#F6F8FB] border border-[#E7ECF3] flex justify-between items-center">
-                <span className="text-[#7C879D] font-bold">Plan Acumulado:</span>
-                <span className="font-black font-mono text-[#172033]">{fmtNum(monthlyTotals.planTotal)} t</span>
+            <div className="divide-y divide-slate-100 text-xs">
+              <div className="py-3 flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Plan Acumulado</span>
+                <span className="font-bold font-mono tabular-nums text-slate-900">{fmtNum(monthlyTotals.planTotal)} t</span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-[#F6F8FB] border border-[#E7ECF3] flex justify-between items-center">
-                <span className="text-[#7C879D] font-bold">Carga Real Acumulada:</span>
-                <span className="font-black font-mono text-[#42B68E]">{fmtNum(monthlyTotals.realTotal)} t</span>
+              <div className="py-3 flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Carga Real Acumulada</span>
+                <span className="font-bold font-mono tabular-nums text-emerald-600">{fmtNum(monthlyTotals.realTotal)} t</span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-[#F6F8FB] border border-[#E7ECF3] flex justify-between items-center">
-                <span className="text-[#7C879D] font-bold">Recepción Acumulada:</span>
-                <span className="font-black font-mono text-[#4B1F82]">{fmtNum(monthlyTotals.recepTotal)} t</span>
+              <div className="py-3 flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Recepción Acumulada</span>
+                <span className="font-bold font-mono tabular-nums text-[#461D77]">{fmtNum(monthlyTotals.recepTotal)} t</span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-[#F6F8FB] border border-[#E7ECF3] flex justify-between items-center">
-                <span className="text-[#7C879D] font-bold">Cumplimiento Promedio:</span>
-                <span className="font-black font-mono text-[#4B1F82]">{fmtPct(monthlyTotals.avgCompliance)}</span>
+              <div className="py-3 flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Cumplimiento Promedio</span>
+                <span className="font-bold font-mono tabular-nums text-[#461D77]">{fmtPct(monthlyTotals.avgCompliance)}</span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-[#F6F8FB] border border-[#E7ECF3] flex justify-between items-center">
-                <span className="text-[#7C879D] font-bold">Días Bajo 95%:</span>
-                <span className={`font-black font-mono ${monthlyTotals.daysBelowTarget > 0 ? "text-[#E84A5F]" : "text-[#42B68E]"}`}>
+              <div className="py-3 flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Días Bajo 95%</span>
+                <span className={`font-bold font-mono tabular-nums ${monthlyTotals.daysBelowTarget > 0 ? "text-rose-600" : "text-emerald-600"}`}>
                   {monthlyTotals.daysBelowTarget} {monthlyTotals.daysBelowTarget === 1 ? "día" : "días"}
                 </span>
               </div>

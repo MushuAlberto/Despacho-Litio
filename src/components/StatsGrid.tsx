@@ -15,7 +15,7 @@ const StatsGrid: React.FC<StatsGridProps> = ({ data }) => {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
       {numericCols.slice(0, 6).map(col => {
         const values = data.map(d => Number(d[col])).filter(v => !isNaN(v));
         const avg = values.reduce((a, b) => a + b, 0) / values.length;
@@ -23,20 +23,22 @@ const StatsGrid: React.FC<StatsGridProps> = ({ data }) => {
         const min = Math.min(...values);
 
         return (
-          <div key={col} className="bg-white/80 backdrop-blur-md p-6 rounded-[1.8rem] border border-black/[0.04] shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] hover:shadow-[0_12px_30px_rgba(70,29,119,0.04)] transition-all duration-300">
-            <h4 className="text-[10px] font-black text-[#461D77] uppercase tracking-widest mb-4 truncate" title={col}>{col}</h4>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-slate-50/50 p-2 rounded-xl border border-black/[0.01]">
-                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Promedio</p>
-                <p className="font-extrabold text-[#461D77] text-sm mt-0.5">{avg.toLocaleString(undefined, {maximumFractionDigits: 1})}</p>
+          <div key={col} className="bg-white/90 backdrop-blur-md border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm">
+            <div className="px-5 py-3 bg-slate-50/80 border-b border-slate-100">
+              <h4 className="text-[11px] font-bold text-[#461D77] uppercase tracking-wider truncate" title={col}>{col}</h4>
+            </div>
+            <div className="grid grid-cols-3 divide-x divide-slate-100 text-center">
+              <div className="py-4 px-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Promedio</p>
+                <p className="font-black tabular-nums text-[#461D77] text-base mt-0.5">{avg.toLocaleString(undefined, { maximumFractionDigits: 1 })}</p>
               </div>
-              <div className="bg-slate-50/50 p-2 rounded-xl border border-black/[0.01]">
-                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Máx</p>
-                <p className="font-extrabold text-[#3FAA88] text-sm mt-0.5">{max.toLocaleString()}</p>
+              <div className="py-4 px-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Máx</p>
+                <p className="font-black tabular-nums text-slate-800 text-base mt-0.5">{max.toLocaleString()}</p>
               </div>
-              <div className="bg-slate-50/50 p-2 rounded-xl border border-black/[0.01]">
-                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Mín</p>
-                <p className="font-extrabold text-[#C59E4D] text-sm mt-0.5">{min.toLocaleString()}</p>
+              <div className="py-4 px-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mín</p>
+                <p className="font-black tabular-nums text-slate-500 text-base mt-0.5">{min.toLocaleString()}</p>
               </div>
             </div>
           </div>

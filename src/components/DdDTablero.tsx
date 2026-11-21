@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
-    ArrowLeft, Clock, Calendar, BarChart3, TrendingUp,
-    Target, AlertCircle, ChevronRight, Gauge, Layers, Info, Scale,
-    FileText, Image as ImageIcon, Loader2
+    Clock, BarChart3, TrendingUp,
+    Target, AlertCircle, Layers, Scale, Loader2
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -30,7 +29,7 @@ interface DdDDataRow {
 interface DdDTableroProps {
     data: DdDDataRow[];
     selectedDate: string;
-    onBack: () => void;
+    onBack?: () => void;
 }
 
 // --- SUB-COMPONENTE: TARJETA DE MÉTRICA EJECUTIVA ---
@@ -40,7 +39,7 @@ const MetricCard: React.FC<{
     subtitle?: string;
     icon: React.ReactNode;
     color: string;
-}> = ({ title, value, subtitle, icon, color }) => (
+}> = React.memo(({ title, value, subtitle, icon, color }) => (
     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden group hover:shadow-xl transition-all duration-500">
         <div className={`absolute top-0 right-0 w-24 h-24 ${color} opacity-5 rounded-bl-[4rem] -mr-8 -mt-8 group-hover:scale-110 transition-transform`} />
         
@@ -52,13 +51,64 @@ const MetricCard: React.FC<{
 
         <div className="mt-4 relative z-10">
             <p className="text-[10px] font-black text-black uppercase tracking-widest leading-none mb-1">{title}</p>
-            <h3 className="text-3xl font-black text-black tracking-tighter italic">{value}</h3>
+            <h3 className="text-3xl font-black text-black tracking-tighter italic tabular-nums">{value}</h3>
             {subtitle && <p className="text-[10px] text-black font-bold mt-1 uppercase tracking-tighter">{subtitle}</p>}
         </div>
     </div>
-);
+));
 
-export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBack }) => {
+const SegmentChart: React.FC<{ title: string; data: any[]; color: string }> = React.memo(({ title, data, color }) => (
+    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+            <h5 className="text-[11px] font-black text-slate-800 uppercase tracking-widest italic">{title}</h5>
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+        </div>
+        <div className="h-[200px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={data} margin={{ top: 20, right: 5, left: 5, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                        dataKey="fecha" 
+                        tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94a3b8' }}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <YAxis yAxisId="left" hide domain={[0, 120]} />
+                    <YAxis yAxisId="right" hide orientation="right" domain={[24, 32]} />
+                    <Tooltip
+                        contentStyle={{ borderRadius: '15px', border: 'none', fontSize: '10px', fontWeight: 'bold' }}
+                        formatter={(v: number) => [v.toFixed(1), ""]}
+                    />
+                    <ReferenceLine yAxisId="left" y={90} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} />
+                    <Bar yAxisId="left" dataKey="cumplimiento" fill={color} opacity={0.6} radius={[4, 4, 0, 0]} name="% Cumpl." isAnimationActive={false}>
+                        <LabelList 
+                            dataKey="cumplimiento" 
+                            position="top" 
+                            formatter={(v: number) => `${v.toFixed(0)}%`}
+                            style={{ fontSize: '10px', fontWeight: 'bold', fill: '#475569' }}
+                        />
+                    </Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="promTon" stroke={color} strokeWidth={3} dot={{ r: 3, fill: color }} name="Tms/Eq" isAnimationActive={false}>
+                        <LabelList 
+                            dataKey="promTon" 
+                            position="top" 
+                            formatter={(v: number) => v.toFixed(1)}
+                            style={{ fontSize: '9px', fontWeight: 'bold', fill: color }}
+                        />
+                    </Line>
+                </ComposedChart>
+            </ResponsiveContainer>
+        </div>
+        <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+            <span>Últimos 10 días</span>
+            <span className="text-slate-200">|</span>
+            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: color }} /> Cumplimiento</span>
+            <span className="flex items-center gap-1"><div className="w-3 h-0.5" style={{ backgroundColor: color }} /> Ton/Eq</span>
+        </div>
+    </div>
+));
+
+export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selectedDate }) => {
     const [isExportingImage, setIsExportingImage] = useState(false);
 
     // 1. Filtrar datos del día seleccionado para la tabla
@@ -180,57 +230,6 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
         };
     }, [data]);
 
-    const SegmentChart: React.FC<{ title: string; data: any[]; color: string }> = ({ title, data, color }) => (
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-50 pb-4">
-                <h5 className="text-[11px] font-black text-slate-800 uppercase tracking-widest italic">{title}</h5>
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-            </div>
-            <div className="h-[200px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={data} margin={{ top: 20, right: 5, left: 5, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis 
-                            dataKey="fecha" 
-                            tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94a3b8' }}
-                            axisLine={false}
-                            tickLine={false}
-                        />
-                        <YAxis yAxisId="left" hide domain={[0, 120]} />
-                        <YAxis yAxisId="right" hide orientation="right" domain={[24, 32]} />
-                        <Tooltip
-                            contentStyle={{ borderRadius: '15px', border: 'none', fontSize: '10px', fontWeight: 'bold' }}
-                            formatter={(v: number) => [v.toFixed(1), ""]}
-                        />
-                        <ReferenceLine yAxisId="left" y={90} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={2} />
-                        <Bar yAxisId="left" dataKey="cumplimiento" fill={color} opacity={0.6} radius={[4, 4, 0, 0]} name="% Cumpl.">
-                            <LabelList 
-                                dataKey="cumplimiento" 
-                                position="top" 
-                                formatter={(v: number) => `${v.toFixed(0)}%`}
-                                style={{ fontSize: '10px', fontWeight: 'bold', fill: '#475569' }}
-                            />
-                        </Bar>
-                        <Line yAxisId="right" type="monotone" dataKey="promTon" stroke={color} strokeWidth={3} dot={{ r: 3, fill: color }} name="Tms/Eq">
-                            <LabelList 
-                                dataKey="promTon" 
-                                position="top" 
-                                formatter={(v: number) => v.toFixed(1)}
-                                style={{ fontSize: '9px', fontWeight: 'bold', fill: color }}
-                            />
-                        </Line>
-                    </ComposedChart>
-                </ResponsiveContainer>
-            </div>
-            <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-tighter">
-                <span>Últimos 10 días</span>
-                <span className="text-slate-200">|</span>
-                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: color }} /> Cumplimiento</span>
-                <span className="flex items-center gap-1"><div className="w-3 h-0.5" style={{ backgroundColor: color }} /> Ton/Eq</span>
-            </div>
-        </div>
-    );
-
     const formatDate = (dateStr: string) => {
         if (!dateStr) return '';
         const [y, m, d] = dateStr.split('-');
@@ -240,14 +239,23 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
 
     const handleExportImage = async () => {
         if (isExportingImage) return;
-        setIsExportingImage(true);
         const element = document.getElementById('ddd-dashboard-capture');
         if (!element) return;
+
+        setIsExportingImage(true);
         try {
-            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+            let dataUrl = '';
+            if (typeof html2canvas === 'function') {
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                dataUrl = canvas.toDataURL('image/png');
+            } else {
+                const { toPng } = await import('html-to-image');
+                dataUrl = await toPng(element, { pixelRatio: 2, cacheBust: true });
+            }
+
             const link = document.createElement('a');
             link.download = `Captura_DdD_${selectedDate}.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.href = dataUrl;
             link.click();
 
             // Record download audit log
@@ -265,6 +273,8 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
             } catch (err) {
                 console.error('Error logging DdD image download:', err);
             }
+        } catch (err) {
+            console.error('Error exporting DdD image:', err);
         } finally {
             setIsExportingImage(false);
         }
@@ -279,12 +289,6 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                     <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-48 -mt-48 opacity-10 animate-pulse" />
                     
                     <div className="flex items-center gap-8 relative z-10">
-                        <button
-                            onClick={onBack}
-                            className="p-5 bg-white/10 hover:bg-ionizado rounded-[2rem] transition-all duration-500 text-white/50 hover:text-white shadow-xl active:scale-90 border border-white/10 hover:border-ionizado"
-                        >
-                            <ArrowLeft size={32} />
-                        </button>
                         <div>
                             <div className="flex items-center gap-3 mb-2">
                                 <span className="px-3 py-1 bg-ionizado text-[11px] font-black rounded-lg uppercase tracking-widest shadow-lg shadow-ionizado/20">Tablero M1</span>
@@ -302,15 +306,24 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                 <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Jornada Reportada</p>
                                 <span className="text-xl font-black capitalize tracking-tighter italic">{formatDate(selectedDate)}</span>
                             </div>
-                            
-                                <button 
-                                    onClick={handleExportImage}
-                                    disabled={isExportingImage}
-                                    className="p-3 bg-ionizado hover:bg-ionizado/80 rounded-2xl transition-all text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-ionizado/20 border border-white/5 disabled:opacity-50"
-                                >
-                                    {isExportingImage ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
-                                    <span className="hidden lg:inline">Imagen</span>
-                                </button>
+
+                            <button
+                                type="button"
+                                onClick={handleExportImage}
+                                disabled={isExportingImage}
+                                title="Descargar imagen del tablero"
+                                aria-label="Descargar imagen del tablero"
+                                className="relative bg-white/95 hover:bg-white active:scale-95 px-4 py-2 rounded-2xl shadow-lg border border-white/20 flex items-center justify-center shrink-0 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4FD1C5]"
+                            >
+                                <img
+                                    src="/novandino.png"
+                                    alt="Novandino — Descargar imagen del tablero"
+                                    className={`h-9 w-auto object-contain transition-opacity ${isExportingImage ? 'opacity-30' : 'opacity-100'}`}
+                                />
+                                {isExportingImage && (
+                                    <Loader2 size={18} className="absolute animate-spin text-[#461D77]" />
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -499,6 +512,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                             fillOpacity={1} 
                                             fill="url(#colorSda)" 
                                             name="Promedio SdA"
+                                            isAnimationActive={false}
                                         />
                                         <Area 
                                             type="monotone" 
@@ -508,6 +522,7 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                             fillOpacity={1} 
                                             fill="url(#colorPang)" 
                                             name="Promedio N. Y."
+                                            isAnimationActive={false}
                                         />
                                         <ReferenceLine y={2} stroke="#ef4444" strokeDasharray="6 6" strokeWidth={2} label={{ position: 'right', value: 'META', fill: '#ef4444', fontSize: 12, fontWeight: 'black' }} />
                                     </AreaChart>
@@ -589,10 +604,10 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
                                     labelStyle={{ fontWeight: 'black', color: '#1e293b' }}
                                 />
                                 <Legend verticalAlign="top" height={36} iconType="diamond" wrapperStyle={{ paddingTop: '0px', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase' }} />
-                                <Bar yAxisId="left" dataKey="cumplimiento" fill="url(#barGradient)" radius={[8, 8, 0, 0]} barSize={45} name="% Cumplimiento">
+                                <Bar yAxisId="left" dataKey="cumplimiento" fill="url(#barGradient)" radius={[8, 8, 0, 0]} barSize={45} name="% Cumplimiento" isAnimationActive={false}>
                                     <LabelList dataKey="cumplimiento" position="top" formatter={(val: number) => `${Math.round(val)}%`} style={{ fill: '#4FD1C5', fontSize: 10, fontWeight: 'black' }} />
                                 </Bar>
-                                <Line yAxisId="right" type="stepAfter" dataKey="promTonReal" stroke="#3FAA88" strokeWidth={4} dot={{ r: 6, fill: '#3FAA88', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} name="Eficiencia Tms/Eq">
+                                <Line yAxisId="right" type="stepAfter" dataKey="promTonReal" stroke="#3FAA88" strokeWidth={4} dot={{ r: 6, fill: '#3FAA88', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} name="Eficiencia Tms/Eq" isAnimationActive={false}>
                                     <LabelList dataKey="promTonReal" position="top" formatter={(val: number) => val.toFixed(1)} style={{ fill: '#3FAA88', fontSize: 10, fontWeight: 'black' }} offset={10} />
                                 </Line>
                                 <ReferenceLine yAxisId="left" y={90} stroke="#4FD1C5" strokeDasharray="5 5" strokeWidth={2} label={{ position: 'insideTopLeft', value: 'META CARGA 90%', fill: '#4FD1C5', fontSize: 10, fontWeight: 'black' }} />
@@ -611,6 +626,6 @@ export const DdDTablero: React.FC<DdDTableroProps> = ({ data, selectedDate, onBa
             </div>
         </div>
     );
-};
+});
 
 export default DdDTablero;

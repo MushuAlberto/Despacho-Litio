@@ -7,9 +7,7 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  Shield,
-  Check,
-  Sparkles
+  Check
 } from 'lucide-react';
 import { SystemUser, updateUserPassword } from '../services/firebase';
 import { setCurrentUserGlobal } from '../auth/authStore';
@@ -76,10 +74,10 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     if (/[0-9]/.test(pwd) && /[a-zA-Z]/.test(pwd)) score += 1;
     if (/[^a-zA-Z0-9]/.test(pwd) || /[A-Z]/.test(pwd)) score += 1;
 
-    if (score <= 1) return { score: 1, label: 'Básica', color: 'bg-amber-400', text: 'text-amber-600' };
-    if (score === 2) return { score: 2, label: 'Media', color: 'bg-blue-500', text: 'text-blue-600' };
-    if (score === 3) return { score: 3, label: 'Segura', color: 'bg-teal-500', text: 'text-teal-600' };
-    return { score: 4, label: 'Muy Fuerte', color: 'bg-emerald-500', text: 'text-emerald-600' };
+    if (score <= 1) return { score: 1, label: 'Básica', color: 'bg-amber-500', text: 'text-amber-600' };
+    if (score === 2) return { score: 2, label: 'Media', color: 'bg-slate-500', text: 'text-slate-600' };
+    if (score === 3) return { score: 3, label: 'Segura', color: 'bg-[#461D77]', text: 'text-[#461D77]' };
+    return { score: 4, label: 'Muy Fuerte', color: 'bg-emerald-600', text: 'text-emerald-600' };
   };
 
   const strength = getPasswordStrength(newPassword);
@@ -159,25 +157,25 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       : 'Supervisor';
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/50 backdrop-blur-sm">
       <div
-        className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden transform animate-in zoom-in-95 duration-200"
+        className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="change-password-title"
       >
         {/* Header Bar */}
-        <div className="bg-gradient-to-r from-[#461D77] via-[#5c279d] to-[#7177EC] px-6 py-5 text-white relative">
+        <div className="bg-gradient-to-r from-[#461D77] to-[#7177EC] px-6 py-5 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                <KeyRound size={20} className="text-white" />
+              <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center text-white">
+                <KeyRound size={18} />
               </div>
               <div>
-                <h2 id="change-password-title" className="text-base font-black tracking-tight leading-none text-white">
+                <h2 id="change-password-title" className="text-sm font-black tracking-tight uppercase">
                   Cambiar Contraseña
                 </h2>
-                <p className="text-[11px] text-white/80 mt-1 font-medium">
+                <p className="text-[11px] text-purple-100 mt-0.5">
                   Actualiza tu clave de acceso personal
                 </p>
               </div>
@@ -186,27 +184,26 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 hover:text-white flex items-center justify-center transition-all cursor-pointer disabled:opacity-40"
+              className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors duration-150 ease-out cursor-pointer disabled:opacity-40"
               title="Cerrar ventana"
             >
               <X size={16} />
             </button>
           </div>
 
-          {/* User Account Pill */}
-          <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-white text-[#461D77] font-black text-[10px] flex items-center justify-center">
+          <div className="mt-3 pt-3 border-t border-white/15 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-6 h-6 rounded-lg bg-white/20 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
                 {(currentUser.name || 'U').charAt(0).toUpperCase()}
               </div>
               <div className="truncate">
                 <span className="font-bold text-white text-xs">{currentUser.name}</span>
-                <span className="text-white/70 text-[11px] ml-1.5 font-mono">
+                <span className="text-purple-100 text-[11px] ml-1.5 font-mono">
                   @{currentUser.username || currentUser.userId}
                 </span>
               </div>
             </div>
-            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white">
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-white shrink-0">
               {roleLabel}
             </span>
           </div>
@@ -215,32 +212,28 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         {/* Content Body */}
         {success ? (
           <div className="p-8 text-center flex flex-col items-center justify-center">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4 shadow-sm animate-bounce">
-              <CheckCircle2 size={32} />
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mb-4">
+              <CheckCircle2 size={24} />
             </div>
-            <h3 className="text-lg font-black text-slate-800">
-              ¡Contraseña Actualizada!
+            <h3 className="text-base font-black text-slate-800">
+              Contraseña Actualizada
             </h3>
-            <p className="text-xs text-slate-500 mt-2 max-w-xs leading-relaxed">
-              Tu clave de acceso ha sido modificada con éxito. Ya puedes iniciar sesión con tu nueva contraseña.
+            <p className="text-xs text-slate-500 mt-1.5 max-w-xs leading-relaxed">
+              Tu clave de acceso ha sido modificada y sincronizada. Ya puedes iniciar sesión con tu nueva contraseña.
             </p>
-            <div className="mt-5 inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-              <Sparkles size={13} />
-              Cambio registrado y sincronizado
-            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {errorMsg && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in duration-150">
-                <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-700">
+                <AlertCircle size={15} className="shrink-0 mt-0.5" />
                 <div className="font-medium leading-relaxed">{errorMsg}</div>
               </div>
             )}
 
             {/* Current Password Field */}
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                 Contraseña Actual
               </label>
               <div className="relative">
@@ -258,12 +251,12 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   required
                   autoFocus
                   disabled={isSubmitting}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#461D77] focus:bg-white rounded-2xl px-3.5 py-2.5 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#461D77]/20 transition-all pr-10"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#461D77] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none transition-colors duration-150 ease-out pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
                   title={showCurrentPassword ? 'Ocultar' : 'Mostrar'}
                 >
                   {showCurrentPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -274,7 +267,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             {/* New Password Field */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Nueva Contraseña
                 </label>
                 {newPassword && (
@@ -294,34 +287,31 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
-                  placeholder="Mínimo 4 caracteres (la que tú elijas)"
+                  placeholder="Mínimo 4 caracteres"
                   required
                   disabled={isSubmitting}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#461D77] focus:bg-white rounded-2xl px-3.5 py-2.5 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#461D77]/20 transition-all pr-10"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-[#461D77] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none transition-colors duration-150 ease-out pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
                   title={showNewPassword ? 'Ocultar' : 'Mostrar'}
                 >
                   {showNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
 
-              {/* Password strength bar */}
               {newPassword && (
                 <div className="mt-2 space-y-1">
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex gap-1">
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className={`h-full transition-all duration-300 rounded-full ${
-                        strength.score >= 1 ? strength.color : 'bg-transparent'
-                      }`}
+                      className={`h-full transition-all duration-150 ${strength.score >= 1 ? strength.color : 'bg-transparent'}`}
                       style={{ width: `${Math.min(100, (strength.score / 4) * 100)}%` }}
                     />
                   </div>
                   <p className="text-[10px] text-slate-400">
-                    Recomendación: combina letras, números o símbolos para mayor seguridad.
+                    Combina letras, números o símbolos para mayor seguridad.
                   </p>
                 </div>
               )}
@@ -329,7 +319,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
             {/* Confirm New Password Field */}
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                 Confirmar Nueva Contraseña
               </label>
               <div className="relative">
@@ -348,16 +338,16 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   disabled={isSubmitting}
                   className={`w-full bg-slate-50 border ${
                     confirmPassword && confirmPassword !== newPassword
-                      ? 'border-amber-400 focus:border-amber-500'
+                      ? 'border-amber-500 focus:border-amber-500'
                       : confirmPassword && confirmPassword === newPassword
-                      ? 'border-emerald-400 focus:border-emerald-500'
+                      ? 'border-emerald-500 focus:border-emerald-500'
                       : 'border-slate-200 focus:border-[#461D77]'
-                  } focus:bg-white rounded-2xl px-3.5 py-2.5 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#461D77]/20 transition-all pr-10`}
+                  } focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none transition-colors duration-150 ease-out pr-10`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
                   title={showConfirmPassword ? 'Ocultar' : 'Mostrar'}
                 >
                   {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -365,7 +355,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               </div>
 
               {confirmPassword && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+                <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
                   {confirmPassword === newPassword ? (
                     <span className="text-emerald-600 font-semibold flex items-center gap-1">
                       <Check size={12} /> Las contraseñas coinciden
@@ -385,14 +375,14 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors duration-150 ease-out cursor-pointer disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !newPassword || !confirmPassword}
-                className="px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-[#461D77] to-[#7177EC] hover:from-[#3b1765] hover:to-[#5e63d3] text-white shadow-md shadow-[#461D77]/20 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#461D77] hover:bg-[#36155E] text-white transition-colors duration-150 ease-out cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
               >
                 {isSubmitting ? (
                   <>

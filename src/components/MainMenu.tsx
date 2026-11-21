@@ -185,7 +185,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       opacity: 1, 
       y: 0,
       transition: { 
-        type: 'spring', 
+        type: 'spring' as const, 
         stiffness: 100, 
         damping: 15 
       }
@@ -216,7 +216,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       color: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10 border-[#461D77]/20',
       iconBg: 'bg-[#461D77]/10 text-[#461D77]',
       accentColor: '#461D77',
-      isFeature: true, // Takes more grid columns on desktop for visual weight
+      isFeature: true,
       badge: 'MÓDULO DESPACHO',
       status: 'ACTIVO',
       group: 'supervision' as const
@@ -230,7 +230,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       color: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10 border-[#461D77]/20',
       iconBg: 'bg-[#461D77]/10 text-[#461D77]',
       accentColor: '#461D77',
-      isFeature: true, // Takes more grid columns on desktop for visual weight
+      isFeature: true,
       badge: 'MÓDULO DESPACHO',
       status: 'ACTIVO',
       group: 'supervision' as const
@@ -330,8 +330,6 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       adminOnly: true
     }
   ];
-
-  // Módulo SLIT has been removed as requested
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] relative overflow-x-hidden overflow-y-auto flex flex-col justify-between">
@@ -433,7 +431,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                 {locationModules.map((loc) => {
                   const IconComponent = loc.icon;
                   const isSdA = loc.id === 'SdA';
-                  const isInProcess = !isSdA; // PQL, CLB, PANG are in process
+                  const isInProcess = !isSdA;
                   const isUnlocked = isSdA || unlockedLocations[loc.id];
                   
                   return (
@@ -464,7 +462,6 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                         </div>
                       )}
 
-                      {/* Decorative Apple-style light reflection */}
                       <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-white/20 to-transparent rounded-bl-[6rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
                       
                       <div className="space-y-4 relative z-10 w-full">
@@ -806,15 +803,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                     </p>
                   </div>
 
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setOpenedLocation(null)}
-                      className="px-6 py-3 bg-nucleo text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-md hover:bg-black transition-all active:scale-95"
-                    >
-                      Volver a Módulos
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpenedLocation(null)}
+                    className="px-6 py-3 bg-[#461D77] hover:bg-[#321159] text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-colors shadow-md cursor-pointer"
+                  >
+                    Volver a Zonas Operativas
+                  </button>
                 </motion.div>
               )}
             </div>
@@ -823,16 +818,17 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       {/* FOOTER BAR */}
-      <footer className="relative z-10 py-8 bg-white/40 border-t border-slate-200/55 text-center mt-12">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-[0.2em]">
+      <footer className="relative z-10 py-6 bg-white/60 backdrop-blur-md border-t border-slate-200/80 mt-12">
+        <div className="max-w-[102rem] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
             NOVANDINO &bull; SUBGERENCIA LOGÍSTICA LITIO &bull; DESPACHO LITIO
           </p>
-          <p className="text-[10px] text-slate-400 font-bold tracking-widest">
-            PWA creada y diseñada por Cristian Tapia Espinoza
+          <p className="text-[11px] font-bold text-slate-400">
+            PWA diseñada por Cristian Tapia Espinoza
           </p>
         </div>
       </footer>
+
       {/* PASSWORD PROTECTION FOR IN-PROCESS MODULES (PQL, CLB, PANG) */}
       {locationPasswordPrompt && (
         <PasswordPrompt
@@ -866,4 +862,3 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 };
 
 export default MainMenu;
-

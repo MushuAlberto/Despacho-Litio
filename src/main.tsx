@@ -166,6 +166,44 @@ try {
   console.warn("Failed to apply html2canvas oklab fallback patch:", e);
 }
 
+import { initOfflineSyncLifecycle } from './services/offlineDb';
+
+// Inicializar sincronización offline en IndexedDB (sin registro de Workbox SW)
+try {
+  initOfflineSyncLifecycle();
+} catch (swErr) {
+  console.warn('[Offline] Inicialización diferida:', swErr);
+}
+
+if (typeof window !== 'undefined') {
+  (async () => {
+    try {
+      const hadController = Boolean(navigator.serviceWorker?.controller);
+      let unregistered = false;
+
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        if (registrations.length > 0) {
+          const results = await Promise.all(registrations.map((reg) => reg.unregister()));
+          unregistered = results.some(Boolean);
+        }
+      }
+
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      }
+
+      if ((hadController || unregistered) && !sessionStorage.getItem('sqm_sw_purged_1911')) {
+        sessionStorage.setItem('sqm_sw_purged_1911', '1');
+        window.location.reload();
+      }
+    } catch {
+      // No bloquear el arranque si el navegador restringe Service Workers o Cache API
+    }
+  })();
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
@@ -173,3 +211,4 @@ createRoot(document.getElementById('root')!).render(
     </AuthProvider>
   </StrictMode>,
 );
+

@@ -517,10 +517,10 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
     return `${h}:${String(m).padStart(2, '0')}`;
   };
 
-  const IndicatorRow = ({ label, value, color = 'text-[#461D77]' }: any) => (
-    <div className="flex justify-between items-center py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50/55 px-2 rounded-xl transition-colors">
-      <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{label}</span>
-      <span className={`text-sm font-[900] ${color} tracking-tight uppercase`}>{value}</span>
+  const IndicatorRow = ({ label, value, color = 'text-slate-900' }: any) => (
+    <div className="flex justify-between items-center py-3 border-b border-slate-200 last:border-0 hover:bg-slate-50 px-2 rounded-lg transition-colors duration-150 ease-out">
+      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{label}</span>
+      <span className={`text-sm font-bold font-mono tabular-nums ${color}`}>{value}</span>
     </div>
   );
 
@@ -943,80 +943,79 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
   }, [filteredSlitRows, showAsTimeline]);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] flex flex-col justify-between">
-      
-      {/* Decorative background grids */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#7177ec03_1px,transparent_1px),linear-gradient(to_bottom,#7177ec03_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-70 pointer-events-none z-0" />
-      
-      <div className="relative z-10 w-full max-w-[102rem] mx-auto px-6 py-6 md:py-10 flex-grow flex flex-col gap-6 md:gap-8">
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] text-slate-800 flex flex-col justify-between font-sans">
+      <div className="w-full max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 flex-grow flex flex-col gap-6">
         
         {/* Header bar */}
-        <header className="w-full bg-white/60 backdrop-blur-md rounded-3xl border border-white/50 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
-          <div className="flex items-center gap-4">
+        <header className="w-full bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
             <button 
               type="button" 
               onClick={onBack}
-              className="w-11 h-11 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all cursor-pointer shadow-sm hover:shadow"
+              aria-label="Volver"
+              className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors duration-150 ease-out cursor-pointer"
             >
-              <ArrowLeft size={18} strokeWidth={2.5} />
+              <ArrowLeft size={18} strokeWidth={2} />
             </button>
+            <div className="h-7 w-px bg-slate-200" />
             <div className="space-y-0.5">
-              <span className="inline-flex items-center gap-1.5 bg-[#461D77]/10 text-[#461D77] text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase">
-                <ShieldCheck size={11} /> Módulo Administración Exclusiva
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-[#461D77] uppercase">
+                <ShieldCheck size={12} /> Administración Exclusiva
               </span>
-              <h1 className="text-2xl font-[900] text-slate-800 tracking-tighter uppercase leading-none">ANALÍTICA DE PRODUCTO: SLIT</h1>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
+                Analítica de Producto: SLIT
+              </h1>
             </div>
           </div>
 
-          {/* Quick actions & stats indicators */}
-          <div className="flex flex-wrap items-center gap-4 bg-white/40 border border-white/50 p-2 rounded-2xl">
+          <div className="flex flex-wrap items-center gap-3">
             <button 
               type="button"
               onClick={() => setShowUploadCenter(!showUploadCenter)}
-              className="px-4 py-2 bg-[#461D77] hover:bg-[#5C2B95] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+              className="px-4 py-2.5 bg-gradient-to-r from-[#461D77] to-[#7177EC] hover:opacity-95 text-white rounded-xl text-xs font-bold shadow-md shadow-[#461D77]/20 transition-all duration-150 ease-out flex items-center gap-2 cursor-pointer"
             >
-              <Upload size={13} className={uploadingOps || uploadingArrivals ? "animate-spin" : ""} />
+              <Upload size={14} className={uploadingOps || uploadingArrivals ? "animate-spin" : ""} />
               {showUploadCenter ? 'Ocultar Panel Excel' : 'Cargar Planillas Excel'}
             </button>
 
-            <div className="text-right border-l border-slate-200/60 pl-3">
-              <span className="text-[8px] font-bold text-slate-400 block uppercase tracking-widest">PRODUCTO ACTIVO</span>
-              <span className="text-xs font-black text-[#461D77] bg-[#461D77]/10 px-2.5 py-1 rounded-lg uppercase tracking-wider">LITIO SLIT</span>
+            <div className="border-l border-slate-200 pl-3 flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Producto</span>
+              <span className="text-xs font-bold text-white bg-[#461D77] px-3 py-1 rounded-full shadow-sm">
+                SLIT
+              </span>
             </div>
           </div>
         </header>
 
-        {/* --------------------- CENTRO DE CARGA DIRECTA DE PLANILLAS --------------------- */}
+        {/* Centro de carga de planillas */}
         {showUploadCenter && (
-          <section className="w-full bg-white/75 backdrop-blur-xl p-8 rounded-[2.5rem] border border-[#461D77]/10 shadow-sm space-y-6 animate-fadeIn relative z-20">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-[#461D77]/5 rounded-bl-full pointer-events-none" />
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <section className="w-full bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
               <div className="space-y-0.5">
-                <h2 className="text-base font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                  <FileSpreadsheet className="text-[#461D77]" size={20} />
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <FileSpreadsheet className="text-[#461D77]" size={18} />
                   Centro de Carga y Sincronización Doble (SLIT)
                 </h2>
-                <p className="text-xs text-slate-400 font-medium">
-                  Cargue de forma directa las planillas para actualizar en tiempo real el universo de despacho y tránsitos SLIT.
+                <p className="text-xs text-slate-500">
+                  Cargue las planillas de despacho y tránsito para cruzar métricas en tiempo real.
                 </p>
               </div>
               <button 
                 type="button"
                 onClick={() => setShowUploadCenter(false)}
-                className="text-xs font-black text-[#461D77] hover:text-[#5C2B95] uppercase tracking-wider underline cursor-pointer"
+                className="text-xs font-semibold text-slate-500 hover:text-slate-900 underline underline-offset-4 cursor-pointer transition-colors duration-150"
               >
                 Ocultar panel
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
-              
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {/* UPLOADER 1: INFORME OPERATIVO */}
               <div 
-                className={`border-2 border-dashed rounded-[2rem] p-6 transition-all flex flex-col justify-between min-h-[240px] ${
+                className={`border-2 border-dashed rounded-2xl p-5 transition-colors duration-150 ease-out flex flex-col justify-between min-h-[210px] ${
                   dragOverOps 
                     ? 'border-[#461D77] bg-[#461D77]/5' 
-                    : 'border-slate-200 hover:border-slate-300 bg-white/50'
+                    : 'border-slate-200 hover:border-[#461D77]/50 bg-slate-50/70'
                 }`}
                 onDragOver={(e) => { e.preventDefault(); setDragOverOps(true); }}
                 onDragLeave={() => setDragOverOps(false)}
@@ -1029,43 +1028,42 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                 }}
               >
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-[#461D77]/10 text-[#461D77] rounded-full">
-                        <FileSpreadsheet size={20} />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2.5 bg-white border border-slate-200 text-[#461D77] rounded-xl shadow-sm">
+                        <FileSpreadsheet size={16} />
                       </div>
                       <div>
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">1. Informe Operativo</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Planilla de Base de Datos General</p>
+                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">1. Informe Operativo</h3>
+                        <p className="text-[11px] text-slate-500">Base de Datos General</p>
                       </div>
                     </div>
                     {operationalRawData.length > 0 ? (
-                      <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 uppercase tracking-wide flex items-center gap-1 font-mono">
-                        <CheckCircle2 size={12} /> {operationalRawData.length} Regs
+                      <span className="text-[11px] font-mono font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 flex items-center gap-1 tabular-nums">
+                        <CheckCircle2 size={12} /> {operationalRawData.length} regs
                       </span>
                     ) : (
-                      <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1 uppercase tracking-wide">
+                      <span className="text-[11px] font-mono font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
                         Pendiente
                       </span>
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-500 font-medium leading-normal mb-4">
-                    Contiene las toneladas, equipos programados/reales, cumplimientos, regulaciones totales y dotaciones de aljibes (AX, AY, AV, AW, AH, AI, AJ, AK, AL, AS, M, N, U, V).
+                  <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                    Toneladas, flota programada/real, cumplimientos, regulaciones y dotación de aljibes (cols. M, N, U, V, AH–AY).
                   </p>
                   
-                  {/* Status Indicator inside Zone */}
-                  <div className="text-[11px] font-semibold text-slate-500 bg-slate-50/50 border border-slate-100/80 rounded-xl p-3 flex flex-col gap-1">
-                    <span className="font-bold text-[#461D77] uppercase text-[9px] tracking-wider leading-none mb-1">Filtro automático M9 para SLIT:</span>
-                    <div>• M&Q / JORQUERA detectadas en base: <strong className="text-slate-800 font-bold">{slitData.length} filas coinciden</strong></div>
+                  <div className="text-[11px] text-slate-600 bg-white border border-slate-200 rounded-xl px-3.5 py-2 flex items-center justify-between">
+                    <span>Filtro M&Q / Jorquera detectado:</span>
+                    <strong className="font-mono tabular-nums text-slate-900">{slitData.length} filas</strong>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
-                  <label className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#461D77] to-[#5C2B95] hover:opacity-95 text-white py-3 px-4 rounded-xl text-xs font-black shadow-sm hover:shadow transition-all cursor-pointer select-none">
+                <div className="mt-4 pt-3 border-t border-slate-200 flex flex-col gap-2">
+                  <label className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#461D77] to-[#7177EC] hover:opacity-95 text-white py-2.5 px-4 rounded-xl text-xs font-bold shadow-sm transition-all duration-150 ease-out cursor-pointer select-none">
                     {uploadingOps ? (
                       <>
-                        <Loader2 className="animate-spin" size={14} /> PROCESANDO PLANILLA...
+                        <Loader2 className="animate-spin" size={14} /> Procesando planilla...
                       </>
                     ) : (
                       <>
@@ -1086,14 +1084,14 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                   </label>
 
                   {errorMsgOps && (
-                    <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs font-bold text-red-600 flex items-start gap-2 animate-fadeIn font-mono">
+                    <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs font-medium text-red-700 flex items-start gap-2 font-mono">
                       <AlertCircle size={14} className="shrink-0 mt-0.5" />
                       <span>{errorMsgOps}</span>
                     </div>
                   )}
 
                   {successMsgOps && (
-                    <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-600 flex items-start gap-2 animate-fadeIn font-mono">
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-medium text-emerald-700 flex items-start gap-2 font-mono">
                       <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
                       <span>{successMsgOps}</span>
                     </div>
@@ -1101,13 +1099,12 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                 </div>
               </div>
 
-
               {/* UPLOADER 2: LLEGADA DE EQUIPOS */}
               <div 
-                className={`border-2 border-dashed rounded-[2rem] p-6 transition-all flex flex-col justify-between min-h-[240px] ${
+                className={`border-2 border-dashed rounded-2xl p-5 transition-colors duration-150 ease-out flex flex-col justify-between min-h-[210px] ${
                   dragOverArrivals 
-                    ? 'border-[#3FAA88] bg-[#3FAA88]/5' 
-                    : 'border-slate-200 hover:border-slate-300 bg-white/50'
+                    ? 'border-[#461D77] bg-[#461D77]/5' 
+                    : 'border-slate-200 hover:border-[#461D77]/50 bg-slate-50/70'
                 }`}
                 onDragOver={(e) => { e.preventDefault(); setDragOverArrivals(true); }}
                 onDragLeave={() => setDragOverArrivals(false)}
@@ -1120,43 +1117,42 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                 }}
               >
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-[#3FAA88]/10 text-[#3FAA88] rounded-full">
-                        <Truck size={20} />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm">
+                        <Truck size={16} />
                       </div>
                       <div>
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">2. Llegada de Equipos</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Bitácora de Tránsito / Retornos</p>
+                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">2. Llegada de Equipos</h3>
+                        <p className="text-[11px] text-slate-500">Bitácora de Tránsito / Retornos</p>
                       </div>
                     </div>
                     {arrivalRawData.length > 0 ? (
-                      <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 uppercase tracking-wide flex items-center gap-1 font-mono">
-                        <CheckCircle2 size={12} /> {arrivalRawData.length} Arribos
+                      <span className="text-[11px] font-mono font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 flex items-center gap-1 tabular-nums">
+                        <CheckCircle2 size={12} /> {arrivalRawData.length} arribos
                       </span>
                     ) : (
-                      <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1 uppercase tracking-wide">
+                      <span className="text-[11px] font-mono font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
                         Pendiente
                       </span>
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-500 font-medium leading-normal mb-4">
-                    Registra los tránsitos y arribos físicos de camiones de la bitácora de control de flota, permitiendo analizar la cargabilidad y rotación real por empresa.
+                  <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                    Registra tránsitos y arribos físicos de flota para calcular rotación y cargabilidad real por empresa.
                   </p>
 
-                  {/* Status Indicator inside Zone */}
-                  <div className="text-[11px] font-semibold text-slate-500 bg-slate-50/50 border border-slate-100/80 rounded-xl p-3 flex flex-col gap-1">
-                    <span className="font-bold text-[#3FAA88] uppercase text-[9px] tracking-wider leading-none mb-1">Rotación y Arribos sincronizados:</span>
-                    <div>• Total Arribos en el set: <strong className="text-slate-800 font-bold">{arrivalRawState.length} tránsitos generales</strong></div>
+                  <div className="text-[11px] text-slate-600 bg-white border border-slate-200 rounded-xl px-3.5 py-2 flex items-center justify-between">
+                    <span>Tránsitos generales cargados:</span>
+                    <strong className="font-mono tabular-nums text-slate-900">{arrivalRawState.length}</strong>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
-                  <label className="w-full flex items-center justify-center gap-2 bg-[#3FAA88] hover:bg-[#328e71] text-white py-3 px-4 rounded-xl text-xs font-black shadow-sm hover:shadow transition-all cursor-pointer select-none">
+                <div className="mt-4 pt-3 border-t border-slate-200 flex flex-col gap-2">
+                  <label className="w-full flex items-center justify-center gap-2 bg-[#461D77] hover:bg-[#311042] text-white py-2.5 px-4 rounded-xl text-xs font-bold shadow-sm transition-colors duration-150 ease-out cursor-pointer select-none">
                     {uploadingArrivals ? (
                       <>
-                        <Loader2 className="animate-spin" size={14} /> PROCESANDO BITÁCORA...
+                        <Loader2 className="animate-spin" size={14} /> Procesando bitácora...
                       </>
                     ) : (
                       <>
@@ -1177,59 +1173,56 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                   </label>
 
                   {errorMsgArrivals && (
-                    <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs font-bold text-red-600 flex items-start gap-2 animate-fadeIn font-mono">
+                    <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs font-medium text-red-700 flex items-start gap-2 font-mono">
                       <AlertCircle size={14} className="shrink-0 mt-0.5" />
                       <span>{errorMsgArrivals}</span>
                     </div>
                   )}
 
                   {successMsgArrivals && (
-                    <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-600 flex items-start gap-2 animate-fadeIn font-mono">
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-medium text-emerald-700 flex items-start gap-2 font-mono">
                       <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
                       <span>{successMsgArrivals}</span>
                     </div>
                   )}
                 </div>
               </div>
-
             </div>
           </section>
         )}
 
         {/* Filters control bar */}
-        <section className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-6 relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="p-3 bg-violet-600/10 text-[#461D77] rounded-2xl flex items-center justify-center shrink-0">
-              <Filter size={18} strokeWidth={2.5} />
+        <section className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 px-6 py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-[#461D77]/10 border border-[#461D77]/20 text-[#461D77] rounded-xl shrink-0">
+              <Filter size={16} />
             </div>
             <div>
-              <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">Rango de Consulta Operativa</h2>
-              <p className="text-xs text-slate-400 font-medium leading-none mt-0.5">Defina el alcance temporal para analizar los KPIs de despacho para Litio SLIT.</p>
+              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Rango de Consulta Operativa</h2>
+              <p className="text-xs text-slate-500">Alcance temporal para indicadores SLIT</p>
             </div>
           </div>
 
-          {/* Filter Type Pills & Inputs Container */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 transition-all duration-300">
-            {/* Filter Mode Selector Pills */}
-            <div className="flex bg-slate-100/80 p-1 rounded-2xl border border-slate-200/50 shrink-0">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <div className="inline-flex bg-slate-100 border border-slate-200 p-1 rounded-xl shrink-0">
               <button
                 type="button"
                 onClick={() => setFilterType('all')}
-                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 ease-out cursor-pointer ${
                   filterType === 'all' 
-                    ? 'bg-white text-[#461D77] shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-gradient-to-r from-[#461D77] to-[#7177EC] text-white shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Histórico Completo
+                Histórico
               </button>
               <button
                 type="button"
                 onClick={() => setFilterType('single')}
-                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 ease-out cursor-pointer ${
                   filterType === 'single' 
-                    ? 'bg-white text-[#461D77] shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-gradient-to-r from-[#461D77] to-[#7177EC] text-white shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Día Único
@@ -1237,25 +1230,24 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
               <button
                 type="button"
                 onClick={() => setFilterType('range')}
-                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 ease-out cursor-pointer ${
                   filterType === 'range' 
-                    ? 'bg-white text-[#461D77] shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-gradient-to-r from-[#461D77] to-[#7177EC] text-white shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Rango Personalizado
+                Rango
               </button>
             </div>
 
-            {/* Date selections rendering */}
             <div className="flex flex-wrap items-center gap-3">
               {filterType === 'single' && (
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">FECHA:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold uppercase text-slate-500">Fecha:</span>
                   <select
                     value={singleDate}
                     onChange={(e) => setSingleDate(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs font-black text-[#461D77] outline-none focus:ring-4 focus:ring-[#461D77]/10"
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono font-semibold text-slate-900 outline-none focus:border-[#461D77]"
                   >
                     {uniqueDatesDesc.map(d => (
                       <option key={d} value={d}>{formatDateToCL(d)}</option>
@@ -1265,13 +1257,13 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
               )}
 
               {filterType === 'range' && (
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">DESDE:</span>
+                    <span className="text-[11px] font-semibold uppercase text-slate-500">Desde:</span>
                     <select
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs font-black text-[#461D77] outline-none focus:ring-4 focus:ring-[#461D77]/10"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono font-semibold text-slate-900 outline-none focus:border-[#461D77]"
                     >
                       {uniqueDates.map(d => (
                         <option key={d} value={d}>{formatDateToCL(d)}</option>
@@ -1279,11 +1271,11 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                     </select>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">HASTA:</span>
+                    <span className="text-[11px] font-semibold uppercase text-slate-500">Hasta:</span>
                     <select
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs font-black text-[#461D77] outline-none focus:ring-4 focus:ring-[#461D77]/10"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono font-semibold text-slate-900 outline-none focus:border-[#461D77]"
                     >
                       {uniqueDates.map(d => (
                         <option key={d} value={d}>{formatDateToCL(d)}</option>
@@ -1294,116 +1286,100 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
               )}
 
               {filterType === 'all' && (
-                <div className="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-4 py-2.5 rounded-2xl uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  Consolidadas {uniqueDates.length} jornadas operativas
+                <div className="text-xs font-mono font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-xl tabular-nums">
+                  {uniqueDates.length} jornadas consolidadas
                 </div>
               )}
             </div>
           </div>
         </section>
 
-        {/* ----- AUDITORÍA DE DESEMPEÑO SLIT (MATCHING IMAGE EXACTLY) ----- */}
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
-          
-          {/* Section title & header inside the card container to match exact image framing */}
-          <div className="flex justify-between items-end border-b border-slate-100 pb-3">
-            <div className="space-y-0.5 animate-fadeIn">
-              <p className="text-[10px] font-black text-[#3FAA88] uppercase tracking-[0.3em]">AUDITORÍA DE DESEMPEÑO</p>
-              <h2 className="text-6xl font-[950] text-[#461D77] tracking-tighter leading-none uppercase">SLIT</h2>
+        {/* AUDITORÍA DE DESEMPEÑO SLIT */}
+        <section className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-4">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest">
+                Auditoría de Desempeño
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-none">
+                SLIT
+              </h2>
             </div>
-            <div className="bg-black text-white px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase mb-1">
-              ÍTEM 1 / 7
+
+            <div className="flex items-center gap-3">
+              <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
+                stats.hasAnyDeviation
+                  ? 'bg-red-50 text-red-700 border-red-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}>
+                {stats.hasAnyDeviation ? 'Requiere Justificación Técnica' : 'Cumplimiento Operativo'}
+              </span>
+              <span className="bg-[#461D77] text-white px-3 py-1 rounded-full text-[11px] font-mono font-bold shadow-sm">
+                ÍTEM 1 / 7
+              </span>
             </div>
           </div>
 
-          {/* Centered compliance status pill */}
-          <div className="flex flex-col items-center pt-1">
-            <div className={`px-8 py-2 rounded-full ${stats.hasAnyDeviation ? 'bg-rose-500 text-white animate-pulse' : 'bg-[#3FAA88]/10 text-[#3FAA88]'} text-[10px] font-black tracking-[0.25em] shadow-sm uppercase`}>
-              {stats.hasAnyDeviation ? 'REQUIERE JUSTIFICACIÓN TÉCNICA' : 'CUMPLIMIENTO OPERATIVO EXITOSO'}
+          {/* 4-Col KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Package size={14} className="text-[#461D77]" /> Carga Real
+                </span>
+                <span className={`text-[11px] font-mono tabular-nums font-bold ${stats.tonDiff >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {stats.tonDiff >= 0 ? '+' : ''}{formatNumberWithDecimals(stats.tonDiff, 2)} t
+                </span>
+              </div>
+              <p className="text-3xl font-extrabold font-mono tabular-nums tracking-tight text-slate-900">
+                {formatNumberWithDecimals(stats.realTon, 2)} <span className="text-xs font-sans font-semibold text-slate-500">Ton</span>
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Truck size={14} className="text-[#461D77]" /> Flota Real
+                </span>
+                <span className={`text-[11px] font-mono tabular-nums font-bold ${stats.eqDiff >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {stats.eqDiff >= 0 ? '+' : ''}{stats.eqDiff} EQ
+                </span>
+              </div>
+              <p className="text-3xl font-extrabold font-mono tabular-nums tracking-tight text-slate-900">
+                {stats.realEq} <span className="text-xs font-sans font-semibold text-slate-500">EQ</span>
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#461D77] to-[#311042] text-white border border-white/15 shadow-lg shadow-[#461D77]/20 flex flex-col justify-between gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-violet-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <Target size={14} className="text-[#4FD1C5]" /> Cumplimiento
+                </span>
+                <span className={`text-[11px] font-mono tabular-nums font-bold ${
+                  stats.compliance >= 100 ? 'text-emerald-300' : stats.compliance >= 90 ? 'text-amber-300' : 'text-red-300'
+                }`}>
+                  {(stats.compliance - 100) >= 0 ? '+' : ''}{(stats.compliance - 100).toFixed(1)}%
+                </span>
+              </div>
+              <p className="text-3xl font-extrabold font-mono tabular-nums tracking-tight text-white">
+                {stats.compliance.toFixed(1)}%
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-3">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <MapPin size={14} className="text-[#461D77]" /> Destino Crítico
+              </span>
+              <p className="text-lg font-extrabold text-slate-900 uppercase truncate tracking-tight" title={stats.mainDest}>
+                {stats.mainDest}
+              </p>
             </div>
           </div>
 
-          {/* Cards Row: Grid of 4 cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            {/* Card 1: CARGA REAL */}
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-slate-50 text-slate-500 group-hover:text-[#461D77] rounded-xl transition-colors">
-                  <Package className="w-5 h-5" />
-                </div>
-                <div className={`text-[10px] font-black px-3 py-1 rounded-full ${stats.tonDiff >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} uppercase tracking-tight`}>
-                  {stats.tonDiff >= 0 ? '+' : ''}{formatNumberWithDecimals(stats.tonDiff, 2)} VS PROG
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">CARGA REAL</p>
-                <h3 className="text-3xl font-[900] text-slate-800 tracking-tight">{formatNumberWithDecimals(stats.realTon, 2)} Ton</h3>
-              </div>
-            </div>
-
-            {/* Card 2: FLOTA REAL */}
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-slate-50 text-slate-500 group-hover:text-[#461D77] rounded-xl transition-colors">
-                  <Truck className="w-5 h-5" />
-                </div>
-                <div className={`text-[10px] font-black px-3 py-1 rounded-full ${stats.eqDiff >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} uppercase tracking-tight`}>
-                  {stats.eqDiff >= 0 ? '+' : ''}{stats.eqDiff} VS PROG
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">FLOTA REAL</p>
-                <h3 className="text-3xl font-[900] text-slate-800 tracking-tight">{stats.realEq} EQ</h3>
-              </div>
-            </div>
-
-            {/* Card 3: CUMPLIMIENTO */}
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-slate-50 text-slate-500 group-hover:text-[#461D77] rounded-xl transition-colors">
-                  <Target className="w-5 h-5" />
-                </div>
-                <div className={`text-[10px] font-black px-3 py-1 rounded-full border ${
-                  stats.compliance >= 100 
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                    : stats.compliance >= 90 
-                      ? 'bg-amber-50 text-amber-600 border-amber-100' 
-                      : 'bg-rose-50 text-rose-600 border-rose-100'
-                } uppercase tracking-tight`}>
-                  {(stats.compliance - 100) >= 0 ? '+' : ''}{(stats.compliance - 100).toFixed(1)} %
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">CUMPLIMIENTO</p>
-                <h3 className="text-3xl font-[900] text-[#461D77] tracking-tight">{stats.compliance.toFixed(1)}%</h3>
-              </div>
-            </div>
-
-            {/* Card 4: DESTINO CRÍTICO */}
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-end relative overflow-hidden group">
-              <div className="absolute top-6 right-6">
-                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-xl">
-                  <MapPin className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-[10px] font-black text-[#461D77] uppercase tracking-widest mb-1">DESTINO CRÍTICO</p>
-                <h3 className="text-2xl font-[900] text-[#461D77] tracking-tight uppercase truncate">
-                  {stats.mainDest}
-                </h3>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Lower comparative chart & indicators table layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
-            
-            {/* Chart module: 2/3 width */}
-            <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between">
-              <div className="h-[280px] w-full">
+          {/* Comparative chart & indicators table layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-1">
+            <div className="lg:col-span-8 border border-slate-200 rounded-2xl p-5 bg-white">
+              <div className="h-[260px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
                     data={[
@@ -1414,189 +1390,153 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                     margin={{ top: 20, right: 30, left: 20, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 800, fill: '#94a3b8' }} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#64748b' }} />
                     <YAxis hide />
                     <Legend 
                       verticalAlign="top" 
                       align="right" 
-                      wrapperStyle={{ paddingBottom: '10px', fontSize: '12px', fontWeight: '900' }} 
+                      wrapperStyle={{ paddingBottom: '10px', fontSize: '11px', fontWeight: '600' }} 
                       iconType="square" 
                       iconSize={8} 
                     />
-                    <Bar isAnimationActive={false} dataKey="Programado" fill="#461D77" radius={[6, 6, 6, 6]} barSize={45}>
-                      <LabelList dataKey="Programado" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 2) : v.toLocaleString()} style={{ fill: '#461D77', fontSize: '10px', fontWeight: '900' }} offset={8} />
+                    <Bar isAnimationActive={false} dataKey="Programado" fill="#94a3b8" radius={[6, 6, 0, 0]} barSize={44}>
+                      <LabelList dataKey="Programado" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 2) : v.toLocaleString()} style={{ fill: '#64748b', fontSize: '10px', fontWeight: '700' }} offset={8} />
                     </Bar>
-                    <Bar isAnimationActive={false} dataKey="Real" fill="#3FAA88" radius={[6, 6, 6, 6]} barSize={45}>
-                      <LabelList dataKey="Real" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 2) : v.toLocaleString()} style={{ fill: '#3FAA88', fontSize: '10px', fontWeight: '900' }} offset={8} />
+                    <Bar isAnimationActive={false} dataKey="Real" fill="#461D77" radius={[6, 6, 0, 0]} barSize={44}>
+                      <LabelList dataKey="Real" position="top" formatter={(v: any) => typeof v === 'number' && v > 200 ? formatNumberWithDecimals(v, 2) : v.toLocaleString()} style={{ fill: '#461D77', fontSize: '10px', fontWeight: '700' }} offset={8} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
- 
-            {/* Indicators table: 1/3 width */}
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-center space-y-2">
-              <IndicatorRow label="REGULACIONES" value={`${formatNumberWithDecimals(stats.avgReg, 1)}%`} />
-              <IndicatorRow label="FACTOR CARGA" value={`${stats.avgLoad.toFixed(1)} T/EQ`} />
-              <div className="h-px bg-slate-200/60 w-full my-2" />
-              <IndicatorRow label="TPO. REAL" value={formatHoursToTime(stats.avgFaenaReal)} color={stats.avgFaenaReal > stats.avgFaenaMeta && (stats.avgFaenaReal - stats.avgFaenaMeta) >= (10 / 60) ? 'text-rose-600' : 'text-[#3FAA88]'} />
-              <IndicatorRow label="TPO. META" value={formatHoursToTime(stats.avgFaenaMeta)} />
-            </div>
 
+            <div className="lg:col-span-4 border border-slate-200 rounded-2xl p-5 bg-slate-50 flex flex-col justify-center">
+              <IndicatorRow label="Regulaciones" value={`${formatNumberWithDecimals(stats.avgReg, 1)}%`} />
+              <IndicatorRow label="Factor Carga" value={`${stats.avgLoad.toFixed(1)} T/EQ`} />
+              <IndicatorRow label="Tpo. Real" value={formatHoursToTime(stats.avgFaenaReal)} color={stats.avgFaenaReal > stats.avgFaenaMeta && (stats.avgFaenaReal - stats.avgFaenaMeta) >= (10 / 60) ? 'text-red-600' : 'text-emerald-600'} />
+              <IndicatorRow label="Tpo. Meta" value={formatHoursToTime(stats.avgFaenaMeta)} />
+            </div>
           </div>
 
-          {/* Persistence date flag label at the bottom outer corner */}
-          <div className="flex justify-end pr-1 pt-1">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              PERSISTENCIA LOCAL: {filterType === 'single' ? singleDate : filterType === 'range' ? `${startDate} / ${endDate}` : 'CONSOLIDADO GENERAL'} &bull; SLIT
+          <div className="flex justify-end border-t border-slate-200 pt-3">
+            <span className="text-[11px] font-mono text-slate-500 uppercase">
+              Persistencia local: {filterType === 'single' ? formatDateToCL(singleDate) : filterType === 'range' ? `${formatDateToCL(startDate)} / ${formatDateToCL(endDate)}` : 'Consolidado General'} · SLIT
             </span>
           </div>
+        </section>
 
-        </div>
-
-        {/* EMPALME DE DOS ARCHIVOS: ANÁLISIS CRUZADO OPERATIVO VS TRÁNSITO (Llegada de Equipos & Informe Operativo) */}
-        <section className="bg-gradient-to-br from-[#fdfcfb] to-[#eceaf3] p-8 rounded-[2.5rem] border border-[#461D77]/10 shadow-sm space-y-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#7177ec]/5 rounded-full blur-[80px]" />
-          
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200">
+        {/* ANÁLISIS CRUZADO OPERATIVO VS TRÁNSITO */}
+        <section className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
             <div className="space-y-1">
-              <span className="inline-flex items-center gap-1.5 bg-[#461D77]/10 text-[#461D77] text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase">
-                <Truck size={10} className="animate-bounce" /> Integración de Dos Archivos Excel
+              <span className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest">
+                Cruce Operativo vs Bitácora
               </span>
-              <h2 className="text-xl font-[900] text-slate-800 tracking-tight uppercase">Analítica Cruzacional: Informe Operativo vs Tránsito</h2>
-              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                Intersección inteligente de datos declarados (Despacho SLIT) con los registros físicos cargados del archivo de Llegada de Equipos.
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                Analítica Cruzacional: Despacho vs Tránsito
+              </h2>
+              <p className="text-xs text-slate-500">
+                Intersección de toneladas declaradas con arribos físicos registrados en Llegada de Equipos.
               </p>
             </div>
             
-            <div className="text-xs font-bold text-slate-400 font-mono bg-white border border-slate-200 shadow-sm px-4 py-2 rounded-2xl flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
-              Estado de Sincronización: <span className={crossStats.hasArrivalsData ? "text-emerald-600 font-black" : "text-amber-500 font-black"}>{crossStats.hasArrivalsData ? "CONECTADO" : "PENDIENTE DE CARGA"}</span>
+            <div className="text-xs font-mono bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-full flex items-center gap-2 text-slate-600">
+              <span>Estado cruce:</span>
+              <span className={crossStats.hasArrivalsData ? "text-emerald-600 font-bold" : "text-amber-600 font-bold"}>
+                {crossStats.hasArrivalsData ? "CONECTADO" : "PENDIENTE"}
+              </span>
             </div>
           </div>
 
           {!crossStats.hasArrivalsData ? (
-            <div className="p-8 bg-white/60 border border-slate-200 rounded-[2rem] text-center max-w-2xl mx-auto space-y-4">
-              <div className="w-16 h-16 bg-amber-500/10 text-amber-600 rounded-full flex items-center justify-center mx-auto">
-                <Truck size={28} />
+            <div className="p-8 bg-slate-50 border border-slate-200 rounded-2xl text-center max-w-2xl mx-auto space-y-3">
+              <div className="w-12 h-12 bg-white border border-slate-200 text-amber-600 rounded-2xl shadow-sm flex items-center justify-center mx-auto">
+                <Truck size={22} />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-black text-slate-800 uppercase tracking-tight">Archivo de Llegada de Equipos no Detectado</h3>
-                <p className="text-xs text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
-                  Para habilitar y sincronizar las capas de gráficos de rotación de flota y cargabilidad promedio, suba primero el archivo Excel correspondiente en el módulo de <strong className="text-[#461D77] font-black cursor-pointer hover:underline">"Llegada de Equipos"</strong>. El sistema cruzará ambas fuentes automáticamente.
+                <h3 className="text-sm font-bold text-slate-900">Archivo de Llegada de Equipos no detectado</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Cargue la planilla de tránsito en el panel superior o en el módulo <strong className="text-[#461D77]">Llegada de Equipos</strong> para habilitar rotación y cargabilidad real.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="space-y-8">
-              {/* CROSS KPIs CARDS */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                {/* 1. Physical Arrivals */}
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-50/50 rounded-bl-2xl" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Arribos Físicos de Flota</span>
-                    <span className="text-indigo-600 bg-indigo-50 p-2.5 rounded-xl text-xs"><Truck size={14} /></span>
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-2xl font-[900] text-slate-800 tracking-tight">{crossStats.totalArrivals} Arribos</h3>
-                    <p className="text-[11px] font-bold text-slate-500 mt-1">Registrados en bitácora de tránsito.</p>
-                  </div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Truck size={14} className="text-[#461D77]" /> Arribos Físicos
+                  </span>
+                  <h3 className="text-2xl font-extrabold font-mono tabular-nums text-slate-900">{crossStats.totalArrivals}</h3>
+                  <p className="text-[11px] text-slate-500">Registrados en bitácora de tránsito</p>
                 </div>
 
-                {/* 2. Rotation / Trips per Truck */}
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-purple-50/50 rounded-bl-2xl" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rotación (Promedio Viajes)</span>
-                    <span className="text-[#461D77] bg-[#461D77]/10 p-2.5 rounded-xl text-xs"><TrendingUp size={14} /></span>
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-2xl font-[900] text-slate-800 tracking-tight">{crossStats.globalTripsPerTruck} Viajes / Eq</h3>
-                    <p className="text-[11px] font-bold text-slate-500 mt-1">Viajes por camión activo en las jornadas.</p>
-                  </div>
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <TrendingUp size={14} className="text-[#461D77]" /> Rotación Promedio
+                  </span>
+                  <h3 className="text-2xl font-extrabold font-mono tabular-nums text-[#461D77]">{crossStats.globalTripsPerTruck} <span className="text-xs font-sans font-medium text-slate-500">viajes/eq</span></h3>
+                  <p className="text-[11px] text-slate-500">Viajes por camión activo</p>
                 </div>
 
-                {/* 3. Load Factor (Tons/Trip) */}
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-teal-50/50 rounded-bl-2xl" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cargabilidad Real Promedio</span>
-                    <span className="text-[#3FAA88] bg-[#3FAA88]/10 p-2.5 rounded-xl text-xs"><Scale size={14} /></span>
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-2xl font-[900] text-slate-800 tracking-tight">{crossStats.globalTonsPerTrip} Tons / Viaje</h3>
-                    <p className="text-[11px] font-bold text-slate-500 mt-1">Peso transportado promedio por viaje.</p>
-                  </div>
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Scale size={14} className="text-[#461D77]" /> Cargabilidad Real
+                  </span>
+                  <h3 className="text-2xl font-extrabold font-mono tabular-nums text-slate-900">{crossStats.globalTonsPerTrip} <span className="text-xs font-sans font-medium text-slate-500">Ton/viaje</span></h3>
+                  <p className="text-[11px] text-slate-500">Peso promedio por tránsito</p>
                 </div>
-
               </div>
 
-              {/* CROSS SPECIALIST CHARTS */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
-                {/* Visual 1: Rotación (Viajes/Vehículo) por Empresa */}
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-[0.2em]">EFICIENCIA OPERATIVA JORNAL</span>
-                    <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase leading-none mt-1 mb-6">Rotación de Flota (Viajes por Camión por Empresa)</h3>
-                  </div>
-
-                  <div className="h-64 w-full">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="border border-slate-200 rounded-2xl p-5 bg-white">
+                  <span className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest">Eficiencia por Flota</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Rotación de Flota (Viajes/Camión)</h3>
+                  <div className="h-60 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={crossCompanyAnalytics} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                      <BarChart data={crossCompanyAnalytics} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip formatter={(value) => [`${value} viajes/eq`, 'Rotación']} />
-                        <Bar dataKey="tripsPerTruck" name="Viajes/Camión" fill="#5c3db5" radius={[4, 4, 0, 0]} barSize={25} />
+                        <Bar dataKey="tripsPerTruck" name="Viajes/Camión" fill="#461D77" radius={[6, 6, 0, 0]} barSize={28} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                {/* Visual 2: Factor de Carga (Tons/Trip) por Empresa */}
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <span className="text-[9px] font-black text-teal-600 uppercase tracking-[0.2em]">APROVECHAMIENTO ÚTIL</span>
-                    <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase leading-none mt-1 mb-6">Factor de Carga Promedio (Kilogramos/Viaje)</h3>
-                  </div>
-
-                  <div className="h-64 w-full">
+                <div className="border border-slate-200 rounded-2xl p-5 bg-white">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aprovechamiento Útil</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Factor de Carga Promedio (Ton/Viaje)</h3>
+                  <div className="h-60 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={crossCompanyAnalytics} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                      <BarChart data={crossCompanyAnalytics} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip formatter={(value) => [`${value} Ton/Viaje`, 'Factor de Carga']} />
-                        <Bar dataKey="tonsPerTrip" name="Tons/Viaje" fill="#3FAA88" radius={[4, 4, 0, 0]} barSize={25} />
+                        <Bar dataKey="tonsPerTrip" name="Tons/Viaje" fill="#64748b" radius={[6, 6, 0, 0]} barSize={28} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-
               </div>
 
-              {/* Visual 3 (Optional Timeline Integration on Historical view) */}
               {showAsTimeline && (
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm w-full">
-                  <div>
-                    <span className="text-[9px] font-black text-purple-600 uppercase tracking-[0.2em]">CORRELACIÓN TEMPORAL</span>
-                    <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase leading-none mt-1 mb-6">Sincronía de Ritmos: Toneladas Reales vs Frecuencia de Arribos en el Tiempo</h3>
-                  </div>
-
-                  <div className="h-64 w-full">
+                <div className="border border-slate-200 rounded-2xl p-5 bg-white w-full">
+                  <span className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest">Correlación Temporal</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Toneladas Reales vs Frecuencia de Arribos</h3>
+                  <div className="h-60 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={crossTimelineData} margin={{ top: 20, right: 15, left: -20, bottom: 5 }}>
+                      <LineChart data={crossTimelineData} margin={{ top: 10, right: 15, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="dateLabel" tick={{ fontSize: 9, fill: '#64748b', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                        <YAxis yAxisId="left" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: '#5c3db5' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="dateLabel" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                        <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#461D77' }} axisLine={false} tickLine={false} />
                         <Tooltip />
                         <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '10px' }} />
-                        <Line yAxisId="left" type="monotone" dataKey="RealTon" name="Tonelaje Real (Ton)" stroke="#3FAA88" strokeWidth={3} dot={{ r: 4 }} />
-                        <Line yAxisId="right" type="monotone" dataKey="Arribos" name="Arribos Físicos (Frecuencia)" stroke="#5c3db5" strokeWidth={3} dot={{ r: 4 }} />
+                        <Line yAxisId="left" type="monotone" dataKey="RealTon" name="Tonelaje Real (Ton)" stroke="#64748b" strokeWidth={2.5} dot={{ r: 3 }} />
+                        <Line yAxisId="right" type="monotone" dataKey="Arribos" name="Arribos Físicos" stroke="#461D77" strokeWidth={2.5} dot={{ r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -1606,408 +1546,342 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
           )}
         </section>
 
-        {/* Error / No Data warning */}
+        {/* No data warning or Main Charts */}
         {slitData.length === 0 ? (
-          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-8 rounded-3xl text-center space-y-3">
-            <Eye size={36} className="mx-auto text-amber-500" />
-            <h3 className="text-base font-black uppercase tracking-wider">SIN REGISTROS DE PRODUCTO "SLIT"</h3>
-            <p className="text-xs font-semibold text-slate-500 max-w-sm mx-auto">
-              No se han encontrado registros del producto SLIT en la base de datos Excel actualmente guardada en el sistema. Debe cargar un Excel con este producto en el módulo de "Informe Operativo" para habilitar las capas de gráficos.
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 text-slate-900 p-8 text-center space-y-2.5">
+            <Eye size={28} className="mx-auto text-amber-600" />
+            <h3 className="text-sm font-bold uppercase tracking-wider">Sin registros de producto "SLIT"</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Cargue una planilla operativa que contenga registros SLIT para habilitar los gráficos y la tabla diaria.
             </p>
           </div>
         ) : (
-          <div className="space-y-8">
-            
-            {/* CHARTS CONTAINER GRID */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
-              {/* CHART 1: Tonelaje total programado vs tonelaje total real (General) */}
-              <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* CHART 1 */}
+              <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 flex flex-col justify-between">
                 <div>
-                  <span className="text-[9px] font-black text-[#461D77] uppercase tracking-[0.2em]">RENDIMIENTO GENERAL</span>
-                  <h3 className="text-lg font-black text-slate-800 tracking-tight uppercase leading-none mt-1 mb-6">Tons: Programado vs Real (Consolidado)</h3>
+                  <span className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest">Rendimiento General</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Tons: Programado vs Real (Consolidado)</h3>
                 </div>
-                
-                <div className="h-72 w-full">
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     {showAsTimeline ? (
-                      // Area Chart over historical days
-                      <AreaChart data={timelineData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                      <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="dateLabel" tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="dateLabel" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip />
-                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '10px', fontWeight: 'bold' }} />
-                        <Area type="monotone" dataKey="ProgramadoTon" name="Prog Ton" stroke="#461D77" fillOpacity={0.05} fill="#461D77" strokeWidth={2} />
-                        <Area type="monotone" dataKey="RealTon" name="Real Ton" stroke="#3FAA88" fillOpacity={0.15} fill="#3FAA88" strokeWidth={3} />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '10px', fontWeight: 600 }} />
+                        <Area type="monotone" dataKey="ProgramadoTon" name="Prog Ton" stroke="#94a3b8" fillOpacity={0.1} fill="#94a3b8" strokeWidth={2} />
+                        <Area type="monotone" dataKey="RealTon" name="Real Ton" stroke="#461D77" fillOpacity={0.16} fill="#461D77" strokeWidth={2.5} />
                       </AreaChart>
                     ) : (
-                      // Double Column Chart comparing general tons for the day
-                      <BarChart data={[{ name: 'General', Programado: stats.progTon, Real: stats.realTon }]} barGap={12} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                      <BarChart data={[{ name: 'General', Programado: stats.progTon, Real: stats.realTon }]} barGap={12} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip />
-                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '10px', fontWeight: 'bold' }} />
-                        <Bar dataKey="Programado" name="Prog Ton" fill="#461D77" radius={[4, 4, 0, 0]} barSize={55} />
-                        <Bar dataKey="Real" name="Real Ton" fill="#3FAA88" radius={[4, 4, 0, 0]} barSize={55} />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '10px', fontWeight: 600 }} />
+                        <Bar dataKey="Programado" name="Prog Ton" fill="#94a3b8" radius={[6, 6, 0, 0]} barSize={52} />
+                        <Bar dataKey="Real" name="Real Ton" fill="#461D77" radius={[6, 6, 0, 0]} barSize={52} />
                       </BarChart>
                     )}
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* CHART 2: Tonelaje total programadovs tonelaje total real (por empresas) */}
-              <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
+              {/* CHART 2 */}
+              <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 flex flex-col justify-between">
                 <div>
-                  <span className="text-[9px] font-black text-[#3FAA88] uppercase tracking-[0.2em]">EFICIENCIA POR TRANSPORTISTA</span>
-                  <h3 className="text-lg font-black text-slate-800 tracking-tight uppercase leading-none mt-1 mb-6">Tons: Programado vs Real (Por Empresas)</h3>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Por Transportista</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Tons: Programado vs Real (Por Empresas)</h3>
                 </div>
-
-                <div className="h-72 w-full">
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={companyTonnageData} barGap={4} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                    <BarChart data={companyTonnageData} barGap={4} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                       <Tooltip />
-                      <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '10px', fontWeight: 'bold' }} />
-                      <Bar dataKey="Programado" name="Prog Ton" fill="#461D77" radius={[4, 4, 0, 0]} barSize={25} />
-                      <Bar dataKey="Real" name="Real Ton" fill="#3FAA88" radius={[4, 4, 0, 0]} barSize={25} />
+                      <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '10px', fontWeight: 600 }} />
+                      <Bar dataKey="Programado" name="Prog Ton" fill="#94a3b8" radius={[6, 6, 0, 0]} barSize={26} />
+                      <Bar dataKey="Real" name="Real Ton" fill="#461D77" radius={[6, 6, 0, 0]} barSize={26} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* CHART 3: Equipos real vs programados (General) */}
-              <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
+              {/* CHART 3 */}
+              <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 flex flex-col justify-between">
                 <div>
-                  <span className="text-[9px] font-black text-[#7177EC] uppercase tracking-[0.2em]">LOGÍSTICA DE ACCESO</span>
-                  <h3 className="text-lg font-black text-slate-800 tracking-tight uppercase leading-none mt-1 mb-6">Equipos: Programado vs Real (Consolidado)</h3>
+                  <span className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest">Logística de Acceso</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Equipos: Programado vs Real (Consolidado)</h3>
                 </div>
-
-                <div className="h-72 w-full">
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     {showAsTimeline ? (
-                      // Line chart comparing total equipment over dates
-                      <LineChart data={timelineData} margin={{ top: 20, right: 15, left: -20, bottom: 5 }}>
+                      <LineChart data={timelineData} margin={{ top: 10, right: 15, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="dateLabel" tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="dateLabel" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip />
-                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '10px', fontWeight: 'bold' }} />
-                        <Line type="step" dataKey="ProgramadoEq" name="Prog EQ" stroke="#461D77" strokeWidth={2} dot={{ r: 4 }} />
-                        <Line type="monotone" dataKey="RealEq" name="Real EQ" stroke="#3FAA88" strokeWidth={3} dot={{ r: 5 }} />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '10px', fontWeight: 600 }} />
+                        <Line type="step" dataKey="ProgramadoEq" name="Prog EQ" stroke="#94a3b8" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="RealEq" name="Real EQ" stroke="#461D77" strokeWidth={2.5} dot={{ r: 4 }} />
                       </LineChart>
                     ) : (
-                      // Single day bar comparison for overall transport equipment
-                      <BarChart data={[{ name: 'General', Programado: stats.progEq, Real: stats.realEq }]} barGap={12} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                      <BarChart data={[{ name: 'General', Programado: stats.progEq, Real: stats.realEq }]} barGap={12} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip />
-                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '10px', fontWeight: 'bold' }} />
-                        <Bar dataKey="Programado" name="Prog EQ" fill="#461D77" radius={[4, 4, 0, 0]} barSize={55} />
-                        <Bar dataKey="Real" name="Real EQ" fill="#3FAA88" radius={[4, 4, 0, 0]} barSize={55} />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '10px', fontWeight: 600 }} />
+                        <Bar dataKey="Programado" name="Prog EQ" fill="#94a3b8" radius={[6, 6, 0, 0]} barSize={52} />
+                        <Bar dataKey="Real" name="Real EQ" fill="#461D77" radius={[6, 6, 0, 0]} barSize={52} />
                       </BarChart>
                     )}
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* CHART 4: Equipos real vs programados por empresas */}
-              <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
+              {/* CHART 4 */}
+              <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 flex flex-col justify-between">
                 <div>
-                  <span className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em]">OPERADORES EN FAENA</span>
-                  <h3 className="text-lg font-black text-slate-800 tracking-tight uppercase leading-none mt-1 mb-6">Equipos: Programado vs Real (Por Empresas)</h3>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Operadores en Faena</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Equipos: Programado vs Real (Por Empresas)</h3>
                 </div>
-
-                <div className="h-72 w-full">
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={companyEquiposData} barGap={4} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                    <BarChart data={companyEquiposData} barGap={4} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                       <Tooltip />
-                      <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '10px', fontWeight: 'bold' }} />
-                      <Bar dataKey="Programado" name="Prog EQ" fill="#461D77" radius={[4, 4, 0, 0]} barSize={25} />
-                      <Bar dataKey="Real" name="Real EQ" fill="#3FAA88" radius={[4, 4, 0, 0]} barSize={25} />
+                      <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '10px', fontWeight: 600 }} />
+                      <Bar dataKey="Programado" name="Prog EQ" fill="#94a3b8" radius={[6, 6, 0, 0]} barSize={26} />
+                      <Bar dataKey="Real" name="Real EQ" fill="#461D77" radius={[6, 6, 0, 0]} barSize={26} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-
             </div>
 
-            {/* BRAND NEW SECTION: ANALÍTICA DE INDICADORES EN FAENA (M, N, U, V, AH, AI, AJ, AK, AL, AS, AV, AW, AX, AY) */}
-            <section className="bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-[#3FAA88]/5 rounded-full blur-[90px] pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#461D77]/5 rounded-full blur-[90px] pointer-events-none" />
-              
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200">
-                <div className="space-y-1">
-                  <span className="inline-flex items-center gap-1.5 bg-[#3FAA88]/10 text-[#3FAA88] text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase">
-                    <BarChart3 size={10} /> Analítica Avanzada Integrada
-                  </span>
-                  <h2 className="text-xl font-[900] text-slate-800 tracking-tight uppercase text-transparent bg-clip-text bg-gradient-to-r from-[#461D77] to-[#3FAA88]">Control de Indicadores Críticos (Variables Operativas)</h2>
-                  <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                    Sincronización de tiempos en interior faena, factores de carga promedio, asignación de flota de aljibes (M&Q y Jorquera), y control de calibraciones/regulaciones.
-                  </p>
-                </div>
+            {/* CONTROL DE INDICADORES CRÍTICOS */}
+            <section className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 p-6 space-y-6">
+              <div className="pb-4 border-b border-slate-200">
+                <span className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest flex items-center gap-1.5">
+                  <BarChart3 size={12} /> Variables Operativas Faena
+                </span>
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight mt-0.5">
+                  Control de Indicadores Críticos
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Tiempos en interior faena, factor de carga promedio, aljibes y regulaciones.
+                </p>
               </div>
 
-              {/* SPECIAL KPI OVERVIEW CARD GRID */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                
-                {/* Time Inside Faena */}
+              {/* 4-Col KPI Overview */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {(() => {
                   const isTimeOver = customColumnsData.summary.timeReal > 0 && 
                     customColumnsData.summary.timeMeta > 0 && 
                     (customColumnsData.summary.timeReal - customColumnsData.summary.timeMeta) >= (10 / 60);
                   return (
-                    <div className={`p-6 rounded-3xl border shadow-sm relative overflow-hidden flex flex-col justify-between ${isTimeOver ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-slate-100'}`}>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tiempo Interior Faena</span>
-                          <h4 className={`text-xl font-black font-mono ${isTimeOver ? 'text-rose-600' : 'text-slate-800'}`}>
-                            {customColumnsData.summary.timeReal.toFixed(2)}h
-                          </h4>
-                        </div>
-                        <span className={`p-2 rounded-xl text-xs ${isTimeOver ? 'text-rose-600 bg-rose-100' : 'text-purple-600 bg-purple-50'}`}>
-                          <Clock size={16} />
-                        </span>
+                    <div className={`p-5 rounded-2xl border flex flex-col justify-between gap-2 ${isTimeOver ? 'bg-red-50/70 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Tiempo Interior Faena</span>
+                        <Clock size={14} className={isTimeOver ? 'text-red-600' : 'text-[#461D77]'} />
                       </div>
-                      <div className="mt-4 pt-3 border-t border-slate-50 text-[10px] font-bold text-slate-500 flex justify-between items-center">
-                        <span>Meta Planificada (AX):</span>
-                        <div className="flex items-center gap-1">
-                          <span className="font-mono text-slate-700 font-black">{customColumnsData.summary.timeMeta.toFixed(2)}h</span>
-                          {isTimeOver && (
-                            <span className="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200 uppercase">
-                              +10m
-                            </span>
-                          )}
-                        </div>
+                      <h4 className={`text-2xl font-extrabold font-mono tabular-nums ${isTimeOver ? 'text-red-600' : 'text-slate-900'}`}>
+                        {customColumnsData.summary.timeReal.toFixed(2)}h
+                      </h4>
+                      <div className="text-[11px] text-slate-500 flex justify-between items-center font-mono tabular-nums">
+                        <span>Meta (AX):</span>
+                        <span className="font-semibold text-slate-900">
+                          {customColumnsData.summary.timeMeta.toFixed(2)}h
+                          {isTimeOver && <span className="ml-1.5 text-red-600 font-bold">+10m</span>}
+                        </span>
                       </div>
                     </div>
                   );
                 })()}
 
-                {/* Average Load Factor */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Promedio Carga Real</span>
-                      <h4 className="text-xl font-black text-slate-800 font-mono">
-                        {customColumnsData.summary.loadReal.toFixed(1)} T
-                      </h4>
-                    </div>
-                    <span className="text-teal-600 bg-teal-50 p-2 rounded-xl text-xs"><Scale size={16} /></span>
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Promedio Carga Real</span>
+                    <Scale size={14} className="text-[#461D77]" />
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-50 text-[10px] font-bold text-slate-500 flex justify-between items-center">
-                    <span>Carga Meta (AV):</span>
-                    <span className="font-mono text-slate-700 font-black">{customColumnsData.summary.loadMeta.toFixed(1)} T</span>
+                  <h4 className="text-2xl font-extrabold font-mono tabular-nums text-slate-900">
+                    {customColumnsData.summary.loadReal.toFixed(1)} T
+                  </h4>
+                  <div className="text-[11px] text-slate-500 flex justify-between items-center font-mono tabular-nums">
+                    <span>Meta (AV):</span>
+                    <span className="font-semibold text-slate-900">{customColumnsData.summary.loadMeta.toFixed(1)} T</span>
                   </div>
                 </div>
 
-                {/* Aljibes Allocated */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Aljibes en Faena</span>
-                      <h4 className="text-xl font-black text-slate-800 font-mono">
-                        {(customColumnsData.summary.mqAljibesReal + customColumnsData.summary.jorqueraAljibesReal).toLocaleString()} EQ
-                      </h4>
-                    </div>
-                    <span className="text-blue-600 bg-blue-50 p-2 rounded-xl text-xs"><Truck size={16} /></span>
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Aljibes en Faena</span>
+                    <Truck size={14} className="text-[#461D77]" />
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-50 text-[10px] font-bold text-slate-500 flex justify-between items-center">
-                    <span>Programados (Col M+U):</span>
-                    <span className="font-mono text-slate-700 font-black">{(customColumnsData.summary.mqAljibesProg + customColumnsData.summary.jorqueraAljibesProg).toLocaleString()} EQ</span>
+                  <h4 className="text-2xl font-extrabold font-mono tabular-nums text-slate-900">
+                    {(customColumnsData.summary.mqAljibesReal + customColumnsData.summary.jorqueraAljibesReal).toLocaleString()} EQ
+                  </h4>
+                  <div className="text-[11px] text-slate-500 flex justify-between items-center font-mono tabular-nums">
+                    <span>Prog. (M+U):</span>
+                    <span className="font-semibold text-slate-900">{(customColumnsData.summary.mqAljibesProg + customColumnsData.summary.jorqueraAljibesProg).toLocaleString()} EQ</span>
                   </div>
                 </div>
 
-                {/* Regulations Total */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Regulaciones Totales</span>
-                      <h4 className="text-xl font-black text-slate-800 font-mono">
-                        {customColumnsData.summary.totalRegulations} Regs
-                      </h4>
-                    </div>
-                    <span className="text-amber-500 bg-amber-50 p-2 rounded-xl text-xs"><ClipboardCheck size={16} /></span>
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Regulaciones Totales</span>
+                    <ClipboardCheck size={14} className="text-[#461D77]" />
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-50 text-[10px] font-bold text-slate-500 flex justify-between items-center">
-                    <span>Tendencia % Cumpl.:</span>
-                    <span className="font-mono text-slate-700 font-black">{customColumnsData.summary.compliancePercent}%</span>
+                  <h4 className="text-2xl font-extrabold font-mono tabular-nums text-slate-900">
+                    {customColumnsData.summary.totalRegulations}
+                  </h4>
+                  <div className="text-[11px] text-slate-500 flex justify-between items-center font-mono tabular-nums">
+                    <span>Cumpl. prom.:</span>
+                    <span className="font-semibold text-[#461D77]">{customColumnsData.summary.compliancePercent}%</span>
                   </div>
                 </div>
-
               </div>
 
-              {/* ADVANCED CHARTS CONTAINER GRID */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
-                {/* 1. Cycle Times: Meta vs Real */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                  <div className="mb-6">
-                    <span className="text-[9px] font-black text-purple-600 uppercase tracking-[0.2em]">EFICIENCIA DE TIEMPO</span>
-                    <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase leading-none mt-1">Tiempo Interior Faena (Real AY vs Meta AX en Horas)</h3>
-                  </div>
-
-                  <div className="h-64 w-full">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="border border-slate-200 rounded-2xl p-5 bg-white">
+                  <span className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest">Eficiencia de Tiempo</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Tiempo Interior Faena (Real AY vs Meta AX)</h3>
+                  <div className="h-60 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={customColumnsData.timeTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="colorTimeReal" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#461D77" stopOpacity={0.15}/>
-                            <stop offset="95%" stopColor="#461D77" stopOpacity={0}/>
-                          </linearGradient>
-                          <linearGradient id="colorTimeMeta" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#7177ec" stopOpacity={0.05}/>
-                            <stop offset="95%" stopColor="#7177ec" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="dateLabel" tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="dateLabel" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip formatter={(value) => [`${value} hrs`, 'Tiempo']} />
-                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '9px', fontWeight: 'bold' }} />
-                        <Area type="monotone" dataKey="timeInsideFaenaMeta" name="Meta (AX)" stroke="#7177ec" strokeWidth={2} fillOpacity={1} fill="url(#colorTimeMeta)" />
-                        <Area type="monotone" dataKey="timeInsideFaenaReal" name="Real (AY)" stroke="#461D77" strokeWidth={3} fillOpacity={1} fill="url(#colorTimeReal)" />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '10px', fontWeight: 600 }} />
+                        <Area type="monotone" dataKey="timeInsideFaenaMeta" name="Meta (AX)" stroke="#94a3b8" strokeWidth={2} fillOpacity={0.1} fill="#94a3b8" />
+                        <Area type="monotone" dataKey="timeInsideFaenaReal" name="Real (AY)" stroke="#461D77" strokeWidth={2.5} fillOpacity={0.16} fill="#461D77" />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                {/* 2. Load Factor: Meta vs Real */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                  <div className="mb-6">
-                    <span className="text-[9px] font-black text-teal-600 uppercase tracking-[0.2em]">RENDIMIENTO UNITARIO DE CARGA</span>
-                    <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase leading-none mt-1">Factor Promedio de Carga (Real AW vs Meta AV)</h3>
-                  </div>
-
-                  <div className="h-64 w-full">
+                <div className="border border-slate-200 rounded-2xl p-5 bg-white">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Rendimiento Unitario</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Factor Promedio de Carga (Real AW vs Meta AV)</h3>
+                  <div className="h-60 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={customColumnsData.timeTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="dateLabel" tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="dateLabel" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip formatter={(value) => [`${value} Ton`, 'Promedio Carga']} />
-                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '9px', fontWeight: 'bold' }} />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '10px', fontWeight: 600 }} />
                         <Line type="monotone" dataKey="avgLoadMeta" name="Meta (AV)" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
-                        <Line type="monotone" dataKey="avgLoadReal" name="Real (AW)" stroke="#3FAA88" strokeWidth={3} dot={{ r: 5 }} />
+                        <Line type="monotone" dataKey="avgLoadReal" name="Real (AW)" stroke="#461D77" strokeWidth={2.5} dot={{ r: 4 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                {/* 3. Aljibes Allocation: M&Q vs Jorquera */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                  <div className="mb-6">
-                    <span className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em]">EQUIPAMIENTO DE APOYO VIAL</span>
-                    <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase leading-none mt-1">Asignación de Aljibes de Agua (Programado vs Real)</h3>
-                  </div>
-
-                  <div className="h-64 w-full">
+                <div className="border border-slate-200 rounded-2xl p-5 bg-white">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Apoyo Vial</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Asignación de Aljibes (Prog vs Real)</h3>
+                  <div className="h-60 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={customColumnsData.aljibesData} barGap={8} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip />
-                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '9px', fontWeight: 'bold' }} />
-                        <Bar dataKey="Programado" name="Prog Aljibes (Col M/U)" fill="#7177ec" radius={[4, 4, 0, 0]} barSize={40} />
-                        <Bar dataKey="Real" name="Real Aljibes (Col N/V)" fill="#461D77" radius={[4, 4, 0, 0]} barSize={40} />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '10px', fontWeight: 600 }} />
+                        <Bar dataKey="Programado" name="Prog Aljibes (Col M/U)" fill="#94a3b8" radius={[6, 6, 0, 0]} barSize={36} />
+                        <Bar dataKey="Real" name="Real Aljibes (Col N/V)" fill="#461D77" radius={[6, 6, 0, 0]} barSize={36} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                {/* 4. Regulations & Compliance Trend */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                  <div className="mb-6">
-                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em]">CONTROL DE CUMPLIMIENTO & CALIBRACIONES</span>
-                    <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase leading-none mt-1">Cantidad de Regulaciones Totales vs Trend de Cumplimiento (%)</h3>
-                  </div>
-
-                  <div className="h-64 w-full">
+                <div className="border border-slate-200 rounded-2xl p-5 bg-white">
+                  <span className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest">Calibraciones y Cumplimiento</span>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5 mb-4">Regulaciones Totales vs Cumplimiento (%)</h3>
+                  <div className="h-60 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={customColumnsData.timeTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="dateLabel" tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis yAxisId="left" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: '#d97706' }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="dateLabel" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#461D77' }} axisLine={false} tickLine={false} />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#d97706' }} axisLine={false} tickLine={false} />
                         <Tooltip />
-                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '9px', fontWeight: 'bold' }} />
-                        <Line yAxisId="left" type="monotone" dataKey="compliancePercent" name="Cumplimiento (% col AL)" stroke="#3FAA88" strokeWidth={3} dot={{ r: 4 }} />
-                        <Line yAxisId="right" type="monotone" dataKey="regulationsCount" name="Regulaciones (Cant AS)" stroke="#d97706" strokeWidth={2} strokeDasharray="3 3" dot={{ r: 4 }} />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px', fontSize: '10px', fontWeight: 600 }} />
+                        <Line yAxisId="left" type="monotone" dataKey="compliancePercent" name="Cumplimiento (% col AL)" stroke="#461D77" strokeWidth={2.5} dot={{ r: 3 }} />
+                        <Line yAxisId="right" type="monotone" dataKey="regulationsCount" name="Regulaciones (Cant AS)" stroke="#d97706" strokeWidth={2} strokeDasharray="3 3" dot={{ r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-
               </div>
-
             </section>
 
             {/* DETAILED DATA TABLE */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <p className="text-[9px] font-black text-purple-700 uppercase tracking-widest leading-none">REGISTRO ANALÍTICO</p>
-                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight mt-1">Resumen Diario de Despacho SLIT</h3>
+                  <p className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest">Registro Analítico</p>
+                  <h3 className="text-sm font-bold text-slate-900 mt-0.5">Resumen Diario de Despacho SLIT</h3>
                 </div>
-                <div className="text-[10px] bg-slate-200/60 font-semibold px-4 py-1.5 rounded-full text-slate-700 uppercase tracking-wider">
+                <span className="text-xs font-mono tabular-nums font-bold text-slate-700 bg-white border border-slate-200 px-3 py-1 rounded-full">
                   {stats.count} registros filtrados
-                </div>
+                </span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">Fecha</th>
-                      <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">Empresa (Grupo)</th>
-                      <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">Eje / Destino Orig.</th>
-                      <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">Tons Prog</th>
-                      <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">Tons Real</th>
-                      <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">Eq Prog</th>
-                      <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">Eq Real</th>
-                      <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center">Desviación</th>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-wider">Fecha</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-wider">Empresa</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-wider">Destino</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-wider text-right">Tons Prog</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-wider text-right">Tons Real</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-wider text-right">Eq Prog</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-wider text-right">Eq Real</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-wider text-center">Desviación</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {filteredSlitRows.map((row, rIdx) => {
-                      const tonDiff = row.Ton_Real - row.Ton_Prog;
                       const devPct = row.Ton_Prog > 0 ? (row.Ton_Real / row.Ton_Prog) * 100 : 0;
                       const timeReal = Number(row.col_TiempoInteriorFaenaReal) || 0;
                       const timeMeta = Number(row.col_TiempoInteriorFaenaProdMeta) || 0;
                       const isTimeDev = timeReal > 0 && timeMeta > 0 && (timeReal - timeMeta) >= (10 / 60);
 
                       return (
-                        <tr key={rIdx} className="border-b border-slate-50 hover:bg-slate-50/50 transition-all font-sans">
-                          <td className="p-4 text-xs font-black text-slate-500 font-mono">{formatDateToCL(row.Fecha)}</td>
-                          <td className="p-4 text-xs font-extrabold text-[#461D77] uppercase">{row.Empresa}</td>
-                          <td className="p-4 text-xs font-bold text-slate-600 uppercase">{row.Destino}</td>
-                          <td className="p-4 text-xs font-bold text-slate-600 text-right font-mono">{formatNumberWithDecimals(row.Ton_Prog, 2)}</td>
-                          <td className="p-4 text-xs font-bold text-slate-800 text-right font-mono">{formatNumberWithDecimals(row.Ton_Real, 2)}</td>
-                          <td className="p-4 text-xs font-bold text-slate-500 text-right font-mono">{row.Eq_Prog}</td>
-                          <td className="p-4 text-xs font-bold text-slate-800 text-right font-mono">{row.Eq_Real}</td>
-                          <td className="p-4 text-center">
-                            <div className="flex flex-col items-center gap-1">
-                              <span className={`inline-block px-3 py-1 rounded-xl text-[9px] font-black border ${
+                        <tr key={rIdx} className="hover:bg-slate-50/80 transition-colors duration-150">
+                          <td className="px-4 py-3 text-xs font-mono tabular-nums text-slate-600">{formatDateToCL(row.Fecha)}</td>
+                          <td className="px-4 py-3 text-xs font-bold text-[#461D77] uppercase">{row.Empresa}</td>
+                          <td className="px-4 py-3 text-xs font-medium text-slate-900 uppercase">{row.Destino}</td>
+                          <td className="px-4 py-3 text-xs font-mono tabular-nums text-slate-600 text-right">{formatNumberWithDecimals(row.Ton_Prog, 2)}</td>
+                          <td className="px-4 py-3 text-xs font-mono tabular-nums font-bold text-slate-900 text-right">{formatNumberWithDecimals(row.Ton_Real, 2)}</td>
+                          <td className="px-4 py-3 text-xs font-mono tabular-nums text-slate-600 text-right">{row.Eq_Prog}</td>
+                          <td className="px-4 py-3 text-xs font-mono tabular-nums font-bold text-slate-900 text-right">{row.Eq_Real}</td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="inline-flex items-center gap-1.5 font-mono tabular-nums text-xs font-bold">
+                              <span className={`px-2 py-0.5 rounded-full ${
                                 devPct >= 100 
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                  ? 'bg-emerald-50 text-emerald-700' 
                                   : devPct >= 90 
-                                    ? 'bg-amber-50 text-amber-600 border-amber-100' 
-                                    : 'bg-rose-50 text-rose-600 border-rose-100 font-bold'
+                                    ? 'bg-amber-50 text-amber-700' 
+                                    : 'bg-red-50 text-red-700'
                               }`}>
                                 {devPct.toFixed(0)}%
                               </span>
                               {isTimeDev && (
-                                <span className="inline-block px-2 py-0.5 rounded-md text-[8px] font-black bg-rose-100 text-rose-700 border border-rose-200 uppercase">
-                                  +10m tpo
+                                <span className="text-[10px] text-red-600 font-bold">
+                                  · +10m
                                 </span>
                               )}
                             </div>
@@ -2019,22 +1893,15 @@ export const SlitDashboard: React.FC<SlitDashboardProps> = ({ data = [], onBack 
                 </table>
               </div>
             </div>
-
           </div>
         )}
-
       </div>
 
-      {/* FOOTER */}
-      <footer className="py-6 bg-white/40 border-t border-slate-200/55 text-center mt-12 z-10 relative">
-        <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-[0.2em] leading-none mb-1">
-          SUBGERENCIA LOGÍSTICA LITIO &bull; PRODUCTO SLIT &bull; NOVANDINO
-        </p>
-        <p className="text-[8px] text-slate-400 font-bold tracking-widest">
-          SISTEMA DE ADMINISTRACIÓN DE FLOTAS &bull; JORNADA 2026.2
+      <footer className="py-4 bg-white/80 backdrop-blur-md border-t border-slate-200 text-center mt-8">
+        <p className="text-[11px] font-mono text-slate-500 uppercase tracking-wider">
+          Subgerencia Logística Litio · Producto SLIT · Novandino
         </p>
       </footer>
-
     </div>
   );
 };

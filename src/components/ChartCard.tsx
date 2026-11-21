@@ -38,7 +38,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
   title,
   aggregation = 'sum'
 }) => {
-  const yAxes = Array.isArray(yAxis) ? yAxis : [yAxis];
+  const yAxes = useMemo(() => (Array.isArray(yAxis) ? yAxis : [yAxis]), [yAxis]);
 
   const aggregatedData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -69,45 +69,45 @@ const ChartCard: React.FC<ChartCardProps> = ({
       })
       .sort((a: any, b: any) => (b[yAxes[1]] || 0) - (a[yAxes[1]] || 0))
       .slice(0, 10);
-  }, [data, xAxis, yAxis, aggregation]);
+  }, [data, xAxis, yAxes, aggregation]);
 
   const renderChart = () => {
-    if (aggregatedData.length === 0) return <div className="h-full flex items-center justify-center text-slate-300 font-bold uppercase text-[10px]">Sin datos para graficar</div>;
+    if (aggregatedData.length === 0) return <div className="h-full flex items-center justify-center text-slate-400 uppercase text-xs font-bold">Sin datos para graficar</div>;
 
     if (type === 'composed') {
       return (
-        <div className="space-y-10">
+        <div className="divide-y divide-slate-100">
           {/* Gráfico 1: Toneladas Programadas vs Toneladas Reales */}
-          <div className="bg-slate-50/40 p-6 rounded-3xl border border-slate-100">
+          <div className="pb-8">
             <div className="flex justify-between items-center mb-4">
-              <span className="text-[11px] font-black text-tecnico tracking-wider uppercase">Comparación de Toneladas (Prog. vs Real)</span>
+              <span className="text-xs font-bold text-slate-700 tracking-wider uppercase">Comparación de Toneladas (Prog. vs Real)</span>
             </div>
             <div style={{ width: '100%', height: '320px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={aggregatedData} margin={{ top: 25, right: 30, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }} 
-                    interval={0} 
-                    angle={-45} 
-                    textAnchor="end" 
-                    height={70} 
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={70}
                   />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
-                    formatter={(val: any) => [Math.round(val).toLocaleString(), "Toneladas"]}
+                    contentStyle={{ borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(15,23,42,0.08)', fontSize: '12px' }}
+                    formatter={(val: any) => [Math.round(val).toLocaleString(), 'Toneladas']}
                   />
-                  <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '11px', fontWeight: '900' }} iconType="circle" />
-                  <Bar dataKey={yAxes[0]} fill={COLORS[0]} name="Prog. Ton" barSize={22} radius={[4, 4, 0, 0]} isAnimationActive={false}>
-                     <LabelList dataKey={yAxes[0]} position="top" style={{ fontSize: '9px', fontWeight: '900', fill: COLORS[0] }} formatter={(v: any) => Math.round(v)} />
+                  <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '11px', fontWeight: '700' }} iconType="circle" />
+                  <Bar dataKey={yAxes[0]} fill={COLORS[0]} name="Prog. Ton" barSize={22} radius={[6, 6, 0, 0]} isAnimationActive={false}>
+                    <LabelList dataKey={yAxes[0]} position="top" style={{ fontSize: '9px', fontWeight: '700', fill: COLORS[0] }} formatter={(v: any) => Math.round(v)} />
                   </Bar>
-                  <Bar dataKey={yAxes[1]} fill={COLORS[1]} name="Real Ton" barSize={22} radius={[4, 4, 0, 0]} isAnimationActive={false}>
-                     <LabelList dataKey={yAxes[1]} position="top" style={{ fontSize: '9px', fontWeight: '900', fill: COLORS[1] }} formatter={(v: any) => Math.round(v)} />
+                  <Bar dataKey={yAxes[1]} fill={COLORS[1]} name="Real Ton" barSize={22} radius={[6, 6, 0, 0]} isAnimationActive={false}>
+                    <LabelList dataKey={yAxes[1]} position="top" style={{ fontSize: '9px', fontWeight: '700', fill: COLORS[1] }} formatter={(v: any) => Math.round(v)} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -115,41 +115,41 @@ const ChartCard: React.FC<ChartCardProps> = ({
           </div>
 
           {/* Gráfico 2: Meta Horas vs Real Horas */}
-          <div className="bg-slate-50/40 p-6 rounded-3xl border border-slate-100">
+          <div className="pt-8">
             <div className="flex justify-between items-center mb-4">
-              <span className="text-[11px] font-black text-tecnico tracking-wider uppercase">Comparación de Tiempos (Meta vs Real)</span>
+              <span className="text-xs font-bold text-slate-700 tracking-wider uppercase">Comparación de Tiempos (Meta vs Real)</span>
             </div>
             <div style={{ width: '100%', height: '320px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={aggregatedData} margin={{ top: 25, right: 30, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }} 
-                    interval={0} 
-                    angle={-45} 
-                    textAnchor="end" 
-                    height={70} 
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={70}
                   />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fill: '#94a3b8' }} 
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#94a3b8' }}
                     tickFormatter={(v: any) => formatDecimalToHHMM(v)}
                   />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
+                    contentStyle={{ borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(15,23,42,0.08)', fontSize: '12px' }}
                     formatter={(val: any, name: any) => [formatDecimalToHHMM(val), name]}
                   />
-                  <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '11px', fontWeight: '900' }} iconType="circle" />
+                  <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '15px', fontSize: '11px', fontWeight: '700' }} iconType="circle" />
                   <Line type="monotone" dataKey={yAxes[2]} stroke={COLORS[2]} name="Meta Hrs" strokeWidth={2} dot={{ r: 4, fill: '#fff', strokeWidth: 2 }} isAnimationActive={false}>
-                    <LabelList dataKey={yAxes[2]} position="top" style={{ fontSize: '9px', fontWeight: '800', fill: COLORS[2] }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={12} />
+                    <LabelList dataKey={yAxes[2]} position="top" style={{ fontSize: '9px', fontWeight: '700', fill: COLORS[2] }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={12} />
                   </Line>
                   <Line type="monotone" dataKey={yAxes[3]} stroke={COLORS[3]} name="Real Hrs" strokeWidth={3} dot={{ r: 5, fill: '#fff', strokeWidth: 3 }} isAnimationActive={false}>
-                    <LabelList dataKey={yAxes[3]} position="top" style={{ fontSize: '10px', fontWeight: '900', fill: COLORS[3] }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={12} />
+                    <LabelList dataKey={yAxes[3]} position="top" style={{ fontSize: '10px', fontWeight: '700', fill: COLORS[3] }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={12} />
                   </Line>
                 </ComposedChart>
               </ResponsiveContainer>
@@ -167,7 +167,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
             <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" isAnimationActive={false}>
               {pieData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
             </Pie>
-            <Tooltip />
+            <Tooltip contentStyle={{ borderRadius: '14px', border: '1px solid #e2e8f0', fontSize: '12px' }} />
             <Legend verticalAlign="bottom" height={36} />
           </PieChart>
         </ResponsiveContainer>
@@ -180,9 +180,9 @@ const ChartCard: React.FC<ChartCardProps> = ({
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} height={60} interval={0} angle={-45} textAnchor="end" />
           <YAxis hide />
-          <Tooltip />
-          <Bar dataKey={yAxes[0]} fill={COLORS[0]} radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
-            <LabelList dataKey={yAxes[0]} position="top" style={{ fontSize: '10px', fontWeight: '900', fill: COLORS[0] }} formatter={(v: any) => Math.round(v).toLocaleString()} />
+          <Tooltip contentStyle={{ borderRadius: '14px', border: '1px solid #e2e8f0', fontSize: '12px' }} />
+          <Bar dataKey={yAxes[0]} fill={COLORS[0]} radius={[6, 6, 0, 0]} barSize={40} isAnimationActive={false}>
+            <LabelList dataKey={yAxes[0]} position="top" style={{ fontSize: '10px', fontWeight: '700', fill: COLORS[0] }} formatter={(v: any) => Math.round(v).toLocaleString()} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -190,72 +190,68 @@ const ChartCard: React.FC<ChartCardProps> = ({
   };
 
   return (
-    <div className={`bg-white/80 backdrop-blur-md p-8 rounded-[2.2rem] border border-black/[0.04] hover:border-black/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] transition-all duration-300 flex flex-col ${type === 'composed' ? 'min-h-[1100px]' : 'h-[500px]'}`}>
-      <h3 className="text-[10px] font-black text-[#461D77] uppercase tracking-[0.3em] mb-6 border-b border-black/[0.04] pb-3">{title}</h3>
+    <div className={`bg-white/90 border border-slate-200/80 p-6 md:p-8 rounded-3xl shadow-sm flex flex-col ${type === 'composed' ? 'min-h-[1100px]' : 'h-[500px]'}`}>
+      <h3 className="text-xs font-black text-[#461D77] uppercase tracking-widest mb-6 border-b border-slate-100 pb-3">{title}</h3>
       <div className="w-full flex-1">
         {renderChart()}
       </div>
       {type === 'composed' && (
-        <div className="mt-12 overflow-x-auto border border-slate-100 rounded-3xl shadow-sm">
+        <div className="mt-10 overflow-x-auto border border-slate-200 rounded-2xl">
           <table className="w-full text-left border-collapse min-w-[750px]">
             <thead>
-              <tr className="bg-calido/80">
-                <th className="py-5 px-6 text-[11px] font-black text-violeta uppercase tracking-widest border-b border-calido">Producto</th>
-                <th className="py-5 px-6 text-[11px] font-black text-nucleo uppercase tracking-widest text-center border-b border-calido">Prog (Ton)</th>
-                <th className="py-5 px-6 text-[11px] font-black text-ionizado uppercase tracking-widest text-center border-b border-calido">Real (Ton)</th>
-                <th className="py-5 px-6 text-[11px] font-black text-tecnico uppercase tracking-widest text-center border-b border-calido">Meta (Hrs)</th>
-                <th className="py-5 px-6 text-[11px] font-black text-mineral uppercase tracking-widest text-center border-b border-calido">Real (Hrs)</th>
-                <th className="py-5 px-6 text-[11px] font-black text-violeta uppercase tracking-widest text-center border-b border-calido">Estado / Semáforo</th>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="py-3.5 px-5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Producto</th>
+                <th className="py-3.5 px-5 text-[10px] font-bold text-[#461D77] uppercase tracking-wider text-center">Prog (Ton)</th>
+                <th className="py-3.5 px-5 text-[10px] font-bold text-emerald-700 uppercase tracking-wider text-center">Real (Ton)</th>
+                <th className="py-3.5 px-5 text-[10px] font-bold text-slate-700 uppercase tracking-wider text-center">Meta (Hrs)</th>
+                <th className="py-3.5 px-5 text-[10px] font-bold text-amber-700 uppercase tracking-wider text-center">Real (Hrs)</th>
+                <th className="py-3.5 px-5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Estado</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {aggregatedData.map((row, idx) => {
                 const progTon = row[yAxes[0]] || 0;
                 const realTon = row[yAxes[1]] || 0;
                 const metaTime = row[yAxes[2]] || 0;
                 const realTime = row[yAxes[3]] || 0;
 
-                // Reglas de negocio estrictas:
-                // 1. Alerta Naranja (Gobernanza) si Tonelaje > 0 pero Tiempo es igual a 0:00 (Inconsistencia)
-                // 2. Alerta Roja si realTon < progTon * 0.90 (inferior al 90% de lo planificado)
-                // 3. Alerta Roja si realTime > metaTime + 10 min (mayor por más de 10 minutos respecto a meta)
                 let alertType: 'red' | 'orange' | 'green' = 'green';
-                let alertMessage = '🟢 Dentro de Rango';
+                let alertMessage = 'En Rango';
 
                 if (realTon > 0 && realTime <= 0) {
                   alertType = 'orange';
-                  alertMessage = '🔶 Falla MIGTRA';
+                  alertMessage = 'Falla MIGTRA';
                 } else if (progTon > 0 && realTon < (progTon * 0.90)) {
                   alertType = 'red';
-                  alertMessage = '🔴 Bajo Ton. (<90%)';
+                  alertMessage = 'Bajo Ton. (<90%)';
                 } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
                   alertType = 'red';
-                  alertMessage = '🔴 Exc. Tiempo (>10m)';
+                  alertMessage = 'Exc. Tiempo (>10m)';
                 }
 
                 const isUnderperformingTon = progTon > 0 && realTon < (progTon * 0.90);
                 const isTimeDeviated = realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60);
 
-                let badgeStyle = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+                let statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
                 if (alertType === 'red') {
-                  badgeStyle = "bg-rose-50 text-rose-700 border border-rose-200 animate-pulse";
+                  statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
                 } else if (alertType === 'orange') {
-                  badgeStyle = "bg-amber-50 text-amber-700 border border-amber-200 font-extrabold";
+                  statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
                 }
 
                 return (
-                  <tr key={idx} className="border-b border-calido last:border-0 hover:bg-calido/50 transition-colors">
-                    <td className="py-4 px-6 text-[13px] font-black text-tecnico truncate max-w-[150px]">{row.name}</td>
-                    <td className="py-4 px-6 text-[12px] font-bold text-center text-slate-700">{Math.round(progTon).toLocaleString()}</td>
-                    <td className={`py-4 px-6 text-[14px] font-black text-center ${isUnderperformingTon ? 'text-rose-600' : 'text-ionizado'}`}>
+                  <tr key={idx} className="hover:bg-slate-50/70 transition-colors duration-150">
+                    <td className="py-3.5 px-5 text-xs font-bold text-slate-800 truncate max-w-[160px]">{row.name}</td>
+                    <td className="py-3.5 px-5 text-xs tabular-nums text-center text-slate-500 font-semibold">{Math.round(progTon).toLocaleString()}</td>
+                    <td className={`py-3.5 px-5 text-sm font-bold tabular-nums text-center ${isUnderperformingTon ? 'text-rose-600' : 'text-emerald-600'}`}>
                       {Math.round(realTon).toLocaleString()}
                     </td>
-                    <td className="py-4 px-6 text-[12px] font-bold text-center text-slate-700">{formatDecimalToHHMM(metaTime)}</td>
-                    <td className={`py-4 px-6 text-[14px] font-black text-center ${isTimeDeviated ? 'text-rose-600' : 'text-mineral'}`}>
+                    <td className="py-3.5 px-5 text-xs tabular-nums text-center text-slate-500 font-semibold">{formatDecimalToHHMM(metaTime)}</td>
+                    <td className={`py-3.5 px-5 text-sm font-bold tabular-nums text-center ${isTimeDeviated ? 'text-rose-600' : 'text-amber-600'}`}>
                       {formatDecimalToHHMM(realTime)}
                     </td>
-                    <td className="py-4 px-6 text-center">
-                      <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${badgeStyle}`}>
+                    <td className="py-3.5 px-5 text-center">
+                      <span className={`inline-block px-2.5 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${statusColor}`}>
                         {alertMessage}
                       </span>
                     </td>
@@ -270,4 +266,4 @@ const ChartCard: React.FC<ChartCardProps> = ({
   );
 };
 
-export default ChartCard;
+export default React.memo(ChartCard);

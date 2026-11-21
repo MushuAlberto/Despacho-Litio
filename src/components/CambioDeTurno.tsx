@@ -13,6 +13,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from './Toast';
 import { getCurrentUser } from '../auth/authStore';
 import { authenticatedFetch } from '../auth/authenticatedFetch';
+import { enqueueOfflineMutation, getOperationalSnapshot, saveOperationalSnapshot } from '../services/offlineDb';
 
 interface ChartData {
   name: string;
@@ -45,6 +46,327 @@ const PRODUCTS_B = [
 interface CambioDeTurnoProps {
   onBack: () => void;
 }
+
+interface GlobalAiSettings {
+  activeAi: 'gemini' | 'glm';
+  enableGemini: boolean;
+  enableGlm: boolean;
+  enableShiftAnalysis: boolean;
+  enableJustificationRefinement: boolean;
+}
+
+interface AnalysisPanelProps {
+  title: string;
+  data: any[];
+  allData: ChartData[];
+  uniqueDates: string[];
+  range: { start: string; end: string };
+  setRange: React.Dispatch<React.SetStateAction<{ start: string; end: string }>>;
+  colorIdx: number;
+  complianceData?: any[];
+  analysis: string | null;
+  setAnalysis: (val: string | null) => void;
+  globalAiSettings: GlobalAiSettings;
+  userAiEnabled: boolean;
+}
+
+const AnalysisPanel: React.FC<AnalysisPanelProps> = React.memo(({
+  title,
+  data,
+  allData,
+  uniqueDates,
+  range,
+  setRange,
+  colorIdx,
+  complianceData,
+  analysis,
+  setAnalysis,
+  globalAiSettings,
+  userAiEnabled
+}) => {
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [aiEngine, setAiEngine] = useState<'gemini' | 'glm'>(globalAiSettings.activeAi);
+
+  useEffect(() => {
+    setAiEngine(globalAiSettings.activeAi);
+  }, [globalAiSettings.activeAi]);
+
+  const handleRunAnalysis = async () => {
+    if (data.length === 0) return;
+    setIsAnalyzing(true);
+    setAnalysis("");
+    setIsEditing(false);
+    try {
+      if (!globalAiSettings.enableShiftAnalysis || !userAiEnabled || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+
+        const totalProg = data.reduce((acc, item) => acc + (item.Ton_Prog || 0), 0);
+        const totalReal = data.reduce((acc, item) => acc + (item.Ton_Real || 0), 0);
+        const pctCumplimiento = totalProg > 0 ? (totalReal / totalProg) * 100 : 0;
+
+        let text = `### **Resumen Ejecutivo - ${title}**\n\n`;
+        text += `Durante el periodo seleccionado de la faena **${title}**, se planificó un total de **${Math.round(totalProg).toLocaleString()} Ton** de carga, alcanzando una ejecución de carga real de **${Math.round(totalReal).toLocaleString()} Ton** (que representa un **${pctCumplimiento.toFixed(1)}% de cumplimiento**).\n\n`;
+
+        if (pctCumplimiento >= 100) {
+          text += `La operación superó la meta definida con un excelente flujo de carguío y tránsito libre en boleterías y pesajes.\n\n`;
+        } else if (pctCumplimiento >= 90) {
+          text += `Se registra un ritmo constante dentro de los límites aceptables de la tolerancia operativa ordinaria, alcanzando un progreso cercano al óptimo.\n\n`;
+        } else {
+          text += `Se evidencia una desviación operativa con un cumplimiento inferior a la meta programada. Se recomienda revisar tiempos de demora no identificados y cuellos de botella.\n\n`;
+        }
+
+        text += `### **Análisis de Desviaciones de Desempeño**\n\n`;
+        text += typeof navigator !== 'undefined' && !navigator.onLine
+          ? `📡 *Nota: Análisis generado en modo local sin conexión. El resumen fue almacenado en IndexedDB para respaldo operativo.*`
+          : `⚠️ *Nota: La funcionalidad de Inteligencia Artificial para análisis extendido ha sido desactivada temporalmente por el Administrador de la plataforma o para su usuario. Para volver a habilitar reportes enriquecidos con IA, active el interruptor correspondiente en el Panel de Usuarios o consulte con el Administrador.*`;
+
+        setAnalysis(text);
+      } else {
+        await analyzeProductData(title, data, (partial) => {
+          setAnalysis(partial);
+        }, complianceData, range, aiEngine);
+      }
+    } catch (err) {
+      console.error(err);
+      setAnalysis(`Error al generar análisis: ${err instanceof Error ? err.message : 'Error desconocido'}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div id={`chart-table-container-${title.replace(/\s+/g, '_')}`} className="space-y-5 flex flex-col">
+        <div className="bg-white/90 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h2 className={`text-xs font-black px-3.5 py-1.5 rounded-full border uppercase tracking-wider ${
+            colorIdx === 1 
+              ? 'bg-[#461D77]/10 text-[#461D77] border-[#461D77]/20' 
+              : 'bg-slate-100 text-slate-800 border-slate-200'
+          }`}>
+            {title}
+          </h2>
+          {uniqueDates.length > 0 && (
+            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 w-full sm:w-auto">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold text-slate-400 uppercase px-2">Desde</span>
+                <input 
+                  type="date"
+                  value={range.start}
+                  min={uniqueDates[0]}
+                  max={uniqueDates[uniqueDates.length - 1]}
+                  onChange={(e) => setRange({ ...range, start: e.target.value })}
+                  className="bg-transparent text-xs font-mono font-bold text-slate-800 outline-none px-2 cursor-pointer [color-scheme:light]"
+                />
+              </div>
+              <div className="w-px h-5 bg-slate-200" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold text-slate-400 uppercase px-2">Hasta</span>
+                <input 
+                  type="date"
+                  value={range.end}
+                  min={range.start || uniqueDates[0]}
+                  max={uniqueDates[uniqueDates.length - 1]}
+                  onChange={(e) => setRange({ ...range, end: e.target.value })}
+                  className="bg-transparent text-xs font-mono font-bold text-slate-800 outline-none px-2 cursor-pointer [color-scheme:light]"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <CambioAnalisisComparativoChart data={data} title={title} />
+
+        <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
+            <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Resumen por Producto</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Prod.</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Prog. Ton</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Real Ton</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Meta Hrs</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Real Hrs</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 tabular-nums">
+                {data.map((item) => {
+                  const progTon = item.Ton_Prog || 0;
+                  const realTon = item.Ton_Real || 0;
+                  const metaTime = item.faenaMetaHours || 0;
+                  const realTime = item.faenaRealHours || 0;
+
+                  let alertType: 'red' | 'orange' | 'green' = 'green';
+                  let alertMessage = 'En Rango';
+
+                  if (realTon > 0 && realTime <= 0) {
+                    alertType = 'orange';
+                    alertMessage = 'Falla MIGTRA';
+                  } else if (progTon > 0 && realTon < (progTon * 0.90)) {
+                    alertType = 'red';
+                    alertMessage = 'Bajo Ton. (<90%)';
+                  } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
+                    alertType = 'red';
+                    alertMessage = 'Exc. Tiempo (>10m)';
+                  }
+
+                  let badgeStyle = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+                  if (alertType === 'red') {
+                    badgeStyle = "bg-rose-50 text-rose-700 border border-rose-200";
+                  } else if (alertType === 'orange') {
+                    badgeStyle = "bg-amber-50 text-amber-700 border border-amber-200";
+                  }
+
+                  return (
+                    <tr key={item.name} className="hover:bg-slate-50/80 transition-colors duration-150">
+                      <td className="px-4 py-3 text-xs font-bold text-slate-800">{item.name}</td>
+                      <td className="px-4 py-3 text-xs font-mono text-right text-slate-500">
+                        {Math.round(progTon).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-mono font-bold text-right text-[#461D77]">
+                        {Math.round(realTon).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-mono text-right text-slate-500">
+                        {formatDecimalToHHMM(metaTime)}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-mono font-bold text-right text-slate-800">
+                        {formatDecimalToHHMM(realTime)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap ${badgeStyle}`}>
+                          {alertMessage}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {data.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-slate-400 text-xs">Sin datos en el rango</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {data.length > 0 && (
+        <CambioAnalisisProductoChart 
+          allData={allData} 
+          range={range} 
+          visibleProducts={data.map(item => item.name)} 
+        />
+      )}
+
+      {/* Panel de Análisis Operativo */}
+      <div className="bg-gradient-to-br from-[#461D77] via-[#3B1766] to-[#260D45] rounded-3xl p-6 md:p-8 border border-white/15 shadow-2xl shadow-[#461D77]/20 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/15 border border-white/20 p-2.5 rounded-2xl">
+              <TrendingUp className="w-4 h-4 text-[#4FD1C5]" />
+            </div>
+            <div>
+              <h4 className="text-white text-xs font-black uppercase tracking-wider">Resumen y Análisis Operativo</h4>
+              <p className="text-purple-200/80 text-xs">Compilación analítica de desempeño del turno</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            {(globalAiSettings.enableGemini || globalAiSettings.enableGlm) && (
+              <div className="flex items-center gap-1 bg-white/10 p-1 rounded-xl border border-white/15 mr-1">
+                {globalAiSettings.enableGemini && (
+                  <button
+                    type="button"
+                    onClick={() => setAiEngine('gemini')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-colors duration-150 uppercase cursor-pointer ${
+                      aiEngine === 'gemini'
+                        ? 'bg-white text-[#461D77]'
+                        : 'text-purple-200 hover:text-white'
+                    }`}
+                  >
+                    Gemini 3.5
+                  </button>
+                )}
+                {globalAiSettings.enableGlm && (
+                  <button
+                    type="button"
+                    onClick={() => setAiEngine('glm')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-colors duration-150 uppercase cursor-pointer ${
+                      aiEngine === 'glm'
+                        ? 'bg-white text-[#461D77]'
+                        : 'text-purple-200 hover:text-white'
+                    }`}
+                  >
+                    Gemma
+                  </button>
+                )}
+              </div>
+            )}
+
+            {analysis && !isAnalyzing && (
+              <button 
+                onClick={() => setIsEditing(!isEditing)}
+                className="px-3.5 py-2 bg-white/10 text-white text-xs font-bold rounded-xl hover:bg-white/20 transition-colors duration-150 cursor-pointer border border-white/15"
+              >
+                {isEditing ? 'Vista Previa' : 'Editar Texto'}
+              </button>
+            )}
+            <button 
+              onClick={() => generateShiftReportPDF({ title, data, range, analysis })}
+              disabled={data.length === 0}
+              className="px-3.5 py-2 bg-[#7177EC] text-white text-xs font-bold rounded-xl hover:bg-[#5E64D8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5" /> PDF
+            </button>
+            <button 
+              onClick={handleRunAnalysis}
+              disabled={isAnalyzing || data.length === 0}
+              className="px-4 py-2 bg-white text-[#461D77] text-xs font-black rounded-xl hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center gap-1.5 cursor-pointer shadow-md"
+            >
+              {isAnalyzing ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-[#461D77] border-t-transparent rounded-full animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-3.5 h-3.5" />
+                  Generar Reporte
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-[100px] bg-black/20 rounded-2xl p-5 border border-white/10">
+          {analysis ? (
+            isEditing ? (
+              <textarea
+                value={analysis}
+                onChange={(e) => setAnalysis(e.target.value)}
+                className="w-full h-[280px] bg-transparent text-purple-50 text-sm leading-relaxed outline-none border-none resize-none focus:ring-0"
+                placeholder="Edita el análisis aquí..."
+              />
+            ) : (
+              <div className="prose prose-invert prose-sm max-w-full text-purple-50 leading-relaxed">
+                <SimpleMarkdown content={analysis} />
+              </div>
+            )
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full py-6 text-purple-200/75">
+              <p className="text-xs">Haz clic en "Generar Reporte" para compilar el resumen operativo del turno.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   const { success, error: toastError, warning, info } = useToast();
@@ -115,38 +437,64 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   const [novandinoAnalysis, setNovandinoAnalysis] = useState<string | null>(null);
   const [sqmAnalysis, setSqmAnalysis] = useState<string | null>(null);
 
-  // Intentar cargar datos existentes desde localStorage al inicializar
+  // Intentar cargar datos existentes desde localStorage / IndexedDB al inicializar
   useEffect(() => {
-    const savedData = localStorage.getItem('sqm_raw_data');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (parsed && parsed.length > 0) {
-          const mapped: ChartData[] = parsed.map((item: any) => ({
-            name: item.Producto || 'SIN PRODUCTO',
-            producto: item.Producto || 'SIN PRODUCTO',
-            dateKey: item.Fecha,
-            Ton_Prog: Number(item.Ton_Prog) || 0,
-            Ton_Real: Number(item.Ton_Real) || 0,
-            faenaMetaHours: Number(item.faenaMetaHours) || 0,
-            faenaRealHours: Number(item.faenaRealHours) || 0,
-            destino: item.Destino || 'N/A'
-          }));
-          setAllData(mapped);
-          
-          const dates = mapped.map(d => d.dateKey).filter(Boolean).sort();
-          if (dates.length > 0) {
-            setRange1({ start: dates[0], end: dates[dates.length - 1] });
-            setRange2({ start: dates[0], end: dates[dates.length - 1] });
+    const hydrateInitialData = async () => {
+      const savedData = localStorage.getItem('sqm_raw_data');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          if (parsed && parsed.length > 0) {
+            const mapped: ChartData[] = parsed.map((item: any) => ({
+              name: item.Producto || 'SIN PRODUCTO',
+              producto: item.Producto || 'SIN PRODUCTO',
+              dateKey: item.Fecha,
+              Ton_Prog: Number(item.Ton_Prog) || 0,
+              Ton_Real: Number(item.Ton_Real) || 0,
+              faenaMetaHours: Number(item.faenaMetaHours) || 0,
+              faenaRealHours: Number(item.faenaRealHours) || 0,
+              destino: item.Destino || 'N/A'
+            }));
+            setAllData(mapped);
+
+            const dates = mapped.map(d => d.dateKey).filter(Boolean).sort();
+            if (dates.length > 0) {
+              setRange1({ start: dates[0], end: dates[dates.length - 1] });
+              setRange2({ start: dates[0], end: dates[dates.length - 1] });
+            }
+            setFileName("Historial cargado automáticamente");
+            setStatus('success');
           }
-          setFileName("Historial cargado automáticamente");
-          setStatus('success');
+        } catch (e) {
+          console.error("Error al cargar datos de localStorage:", e);
         }
-      } catch (e) {
-        console.error("Error al cargar datos de localStorage:", e);
       }
-    }
+
+      const draft = await getOperationalSnapshot<{
+        novandinoAnalysis?: string | null;
+        sqmAnalysis?: string | null;
+      }>('shift_handoff_draft');
+      if (draft?.data) {
+        if (draft.data.novandinoAnalysis) setNovandinoAnalysis(draft.data.novandinoAnalysis);
+        if (draft.data.sqmAnalysis) setSqmAnalysis(draft.data.sqmAnalysis);
+      }
+    };
+
+    void hydrateInitialData();
   }, []);
+
+  // Respaldo automático en IndexedDB de los análisis de cambio de turno
+  useEffect(() => {
+    if (novandinoAnalysis || sqmAnalysis) {
+      void saveOperationalSnapshot('shift_handoff_draft', {
+        range1,
+        range2,
+        novandinoAnalysis,
+        sqmAnalysis,
+        fileName,
+      });
+    }
+  }, [novandinoAnalysis, sqmAnalysis, range1, range2, fileName]);
 
   const processFile = useCallback((file: File) => {
     const reader = new FileReader();
@@ -254,20 +602,28 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
         }
 
         setAllData(mappedData);
-        
-        // Record Cambio De Turno excel upload activity log in Firestore
-        try {
-          const user = getCurrentUser();
-          if (user) {
+        void saveOperationalSnapshot('shift_handoff_data', mappedData, mappedData.length);
+
+        const user = getCurrentUser();
+        const handoffSummary = `Cargó archivo base Excel (${file.name}) con ${mappedData.length} registros para Cambio de Turno.`;
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          await enqueueOfflineMutation('shift_handoff', `Cambio de Turno (${file.name})`, {
+            user,
+            title: 'Cambio de Turno',
+            summaryText: handoffSummary,
+          });
+        } else if (user) {
+          try {
             const { logActivity } = await import('../services/firebase');
-            await logActivity(
+            await logActivity(user, 'Carga de Datos', handoffSummary);
+          } catch (err) {
+            console.error('Error logging Cambio de Turno excel upload, queueing offline:', err);
+            await enqueueOfflineMutation('shift_handoff', `Cambio de Turno (${file.name})`, {
               user,
-              'Carga de Datos',
-              `Cargó de archivo base Excel (${file.name}) con ${mappedData.length} registros para Cambio de Turno.`
-            );
+              title: 'Cambio de Turno',
+              summaryText: handoffSummary,
+            });
           }
-        } catch (err) {
-          console.error('Error logging Cambio de Turno excel upload:', err);
         }
         
         const dates = mappedData.map(d => d.dateKey).sort();
@@ -557,508 +913,279 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
       });
   };
 
-  const AnalysisPanel = ({ title, data, range, setRange, colorIdx, complianceData, analysis, setAnalysis }: { 
-    title: string, 
-    data: any[], 
-    range: {start: string, end: string}, 
-    setRange: any,
-    colorIdx: number,
-    complianceData?: any[],
-    analysis: string | null,
-    setAnalysis: (val: string | null) => void
-  }) => {
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [aiEngine, setAiEngine] = useState<'gemini' | 'glm'>(globalAiSettings.activeAi);
-
-    useEffect(() => {
-      setAiEngine(globalAiSettings.activeAi);
-    }, [globalAiSettings.activeAi]);
-
-    const handleRunAnalysis = async () => {
-      if (data.length === 0) return;
-      setIsAnalyzing(true);
-      setAnalysis(""); 
-      setIsEditing(false); 
-      try {
-        if (!globalAiSettings.enableShiftAnalysis || !userAiEnabled) {
-          // Fallback deterministic local summary when AI is deactivated by the Admin or for the user
-          await new Promise((resolve) => setTimeout(resolve, 800));
-
-          const totalProg = data.reduce((acc, item) => acc + (item.Ton_Prog || 0), 0);
-          const totalReal = data.reduce((acc, item) => acc + (item.Ton_Real || 0), 0);
-          const pctCumplimiento = totalProg > 0 ? (totalReal / totalProg) * 100 : 0;
-          
-          let text = `### **Resumen Ejecutivo - ${title}**\n\n`;
-          text += `Durante el periodo seleccionado de la faena **${title}**, se planificó un total de **${Math.round(totalProg).toLocaleString()} Ton** de carga, alcanzando una ejecución de carga real de **${Math.round(totalReal).toLocaleString()} Ton** (que representa un **${pctCumplimiento.toFixed(1)}% de cumplimiento**).\n\n`;
-          
-          if (pctCumplimiento >= 100) {
-            text += `La operación superó la meta definida con un excelente flujo de carguío y tránsito libre en boleterías y pesajes.\n\n`;
-          } else if (pctCumplimiento >= 90) {
-            text += `Se registra un ritmo constante dentro de los límites aceptables de la tolerancia operativa ordinaria, alcanzando un progreso cercano al óptimo.\n\n`;
-          } else {
-            text += `Se evidencia una desviación operativa con un cumplimiento inferior a la meta programada. Se recomienda revisar tiempos de de demora no identificados y cuellos de botella.\n\n`;
-          }
-          
-          text += `### **Análisis de Desviaciones de Desempeño**\n\n`;
-          text += `⚠️ *Nota: La funcionalidad de Inteligencia Artificial para análisis extendido ha sido desactivada temporalmente por el Administrador de la plataforma o para su usuario. Para volver a habilitar reportes enriquecidos con IA, active el interruptor correspondiente en el Panel de Usuarios o consulte con el Administrador.*`;
-
-          setAnalysis(text);
-        } else {
-          await analyzeProductData(title, data, (partial) => {
-            setAnalysis(partial);
-          }, complianceData, range, aiEngine);
-        }
-      } catch (err) {
-        console.error(err);
-        setAnalysis(`Error al generar análisis: ${err instanceof Error ? err.message : 'Error desconocido'}`);
-      } finally {
-        setIsAnalyzing(false);
-      }
-    };
-
-    return (
-      <div className="space-y-6">
-        <div id={`chart-table-container-${title.replace(/\s+/g, '_')}`} className="space-y-6 flex flex-col">
-          <div className="bg-white p-4 rounded-2xl border border-violeta/10 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h2 className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-tighter ${colorIdx === 1 ? 'bg-nucleo/10 text-nucleo' : 'bg-mineral/10 text-mineral'}`}>
-            {title}
-          </h2>
-          {uniqueDates.length > 0 && (
-            <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100 w-full sm:w-auto">
-              <div className="flex flex-col">
-                <span className="text-[8px] font-black text-slate-400 uppercase px-2">Desde</span>
-                <input 
-                  type="date"
-                  value={range.start}
-                  min={uniqueDates[0]}
-                  max={uniqueDates[uniqueDates.length - 1]}
-                  onChange={(e) => setRange({ ...range, start: e.target.value })}
-                  className="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 cursor-pointer [color-scheme:light]"
-                />
-              </div>
-              <div className="w-px h-4 bg-slate-200" />
-              <div className="flex flex-col">
-                <span className="text-[8px] font-black text-slate-400 uppercase px-2">Hasta</span>
-                <input 
-                  type="date"
-                  value={range.end}
-                  min={range.start || uniqueDates[0]}
-                  max={uniqueDates[uniqueDates.length - 1]}
-                  onChange={(e) => setRange({ ...range, end: e.target.value })}
-                  className="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 cursor-pointer [color-scheme:light]"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <CambioAnalisisComparativoChart data={data} title={title} />
-
-        <div className="bg-white rounded-[2.5rem] border border-violeta/10 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-            <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">RESUMEN POR PRODUCTO</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[750px]">
-              <thead>
-                <tr className="bg-slate-50/50">
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Prod.</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Prog. Ton</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Ton</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Meta Hrs</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Hrs</th>
-                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Estado / Semáforo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {data.map((item) => {
-                  const progTon = item.Ton_Prog || 0;
-                  const realTon = item.Ton_Real || 0;
-                  const metaTime = item.faenaMetaHours || 0;
-                  const realTime = item.faenaRealHours || 0;
-
-                  // Reglas de negocio estrictas:
-                  // 1. Alerta Naranja (Gobernanza) si Tonelaje > 0 pero Tiempo es igual a 0:00 (Inconsistencia)
-                  // 2. Alerta Roja si realTon < progTon * 0.90 (inferior al 90% de lo planificado)
-                  // 3. Alerta Roja si realTime > metaTime + 10 min (mayor por más de 10 minutos respecto a meta)
-                  let alertType: 'red' | 'orange' | 'green' = 'green';
-                  let alertMessage = '🟢 Dentro de Rango';
-
-                  if (realTon > 0 && realTime <= 0) {
-                    alertType = 'orange';
-                    alertMessage = '🔶 Falla MIGTRA';
-                  } else if (progTon > 0 && realTon < (progTon * 0.90)) {
-                    alertType = 'red';
-                    alertMessage = '🔴 Bajo Ton. (<90%)';
-                  } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
-                    alertType = 'red';
-                    alertMessage = '🔴 Exc. Tiempo (>10m)';
-                  }
-
-                  let badgeStyle = "bg-emerald-50 text-emerald-700 border border-emerald-200";
-                  if (alertType === 'red') {
-                    badgeStyle = "bg-rose-50 text-rose-700 border border-rose-200 animate-pulse";
-                  } else if (alertType === 'orange') {
-                    badgeStyle = "bg-amber-50 text-amber-700 border border-amber-200 font-extrabold";
-                  }
-
-                  return (
-                    <tr key={item.name} className="hover:bg-slate-50/30 transition-colors">
-                      <td className="px-4 py-3 text-[11px] font-bold text-slate-700">{item.name}</td>
-                      <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
-                        {Math.round(progTon).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-[11px] font-bold text-right">
-                        <span className="text-violeta">{Math.round(realTon).toLocaleString()}</span>
-                      </td>
-                      <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
-                        {formatDecimalToHHMM(metaTime)}
-                      </td>
-                      <td className="px-4 py-3 text-[11px] font-bold text-right text-mineral">
-                        {formatDecimalToHHMM(realTime)}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap ${badgeStyle}`}>
-                          {alertMessage}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {data.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-400 font-medium italic text-xs">Sin datos</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        </div>
-
-        {/* Gráfico y tabla de tendencia diario del producto */}
-        {data.length > 0 && (
-          <CambioAnalisisProductoChart 
-            allData={allData} 
-            range={range} 
-            visibleProducts={data.map(item => item.name)} 
-          />
-        )}
-
-        {/* Panel de Análisis Operativo Local */}
-        <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-            <FileText className="w-24 h-24 text-white" />
-          </div>
-          
-          <div className="relative z-10 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-violeta p-2 rounded-xl">
-                  <TrendingUp className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="text-white text-sm font-black uppercase tracking-widest">Resumen y Análisis Operativo</h4>
-                  <p className="text-slate-400 text-[10px] font-bold">Cálculos analíticos automáticos basados en datos de faena</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-2">
-                {(globalAiSettings.enableGemini || globalAiSettings.enableGlm) && (
-                  <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-white/5 mr-1">
-                    {globalAiSettings.enableGemini && (
-                      <button
-                        type="button"
-                        onClick={() => setAiEngine('gemini')}
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
-                          aiEngine === 'gemini'
-                            ? 'bg-violeta text-white'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Gemini 3.5
-                      </button>
-                    )}
-                    {globalAiSettings.enableGlm && (
-                      <button
-                        type="button"
-                        onClick={() => setAiEngine('glm')}
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
-                          aiEngine === 'glm'
-                            ? 'bg-amber-500 text-slate-950'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Gemma (OpenRouter)
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {analysis && !isAnalyzing && (
-                  <button 
-                    onClick={() => setIsEditing(!isEditing)}
-                    className="px-4 py-2 bg-slate-800 text-white text-[10px] font-black rounded-xl hover:bg-slate-700 transition-all uppercase tracking-widest"
-                  >
-                    {isEditing ? 'Vista Previa' : 'Editar Texto'}
-                  </button>
-                )}
-                <button 
-                  onClick={() => generateShiftReportPDF({ title, data, range, analysis })}
-                  disabled={data.length === 0}
-                  className="px-4 py-2 bg-violeta text-white text-[10px] font-black rounded-xl hover:bg-violeta/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2 uppercase tracking-widest"
-                >
-                  <Download className="w-3.5 h-3.5" /> Descargar PDF
-                </button>
-                <button 
-                  onClick={handleRunAnalysis}
-                  disabled={isAnalyzing || data.length === 0}
-                  className="px-6 py-2 bg-white text-slate-900 text-xs font-black rounded-xl hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <div className="w-3 h-3 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                      Procesando...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4" />
-                      Generar Reporte
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="min-h-[100px] bg-slate-800/50 rounded-2xl p-6 border border-white/5">
-              {analysis ? (
-                isEditing ? (
-                  <textarea
-                    value={analysis}
-                    onChange={(e) => setAnalysis(e.target.value)}
-                    className="w-full h-[300px] bg-transparent text-slate-300 text-sm font-medium leading-relaxed outline-none border-none resize-none focus:ring-0"
-                    placeholder="Edita el análisis aquí..."
-                  />
-                ) : (
-                  <div className="prose prose-invert prose-sm max-w-full text-slate-300 leading-relaxed">
-                    <SimpleMarkdown content={analysis} />
-                  </div>
-                )
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full py-8 text-slate-500 italic space-y-2">
-                  <p className="text-xs font-medium">Haz clic en "Generar Reporte" para compilar el resumen operativo automático.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div 
+    <div
       onDragOver={handleDragOver}
-      onDragOverCapture={(e) => { e.preventDefault(); setIsDragging(true); }}
-      className="min-h-screen bg-calido p-4 md:p-8 max-w-[1800px] mx-auto space-y-6 relative"
+      onDragOverCapture={(e) => {
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      className="min-h-screen bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] text-slate-800 p-4 md:p-8 max-w-[1600px] mx-auto space-y-6 relative"
     >
       {/* Screen-wide Drag & Drop Overlay Portal */}
       {isDragging && (
-        <div 
+        <div
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex flex-col items-center justify-center border-8 border-dashed border-violeta m-4 rounded-[3rem] transition-all duration-300"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center border-2 border-dashed border-[#7177EC] m-4 rounded-3xl transition-opacity duration-150 ease-out"
         >
-          <div className="text-center p-8 space-y-4 max-w-md pointer-events-none">
-            <div className="mx-auto w-20 h-20 bg-violeta/10 rounded-full flex items-center justify-center text-violeta animate-bounce">
-              <Upload className="w-10 h-10" />
+          <div className="text-center p-8 space-y-3 max-w-md pointer-events-none bg-white border border-slate-200 rounded-3xl shadow-2xl">
+            <div className="mx-auto w-14 h-14 bg-[#461D77]/10 border border-[#461D77]/20 rounded-2xl flex items-center justify-center text-[#461D77]">
+              <Upload className="w-6 h-6" />
             </div>
-            <h2 className="text-2xl font-black text-white uppercase tracking-widest">Suelta para Procesar</h2>
-            <p className="text-slate-300 text-sm font-semibold">
+            <h2 className="text-lg font-black text-slate-800 tracking-tight">
+              Suelta para Procesar
+            </h2>
+            <p className="text-slate-500 text-sm">
               Suelta tu plantilla Excel o archivo JSON de justificación aquí para cargarlos instantáneamente.
             </p>
           </div>
         </div>
       )}
 
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-violeta/10 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={onBack} 
-            className="p-3 hover:bg-slate-50 rounded-2xl border border-slate-100 transition-colors"
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="p-2.5 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77] cursor-pointer shadow-sm"
+            title="Volver"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-700" />
+            <ArrowLeft className="w-4 h-4 text-[#461D77]" />
           </button>
           <div>
-            <h1 className="text-2xl font-black text-violeta tracking-tight">Análisis de Turno</h1>
-            <p className="text-slate-500 text-sm font-medium italic">Modo Comparativo Dual: Suma de Tons vs Promedio de Horas</p>
+            <h1 className="text-xl font-black text-slate-800 tracking-tight">
+              Análisis de Turno
+            </h1>
+            <p className="text-slate-500 text-xs font-medium">
+              Comparativa dual: suma de toneladas vs. promedio de horas
+            </p>
           </div>
         </div>
-        
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
+
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
           {complianceFiles.length > 0 && (
-            <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200">
-              <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
+            <div className="flex items-center gap-2 bg-amber-50 px-3.5 py-1.5 rounded-full border border-amber-200">
+              <span className="text-xs font-mono tabular-nums font-bold text-amber-700">
                 {complianceFiles.length} JSONs Incumplimiento
               </span>
-              <button onClick={clearCompliance} className="p-1 hover:bg-amber-200 rounded-lg text-amber-600">
-                <AlertCircle className="w-3 h-3" />
+              <button
+                onClick={clearCompliance}
+                className="p-0.5 hover:bg-amber-200/50 rounded-full text-amber-700 transition-colors duration-150 cursor-pointer"
+                title="Limpiar archivos de incumplimiento"
+              >
+                <AlertCircle className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
-          <div className="flex flex-wrap gap-2">
-            <button 
+          <div className="flex flex-wrap items-center gap-2">
+            <button
               onClick={() => downloadPDF('novandino')}
               disabled={aggregatedData1.length === 0 || downloadingPdf}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-nucleo border-2 border-nucleo/10 hover:border-nucleo/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors duration-150 ease-out bg-white disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
             >
               {downloadingPdf ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#461D77]" />
               ) : (
-                <FileText className="w-4 h-4" />
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
               )}
-              PDF Novandino
+              <span>PDF Novandino</span>
             </button>
-            <button 
+            <button
               onClick={() => downloadPNG('novandino')}
               disabled={aggregatedData1.length === 0}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-nucleo border-2 border-nucleo/10 hover:border-nucleo/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors duration-150 ease-out bg-white disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
             >
-              <Image className="w-4 h-4" /> PNG Novandino
+              <Image className="w-3.5 h-3.5 text-slate-500" />
+              <span>PNG Novandino</span>
             </button>
-            <button 
+            <button
               onClick={() => downloadPDF('sqm')}
               disabled={aggregatedData2.length === 0 || downloadingPdf}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-mineral border-2 border-mineral/10 hover:border-mineral/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors duration-150 ease-out bg-white disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
             >
               {downloadingPdf ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#461D77]" />
               ) : (
-                <FileText className="w-4 h-4" />
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
               )}
-              PDF SQM
+              <span>PDF SQM</span>
             </button>
-            <button 
+            <button
               onClick={() => downloadPNG('sqm')}
               disabled={aggregatedData2.length === 0}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-mineral border-2 border-mineral/10 hover:border-mineral/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors duration-150 ease-out bg-white disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
             >
-              <Image className="w-4 h-4" /> PNG SQM
+              <Image className="w-3.5 h-3.5 text-slate-500" />
+              <span>PNG SQM</span>
             </button>
-            <button onClick={downloadTemplate} className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-violeta border-2 border-violeta/10 hover:border-violeta/30 rounded-xl transition-all active:scale-95 bg-white">
-              <Download className="w-4 h-4" /> Plantilla
+            <button
+              onClick={downloadTemplate}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors duration-150 ease-out bg-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <span>Plantilla</span>
             </button>
-            <label className="flex items-center gap-2 px-6 py-3 bg-violeta text-white font-bold rounded-xl cursor-pointer hover:bg-violeta/90 transition-all shadow-lg active:scale-95">
-              <Upload className="w-4 h-4" /> <span>Cargar Archivos</span>
-              <input type="file" className="hidden" accept=".xlsx, .xls, .csv, .xlsm, .json" multiple onChange={handleFileUpload} />
+            <label className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#461D77] to-[#7177EC] hover:opacity-95 text-white text-xs font-bold rounded-xl cursor-pointer transition-all duration-150 ease-out shadow-md shadow-[#461D77]/20 focus-within:ring-2 focus-within:ring-[#461D77] focus-within:ring-offset-1">
+              <Upload className="w-3.5 h-3.5" />
+              <span>Cargar Archivos</span>
+              <input
+                type="file"
+                className="hidden"
+                accept=".xlsx, .xls, .csv, .xlsm, .json"
+                multiple
+                onChange={handleFileUpload}
+              />
             </label>
           </div>
         </div>
       </header>
 
       {fileName && (
-        <div className={`flex items-center gap-3 p-4 rounded-2xl border transition-all duration-300 ${status === 'success' ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
-          {status === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <AlertCircle className="w-5 h-5 text-rose-500" />}
-          <div className="flex-1">
-            <span className="font-bold text-sm text-slate-800">{fileName}</span>
-            {error && <p className="text-xs mt-1 font-medium text-rose-600">{error}</p>}
+        <div
+          className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors duration-150 shadow-sm ${
+            status === 'success'
+              ? 'bg-white/90 border-slate-200/80'
+              : 'bg-rose-50 border-rose-200'
+          }`}
+        >
+          {status === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <span className="font-mono text-xs font-bold text-slate-800 truncate block">
+              {fileName}
+            </span>
+            {error && (
+              <p className="text-xs mt-0.5 font-medium text-rose-700">{error}</p>
+            )}
           </div>
           {status === 'success' && (
-            <span className="text-[10px] font-black uppercase tracking-widest bg-violeta text-white px-3 py-1 rounded-lg">Cargado Exitosamente</span>
+            <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-0.5 rounded-full shrink-0">
+              Cargado
+            </span>
           )}
         </div>
       )}
 
-      {/* Advanced interactive Drag & Drop landing zone if no data is loaded */}
+      {/* Interactive Drag & Drop zone when no data is loaded */}
       {allData.length === 0 ? (
-        <div 
+        <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative overflow-hidden min-h-[420px] flex flex-col items-center justify-center border-4 border-dashed rounded-[3rem] p-12 transition-all duration-300 bg-white ${
-            isDragging 
-              ? 'border-violeta bg-violeta/5 scale-[1.01] shadow-2xl' 
-              : 'border-slate-200 hover:border-violeta/30 hover:bg-slate-50/50 shadow-sm'
+          className={`min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed rounded-3xl p-10 transition-colors duration-150 ease-out bg-white/90 backdrop-blur-md shadow-xl shadow-slate-200/40 ${
+            isDragging
+              ? 'border-[#461D77] bg-[#461D77]/5'
+              : 'border-slate-300 hover:border-[#461D77]/50'
           }`}
         >
           {isUploading ? (
-            <div className="flex flex-col items-center space-y-6 max-w-md w-full text-center">
-              <div className="relative flex items-center justify-center w-20 h-20 bg-violeta/5 rounded-full">
-                <Loader2 className="w-12 h-12 text-violeta animate-spin" />
-                <span className="absolute text-[11px] font-black text-slate-800">{uploadProgress}%</span>
+            <div className="flex flex-col items-center space-y-5 max-w-md w-full text-center">
+              <div className="relative flex items-center justify-center w-16 h-16 bg-[#461D77]/10 border border-[#461D77]/20 rounded-2xl">
+                <Loader2 className="w-7 h-7 text-[#461D77] animate-spin" />
               </div>
-              <div className="space-y-2 w-full">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Procesando Archivo Operativo</h3>
-                <p className="text-[11px] text-slate-500 font-bold">Analizando cabeceras dinámicas y mapeando registros...</p>
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-4 border border-slate-200">
-                  <div 
-                    className="h-full bg-violeta rounded-full transition-all duration-100 ease-out" 
+              <div className="space-y-1.5 w-full">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                  <span>Procesando archivo operativo</span>
+                  <span className="font-mono tabular-nums text-[#461D77]">{uploadProgress}%</span>
+                </div>
+                <p className="text-xs text-slate-500 text-left">
+                  Analizando cabeceras dinámicas y mapeando registros...
+                </p>
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-2">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#461D77] to-[#7177EC] transition-all duration-150 ease-out"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center text-center space-y-6 max-w-xl">
-              <div className="p-6 bg-violeta/10 rounded-full text-violeta mb-1 animate-bounce">
-                <Upload className="w-8 h-8" />
+            <div className="flex flex-col items-center text-center space-y-5 max-w-lg">
+              <div className="w-14 h-14 bg-[#461D77]/10 border border-[#461D77]/20 rounded-2xl flex items-center justify-center text-[#461D77]">
+                <Upload className="w-6 h-6" />
               </div>
-              <div className="space-y-2">
-                <h2 className="text-lg font-black text-violeta uppercase tracking-widest">Arrastra tus Archivos Aquí</h2>
-                <p className="text-xs text-slate-500 font-semibold max-w-md leading-relaxed">
-                  Soporta plantillas comparativas de turnos en formato <span className="text-emerald-600 font-bold">Excel (.xlsx, .xls)</span> o archivos de justificación <span className="text-amber-500 font-bold">JSON (.json)</span> de desviaciones.
+              <div className="space-y-1.5">
+                <h2 className="text-lg font-black text-slate-800 tracking-tight">
+                  Cargar Planilla de Turno
+                </h2>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  Arrastra plantillas comparativas en formato Excel (.xlsx, .xls) o archivos JSON de justificación de desviaciones.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-wider">
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" /> Excel Base
-                <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                <FileText className="w-3.5 h-3.5 text-amber-500" /> JSON Justificaciones
+              <div className="flex items-center gap-4 text-xs font-mono text-slate-400 border-y border-slate-200 py-2 px-4">
+                <span className="inline-flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Excel Base
+                </span>
+                <span aria-hidden="true" className="text-slate-300">·</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-amber-600" /> JSON Justificaciones
+                </span>
               </div>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-                <label className="flex items-center gap-2 px-8 py-3.5 bg-violeta text-white font-black rounded-2xl cursor-pointer hover:bg-violeta/90 transition-all shadow-lg hover:shadow-violeta/20 active:scale-95 uppercase tracking-wider text-[10px]">
-                  <Upload className="w-4 h-4" /> Seleccionar Archivo
-                  <input type="file" className="hidden" accept=".xlsx, .xls, .csv, .xlsm, .json" multiple onChange={handleFileUpload} />
+              <div className="pt-1 flex flex-col sm:flex-row items-center gap-3">
+                <label className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#461D77] to-[#7177EC] hover:opacity-95 text-white text-xs font-bold rounded-xl cursor-pointer transition-all duration-150 ease-out shadow-md shadow-[#461D77]/20">
+                  <Upload className="w-4 h-4" />
+                  <span>Seleccionar Archivo</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".xlsx, .xls, .csv, .xlsm, .json"
+                    multiple
+                    onChange={handleFileUpload}
+                  />
                 </label>
-                <button 
-                  onClick={downloadTemplate} 
-                  className="flex items-center gap-2 px-6 py-3.5 text-[10px] font-black text-slate-600 border-2 border-slate-200 hover:border-slate-300 rounded-2xl transition-all active:scale-95 bg-white uppercase tracking-wider cursor-pointer"
+                <button
+                  onClick={downloadTemplate}
+                  className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors duration-150 ease-out bg-white cursor-pointer"
                 >
-                  <Download className="w-4 h-4" /> Plantilla Base
+                  <Download className="w-4 h-4 text-slate-500" />
+                  <span>Plantilla Base</span>
                 </button>
               </div>
             </div>
           )}
         </div>
       ) : (
-        <main className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <AnalysisPanel 
-            title="NOVANDINO" 
-            data={aggregatedData1} 
-            range={range1} 
-            setRange={setRange1} 
-            colorIdx={1} 
-            complianceData={complianceData} 
+        <main className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <AnalysisPanel
+            title="NOVANDINO"
+            data={aggregatedData1}
+            allData={allData}
+            uniqueDates={uniqueDates}
+            range={range1}
+            setRange={setRange1}
+            colorIdx={1}
+            complianceData={complianceData}
             analysis={novandinoAnalysis}
             setAnalysis={setNovandinoAnalysis}
+            globalAiSettings={globalAiSettings}
+            userAiEnabled={userAiEnabled}
           />
-          <AnalysisPanel 
-            title="SQM N.Y." 
-            data={aggregatedData2} 
-            range={range2} 
-            setRange={setRange2} 
-            colorIdx={2} 
-            complianceData={complianceData} 
+          <AnalysisPanel
+            title="SQM N.Y."
+            data={aggregatedData2}
+            allData={allData}
+            uniqueDates={uniqueDates}
+            range={range2}
+            setRange={setRange2}
+            colorIdx={2}
+            complianceData={complianceData}
             analysis={sqmAnalysis}
             setAnalysis={setSqmAnalysis}
+            globalAiSettings={globalAiSettings}
+            userAiEnabled={userAiEnabled}
           />
         </main>
       )}
 
-      <footer className="text-center pb-8 border-t border-slate-100 pt-8 mt-12">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Excel Analytic Platform · Modo Dual Activo</p>
+      <footer className="text-center border-t border-slate-200/80 pt-6 pb-8 mt-8">
+        <p className="text-xs font-mono text-slate-400">
+          Análisis de Turno · Modo Comparativo Dual
+        </p>
       </footer>
     </div>
   );

@@ -41,6 +41,7 @@ import { GlobalTopBar } from './GlobalTopBar';
 import { CommandPalette } from './CommandPalette';
 import { NotFoundView } from './NotFoundView';
 import { ControlRoomOverlay } from './ControlRoomOverlay';
+import { getOperationalSnapshot, saveOperationalSnapshot } from '../services/offlineDb';
 
 declare const html2canvas: any;
 declare const jspdf: any;
@@ -327,6 +328,7 @@ const App: React.FC = () => {
                 setRawData(parsed);
                 setSelectedDate(latest.date);
                 localStorage.setItem('sqm_raw_data', JSON.stringify(parsed));
+                void saveOperationalSnapshot('operational_raw', parsed, parsed.length);
                 // Also restore any historical sqm_ keys from backup
                 Object.entries(backup).forEach(([k, v]) => {
                   if (k.startsWith('sqm_') && k !== 'sqm_current_user' && typeof v === 'string') {
@@ -338,6 +340,12 @@ const App: React.FC = () => {
           }
         } catch (e) {
           console.error("Error auto-fetching reports from Firebase on startup:", e);
+          const offlineSnapshot = await getOperationalSnapshot<any[]>('operational_raw');
+          if (offlineSnapshot?.data && Array.isArray(offlineSnapshot.data) && offlineSnapshot.data.length > 0) {
+            setRawData(offlineSnapshot.data);
+            const dates = [...new Set(offlineSnapshot.data.map((r: any) => r.Fecha))].sort().reverse();
+            if (dates.length > 0) setSelectedDate(dates[0] as string);
+          }
         }
       })();
     }
@@ -687,6 +695,7 @@ const App: React.FC = () => {
         localStorage.removeItem('sqm_raw_data');
         setRawData(processed);
         localStorage.setItem('sqm_raw_data', JSON.stringify(processed));
+        void saveOperationalSnapshot('operational_raw', processed, processed.length);
         const dates = [...new Set(processed.map(r => r.Fecha))].sort().reverse();
         if (dates.length > 0) setSelectedDate(dates[0]);
         
@@ -1090,47 +1099,47 @@ const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsSidebarCollapsed(false)}
-            className="fixed top-20 left-0 z-50 bg-[#461D77] text-white hover:bg-[#381660] border border-l-0 border-white/20 rounded-r-2xl p-3 shadow-2xl flex items-center justify-center transition-all duration-300 cursor-pointer no-print animate-in fade-in slide-in-from-left-2 group"
+            className="fixed top-20 left-0 z-50 bg-[#461D77] text-white hover:bg-[#36155E] border border-l-0 border-[#461D77] rounded-r-xl p-2.5 shadow-lg flex items-center justify-center transition-all duration-200 cursor-pointer no-print group"
             title="Mostrar Menú Lateral"
           >
-            <ChevronRight size={20} className="text-[#4FD1C5] group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight size={18} className="text-white group-hover:translate-x-0.5 transition-transform duration-150" />
           </button>
         )}
 
-        <aside className={`bg-levanda border-r border-violeta/20 flex flex-col no-print shrink-0 relative transition-all duration-300 ${
-          isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden border-r-0' : 'w-[300px] opacity-100'
+        <aside className={`bg-white/90 backdrop-blur-md border-r border-slate-200/80 flex flex-col no-print shrink-0 relative transition-all duration-300 ease-out shadow-sm ${
+          isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden border-r-0' : 'w-[290px] opacity-100'
         }`}>
           {/* BOTÓN PARA OCULTAR EL MENÚ LATERAL */}
           <button
             type="button"
             onClick={() => setIsSidebarCollapsed(true)}
-            className="absolute top-4 right-3 z-30 w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-violeta/20 flex items-center justify-center text-[#461D77] shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer no-print"
+            className="absolute top-4 right-3 z-30 w-8 h-8 rounded-xl bg-slate-50 hover:bg-[#461D77]/10 border border-slate-200 flex items-center justify-center text-[#461D77] transition-all duration-150 cursor-pointer no-print shadow-xs"
             title="Ocultar Menú Lateral"
           >
             <ChevronLeft size={16} />
           </button>
 
-          <div className="p-6 overflow-y-auto flex-1 space-y-8">
-            <div className="flex flex-col gap-2 mb-4">
+          <div className="p-5 overflow-y-auto flex-1 space-y-6">
+            <div className="flex flex-col gap-2 mb-2">
               {activeLocation && (
-                <button 
+                <button
                   onClick={() => {
                     handleBack();
-                  }} 
-                  className="flex items-center gap-2 text-[#461D77] hover:text-nucleo font-black text-[10px] uppercase tracking-widest transition-colors group cursor-pointer"
+                  }}
+                  className="flex items-center gap-2 text-[#461D77] hover:text-[#36155E] font-bold text-xs uppercase tracking-wider transition-colors group cursor-pointer"
                 >
-                  <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver a Módulo {activeLocation}
+                  <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform duration-150" /> Volver a {activeLocation}
                 </button>
               )}
-              
-              <button 
+
+              <button
                 onClick={() => {
                   setActiveLocation(null);
                   navigateTo('menu');
-                }} 
-                className="flex items-center gap-2 text-slate-400 hover:text-slate-600 font-black text-[10px] uppercase tracking-widest transition-colors group cursor-pointer"
+                }}
+                className="flex items-center gap-2 text-slate-500 hover:text-[#461D77] font-bold text-xs uppercase tracking-wider transition-colors group cursor-pointer"
               >
-                <Home size={14} className="group-hover:-translate-x-1 transition-transform" /> Menú Principal
+                <Home size={13} className="group-hover:-translate-x-0.5 transition-transform duration-150" /> Menú Principal
               </button>
             </div>
 
@@ -1141,14 +1150,14 @@ const App: React.FC = () => {
             />
             {rawData.length > 0 && (
               <>
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-violeta">Jornada</p>
-                  <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full bg-white border border-violeta/20 rounded-2xl px-4 py-3 text-sm font-black text-tecnico outline-none focus:ring-4 focus:ring-ionizado/10">
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Jornada</p>
+                  <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 focus:border-[#461D77] rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 outline-none shadow-xs">
                     {[...new Set(rawData.map(r => r.Fecha))].sort().reverse().map(d => <option key={d as string} value={d as string}>{formatDateToCL(d as string)}</option>)}
                   </select>
                 </div>
-                <div className="space-y-3 pt-4 border-t border-slate-200/50">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[#461D77] mb-1">Herramientas</p>
+                <div className="space-y-2.5 pt-4 border-t border-slate-200/80">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Herramientas</p>
                   <ExportDownloadButton
                     type="pdf"
                     onClick={handleExportPDF}
@@ -1159,13 +1168,13 @@ const App: React.FC = () => {
                     onClick={handleExportImage}
                     isLoading={exportingImage}
                   />
-                  <OutlookSendButton 
-                    onClick={() => setIsOutlookModalOpen(true)} 
+                  <OutlookSendButton
+                    onClick={() => setIsOutlookModalOpen(true)}
                     autoreset={1800}
                   />
 
-                  <FirebaseSyncButton 
-                    onSync={() => handleSyncToFirebase(selectedDate)} 
+                  <FirebaseSyncButton
+                    onSync={() => handleSyncToFirebase(selectedDate)}
                     isSyncingExternal={isSyncingFirebase}
                   />
                 </div>
@@ -1173,50 +1182,51 @@ const App: React.FC = () => {
             )}
           </div>
         </aside>
-        <main className="flex-1 overflow-y-auto relative bg-white">
+        <main className="flex-1 overflow-y-auto relative bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED]">
           {isRunning && (
-            <div className="absolute top-4 right-8 z-50 flex items-center gap-3 bg-white px-5 py-2 rounded-full shadow-2xl border border-violeta/10 animate-in fade-in slide-in-from-top-2 no-print">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-ionizado" />
-              <span className="text-[10px] font-black text-violeta uppercase tracking-[0.2em]">Cargando Informe...</span>
+            <div className="absolute top-4 right-6 z-50 flex items-center gap-2.5 bg-white/95 backdrop-blur-md px-4 py-2 rounded-full shadow-md border border-slate-200 no-print">
+              <Loader2 className="w-4 h-4 animate-spin text-[#461D77]" />
+              <span className="text-[11px] font-bold text-[#461D77] uppercase tracking-wider">Procesando...</span>
             </div>
           )}
-          <div className="max-w-5xl mx-auto p-8 space-y-0" id="dashboard-report">
+          <div className="max-w-5xl mx-auto p-6 sm:p-8 space-y-6" id="dashboard-report">
             {rawData.length === 0 ? (
-              <div className="py-20 flex flex-col items-center text-center space-y-8 max-w-2xl mx-auto">
-                <div className="w-24 h-24 bg-calido rounded-[2.5rem] flex items-center justify-center text-violeta/20"><BarChart3 size={48} /></div>
+              <div className="bg-white/90 backdrop-blur-md rounded-[2.2rem] shadow-xl border border-white py-20 px-8 flex flex-col items-center text-center space-y-6 max-w-xl mx-auto mt-8">
+                <div className="w-16 h-16 bg-[#461D77]/10 rounded-2xl flex items-center justify-center text-[#461D77]">
+                  <BarChart3 size={28} />
+                </div>
                 <div>
-                  <h2 className="text-3xl font-[900] text-nucleo tracking-tighter uppercase mb-2">Gestión de Despacho Litio</h2>
-                  <p className="text-violeta/60 font-medium">Cargue un archivo base para iniciar el análisis operativo.</p>
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase mb-1.5">Gestión de Despacho Litio</h2>
+                  <p className="text-sm text-slate-500">Cargue un archivo base Excel en el panel izquierdo para iniciar el informe.</p>
                 </div>
 
                 {uploadError && (
-                  <div className="w-full bg-rose-50 border border-rose-200 rounded-3xl p-6 text-left space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="w-full bg-red-50 border border-red-200 rounded-2xl p-5 text-left space-y-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-600 font-extrabold shrink-0">!</div>
+                      <div className="w-7 h-7 rounded-xl bg-red-100 flex items-center justify-center text-red-700 font-bold shrink-0">!</div>
                       <div>
-                        <h4 className="font-extrabold text-rose-950 text-sm">Error al Interpretar la Base de Datos</h4>
-                        <p className="text-xs text-rose-800/80 mt-1">{uploadError.message}</p>
+                        <h4 className="font-bold text-slate-800 text-sm">Error al interpretar la base de datos</h4>
+                        <p className="text-xs text-red-700 mt-1">{uploadError.message}</p>
                       </div>
                     </div>
 
                     {uploadError.missingColumns && uploadError.missingColumns.length > 0 && (
-                      <div className="bg-white/80 border border-rose-100 rounded-2xl p-4 text-xs space-y-2">
-                        <span className="font-black text-[10px] text-rose-900 uppercase tracking-widest block">Columnas críticas faltantes:</span>
+                      <div className="bg-white border border-red-200 rounded-xl p-3.5 text-xs space-y-2">
+                        <span className="text-[10px] font-bold text-red-700 uppercase tracking-wider block">Columnas críticas faltantes:</span>
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           {uploadError.missingColumns.map((col, cIdx) => (
-                            <span key={cIdx} className="bg-rose-100 text-rose-800 px-2 py-1 rounded-lg font-bold text-[10px]">{col}</span>
+                            <span key={cIdx} className="bg-red-50 border border-red-200 text-red-700 px-2 py-0.5 rounded-lg font-mono text-[11px] font-semibold">{col}</span>
                           ))}
                         </div>
                       </div>
                     )}
 
                     {uploadError.foundHeaders && uploadError.foundHeaders.length > 0 && (
-                      <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4 text-xs space-y-2 max-h-40 overflow-y-auto">
-                        <span className="font-black text-[10px] text-slate-700 uppercase tracking-widest block">Cabeceras leídas en el Excel:</span>
-                        <p className="text-[10px] text-slate-500 mb-2">Asegúrese de renombrar las columnas relevantes para coincidir con el formato requerido:</p>
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs space-y-2 max-h-40 overflow-y-auto">
+                        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">Cabeceras leídas en el Excel:</span>
                         <div className="flex flex-wrap gap-1">
                           {uploadError.foundHeaders.map((hdr, hIdx) => (
-                            <span key={hIdx} className="bg-slate-200/75 text-slate-700 px-1.5 py-0.5 rounded text-[9px] font-mono">{hdr}</span>
+                            <span key={hIdx} className="bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-md text-[10px] font-mono">{hdr}</span>
                           ))}
                         </div>
                       </div>
@@ -1252,13 +1262,13 @@ const App: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div id="executive-summary-capture" className="no-pdf space-y-8 bg-white min-h-[1000px] flex flex-col mb-10 no-page-break">
-                    <div className="bg-white p-8 space-y-10 flex-1">
-                      <div className="flex justify-between items-start pb-8 border-b-2 border-calido">
+                  <div id="executive-summary-capture" className="no-pdf bg-white rounded-[2.5rem] shadow-xl border border-slate-200/80 space-y-8 min-h-[1000px] flex flex-col mb-10 no-page-break overflow-hidden">
+                    <div className="p-8 space-y-10 flex-1">
+                      <div className="flex justify-between items-start pb-8 border-b border-slate-100">
                         <div className="flex flex-col items-start gap-4">
                           <NovandinoLogo className="h-32 w-[480px] max-w-full" variant="print" />
                           <div>
-                            <h1 className="text-5xl font-[900] text-nucleo tracking-tighter leading-tight mb-1 uppercase">
+                            <h1 className="text-5xl font-[900] text-slate-800 tracking-[-0.03em] leading-tight mb-1 uppercase">
                               {view === 'informe-sqm' ? (
                                 <>
                                   INFORME OPERATIVO<br />SQM NY
@@ -1267,53 +1277,69 @@ const App: React.FC = () => {
                                 'INFORME OPERATIVO NOVANDINO'
                               )}
                             </h1>
-                            <p className="text-violeta font-bold text-[10px] tracking-[0.4em] uppercase">{reportSubtitle}</p>
+                            <p className="text-[#461D77] font-bold text-[10px] tracking-[0.4em] uppercase">{reportSubtitle}</p>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-violeta font-bold text-[10px] tracking-[0.3em] uppercase mb-1">FECHA JORNADA</p>
-                          <p className="text-2xl font-[900] text-ionizado tracking-tighter whitespace-nowrap">{formatDateToCL(selectedDate)}</p>
+                        <div className="bg-gradient-to-br from-[#1e1b4b] via-[#311042] to-[#110e2e] text-white px-6 py-4 rounded-2xl border border-white/10 text-right shrink-0 shadow-lg">
+                          <p className="text-[#4FD1C5] font-bold text-[10px] tracking-[0.2em] uppercase mb-1">FECHA JORNADA</p>
+                          <p className="text-2xl font-[900] text-white tabular-nums tracking-tight whitespace-nowrap">{formatDateToCL(selectedDate)}</p>
                         </div>
                       </div>
                     {filteredData.length > 0 && (
-                      <div className="bg-white rounded-[2.5rem] p-10 border-2 border-ionizado/10 border-l-[12px] border-l-ionizado space-y-8 shadow-sm">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-ionizado"><span className="font-black uppercase tracking-[0.3em] text-[10px]">KPIs OPERATIVOS</span></div>
-                          <h2 className="text-4xl font-[900] text-nucleo tracking-tighter uppercase">Cumplimiento Global</h2>
+                      <div className="bg-slate-50/70 border border-slate-200/70 rounded-3xl p-6 space-y-5">
+                        <div className="flex items-end justify-between border-b border-slate-200/80 pb-3">
+                          <div className="space-y-0.5">
+                            <span className="font-bold uppercase tracking-[0.2em] text-[10px] text-[#7177EC] block">KPIs Operativos</span>
+                            <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Cumplimiento Global</h2>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-4 gap-4 pt-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                           {operationalKPIs?.map((kpi, idx) => {
+                            const isFeatured = idx === 0;
                             return (
-                              <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02),0_12px_24px_-10px_rgba(70,29,119,0.05)] flex flex-col justify-between min-h-[145px] hover:shadow-[0_8px_30px_rgba(70,29,119,0.08)] hover:border-[#461D77]/15 transition-all duration-300 group relative overflow-hidden">
-                                <div className="absolute top-0 inset-x-0 h-[3px] bg-slate-100 group-hover:bg-[#461D77]/80 transition-all duration-300 rounded-t-2xl"></div>
+                              <div key={idx} className={`p-4 rounded-2xl flex flex-col justify-between min-h-[132px] border transition-all ${
+                                isFeatured
+                                  ? 'bg-gradient-to-br from-[#461D77] to-[#311042] text-white border-[#461D77] shadow-md'
+                                  : 'bg-white text-slate-800 border-slate-200/80 shadow-xs'
+                              }`}>
                                 <div className="flex items-start gap-2.5">
-                                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-50 text-slate-400 group-hover:bg-[#461D77]/8 group-hover:text-[#461D77] transition-all duration-300 shrink-0">
+                                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                                    isFeatured ? 'bg-white/15 text-[#4FD1C5]' : 'bg-[#461D77]/10 text-[#461D77]'
+                                  }`}>
                                     {kpi.icon}
                                   </div>
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 group-hover:text-[#461D77] transition-colors duration-300 leading-tight block">
+                                  <span className={`text-[10px] font-bold uppercase tracking-wider leading-tight block ${
+                                    isFeatured ? 'text-purple-100' : 'text-slate-500'
+                                  }`}>
                                     {kpi.label}
                                   </span>
                                 </div>
-                                <div className="mt-3">
-                                  <span className="text-3xl font-[900] tracking-tight text-slate-800 leading-none block">
+                                <div className="mt-2.5">
+                                  <span className={`tabular-nums text-2xl font-black tracking-tight leading-none block ${
+                                    isFeatured ? 'text-white' : 'text-slate-800'
+                                  }`}>
                                     {kpi.value}
                                   </span>
                                 </div>
-                                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                                  <span className="text-[8px] font-black text-black uppercase tracking-widest leading-none">vs día anterior</span>
+                                <div className={`mt-2.5 pt-2 border-t flex items-center justify-between ${
+                                  isFeatured ? 'border-white/15' : 'border-slate-100'
+                                }`}>
+                                  <span className={`text-[9px] font-bold uppercase tracking-wider leading-none ${
+                                    isFeatured ? 'text-purple-200' : 'text-slate-400'
+                                  }`}>vs anterior</span>
                                   {kpi.comparison ? (
-                                    <span className={`text-[10px] font-black flex items-center gap-0.5 select-none leading-none ${
+                                    <span className={`tabular-nums text-[10px] font-bold flex items-center gap-0.5 select-none leading-none ${
                                       !kpi.comparison.isChange
-                                        ? 'text-black'
+                                        ? (isFeatured ? 'text-purple-200' : 'text-slate-400')
                                         : kpi.comparison.isPositive
-                                          ? 'text-emerald-600'
-                                          : 'text-rose-600'
+                                          ? (isFeatured ? 'text-[#4FD1C5]' : 'text-emerald-600')
+                                          : (isFeatured ? 'text-rose-300' : 'text-rose-600')
                                     }`} title="Comparado con la jornada anterior">
-                                      <span className="text-[11px] font-bold leading-none">{kpi.comparison.arrow}</span>
+                                      <span>{kpi.comparison.arrow}</span>
                                       <span>{kpi.comparison.text}</span>
                                     </span>
                                   ) : (
-                                    <span className="text-[9px] text-black italic font-black">S/D anterior</span>
+                                    <span className={`text-[9px] font-semibold ${isFeatured ? 'text-purple-200' : 'text-slate-400'}`}>S/D</span>
                                   )}
                                 </div>
                               </div>
@@ -1322,14 +1348,14 @@ const App: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    <div className="pt-6">
+                    <div className="pt-2">
                       <ChartCard type="composed" xAxis="Producto" yAxis={['Ton_Prog', 'Ton_Real', 'faenaMetaHours', 'faenaRealHours']} title="Análisis Comparativo" data={filteredData} />
                     </div>
                   </div>
                   <div className="px-8 pb-8 mt-auto"><ReportFooter /></div>
                 </div>
                 {productList.map((prod, idx) => (
-                  <div key={`${selectedDate}-${prod}`} id={`product-section-${idx}`} className="page-break-before bg-white block w-full pt-4" style={{ minHeight: '330mm' }}>
+                  <div key={`${selectedDate}-${prod}`} id={`product-section-${idx}`} className="page-break-before bg-white block w-full pt-4 rounded-3xl" style={{ minHeight: '330mm' }}>
                     <div className="px-4">
                       <ProductDetailSection product={prod} data={filteredData.filter(d => d.Producto === prod)} allData={separatedRawData} date={selectedDate} index={idx + 1} total={productList.length} />
                     </div>
@@ -1344,7 +1370,7 @@ const App: React.FC = () => {
     );
   };
 
-  // If no user is logged in, interrupt rendering and enforce Login Screen
+  // If no user is logged in, show LoginScreen directly
   if (!currentUser) {
     return <LoginScreen onLoginSuccess={setCurrentUser} />;
   }
@@ -1388,6 +1414,7 @@ const App: React.FC = () => {
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
       />
+
       {passwordRequest && (
         <PasswordPrompt 
           correctPassword="MIRAME"
@@ -1408,53 +1435,53 @@ const App: React.FC = () => {
 
       {/* Interactive Outlook Composer Assistant Modal */}
       {isOutlookModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-2xl rounded-[2.2rem] shadow-2xl border border-black/[0.04] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 text-left">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl border border-slate-200 overflow-hidden flex flex-col text-left">
             {/* Header */}
-            <div className="bg-slate-50/80 backdrop-blur-sm px-8 py-6 border-b border-black/[0.04] flex justify-between items-center shrink-0">
+            <div className="bg-gradient-to-r from-[#461D77] to-[#7177EC] px-6 py-5 flex justify-between items-center shrink-0 text-white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-violeta/10 text-violeta flex items-center justify-center shadow-sm">
-                  <Mail size={20} />
+                <div className="w-10 h-10 rounded-xl bg-white/15 text-white flex items-center justify-center">
+                  <Mail size={18} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-[900] text-slate-800 tracking-tight leading-none uppercase">Compartir por Outlook</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Asistente de correo corporativo</p>
+                  <h3 className="text-base font-black tracking-tight leading-none uppercase">Compartir por Outlook</h3>
+                  <p className="text-[11px] text-purple-100 mt-1">Asistente de correo corporativo</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsOutlookModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-white rounded-full shadow-sm border border-slate-100"
+                className="p-2 text-white/80 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-xl cursor-pointer"
               >
                 <X size={16} />
               </button>
             </div>
 
             {/* Form Content */}
-            <div className="p-8 space-y-4 overflow-y-auto max-h-[70vh]">
+            <div className="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Destinatarios (Para)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Destinatarios (Para)</label>
                     <Lock size={10} className="text-slate-400" />
                   </div>
                   <input
                     type="text"
                     value={emailTo}
                     readOnly
-                    className="w-full bg-slate-100/70 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-500 cursor-not-allowed select-all outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-600 cursor-not-allowed select-all outline-none"
                     placeholder="ejemplo@novandino.cl"
                   />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Copia (CC)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Copia (CC)</label>
                     <Lock size={10} className="text-slate-400" />
                   </div>
                   <input
                     type="text"
                     value={emailCC}
                     readOnly
-                    className="w-full bg-slate-100/70 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-500 cursor-not-allowed select-all outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-600 cursor-not-allowed select-all outline-none"
                     placeholder="ejemplo@novandino.cl"
                   />
                 </div>
@@ -1462,84 +1489,73 @@ const App: React.FC = () => {
 
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Asunto del Correo</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Asunto del Correo</label>
                   <Lock size={10} className="text-slate-400" />
                 </div>
                 <input
                   type="text"
                   value={emailSubject}
                   readOnly
-                  className="w-full bg-slate-100/70 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-500 cursor-not-allowed select-all outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 cursor-not-allowed select-all outline-none"
                 />
               </div>
 
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Vista Previa del Cuerpo</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Vista Previa del Cuerpo</label>
                     <Lock size={10} className="text-slate-400" />
                   </div>
-                  <span className="text-[8px] font-black bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full uppercase tracking-wider">KPIs Generados</span>
+                  <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full uppercase">KPIs Generados</span>
                 </div>
                 <textarea
                   rows={8}
                   value={emailBody}
                   readOnly
-                  className="w-full bg-slate-100/70 border border-slate-200 rounded-xl p-4 text-xs font-mono text-slate-500 cursor-not-allowed select-all outline-none leading-relaxed resize-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs font-mono text-slate-700 cursor-not-allowed select-all outline-none leading-relaxed resize-none"
                 />
               </div>
-              
-              <div className="bg-[#461D77]/5 border border-[#461D77]/10 p-4 rounded-2xl flex items-start gap-3">
+
+              <div className="bg-purple-50/70 border border-purple-200/80 p-4 rounded-2xl flex items-start gap-3">
                 <div className="text-[#461D77] shrink-0 mt-0.5"><FileText size={16} /></div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#461D77]">Instrucciones de envío corporativo:</p>
-                  <p className="text-[10px] text-slate-600 font-bold leading-relaxed mt-1">
-                    1. Descarga el informe en PDF y PNG usando los botones del panel lateral izquierda.
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">
-                    2. Haz clic en "Abrir Outlook" para iniciar la redacción con los destinatarios, CC y asunto pre-configurados.
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">
-                    3. Pega la imagen PNG del dashboard directamente en el cuerpo del correo (Ctrl + V).
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">
-                    4. Adjunta el archivo PDF descargado antes de presionar enviar.
-                  </p>
+                <div className="text-[11px] text-slate-600 space-y-0.5">
+                  <p className="font-bold uppercase tracking-wider text-[#461D77]">Instrucciones de envío:</p>
+                  <p>1. Descargue el informe en PDF y PNG en el panel lateral.</p>
+                  <p>2. Haga clic en Abrir Outlook para iniciar la redacción con los destinatarios configurados.</p>
+                  <p>3. Pegue la imagen PNG en el cuerpo (Ctrl + V) y adjunte el archivo PDF.</p>
                 </div>
               </div>
             </div>
 
             {/* Footer Actions */}
-            <div className="bg-slate-50 px-8 py-5 border-t border-black/[0.04] flex flex-col sm:flex-row sm:justify-end gap-3 shrink-0">
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row sm:justify-end gap-2.5 shrink-0">
               <button
                 onClick={() => setIsOutlookModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer"
               >
                 Cancelar
               </button>
-              
-              {/* Desktop Client button (mailto) */}
+
               <button
                 onClick={() => {
                   const mailtoUrl = `mailto:${encodeURIComponent(emailTo)}?cc=${encodeURIComponent(emailCC)}&subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
                   window.open(mailtoUrl, '_self');
                   setIsOutlookModalOpen(false);
                 }}
-                className="px-5 py-2.5 rounded-xl bg-violeta hover:bg-violeta/90 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-violeta/10"
+                className="px-4 py-2.5 rounded-xl bg-[#461D77] hover:bg-[#36155E] text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors duration-150 cursor-pointer shadow-sm"
               >
-                <Send size={12} /> Abrir Outlook Escritorio
+                <Send size={13} /> Abrir Outlook Escritorio
               </button>
 
-              {/* Web Client button (M365) */}
               <button
                 onClick={() => {
                   const owaUrl = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(emailTo)}&cc=${encodeURIComponent(emailCC)}&subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
                   window.open(owaUrl, '_blank');
                   setIsOutlookModalOpen(false);
                 }}
-                className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-sky-600/10"
+                className="px-4 py-2.5 rounded-xl bg-[#7177EC] hover:bg-[#5E64D9] text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors duration-150 cursor-pointer shadow-sm"
               >
-                <Mail size={12} /> Abrir Outlook Web (365)
+                <Mail size={13} /> Abrir Outlook Web (365)
               </button>
             </div>
           </div>

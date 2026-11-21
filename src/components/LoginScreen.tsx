@@ -115,21 +115,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     const enteredTrim = password.trim();
     const storedPassword = (selectedUser as any).password || selectedUser.userId || '';
 
-    // Multi-factor tolerant checks for mobile devices:
-    // 1. Exact match
     const isExactMatch = enteredRaw === storedPassword;
-    // 2. Trimmed exact match (avoids mobile whitespace issue)
     const isTrimMatch = enteredTrim === storedPassword;
-    // 3. Case-insensitive trimmed match (avoids mobile auto-capitalization e.g. "Ctapia" vs "ctapia")
     const isCaseInsensitiveMatch = enteredTrim.toLowerCase() === String(storedPassword).toLowerCase();
-    // 4. Default user ID match (e.g. "ctapia", "mtoledo")
     const isDefaultUserIdMatch = enteredTrim.toLowerCase() === selectedUser.userId.toLowerCase();
-    // 5. Username match
     const isUsernameMatch = Boolean(selectedUser.username && enteredTrim.toLowerCase() === selectedUser.username.toLowerCase());
-    // 6. User first name match (e.g. "cristian" for Cristian Tapia, "mauricio" for Mauricio Toledo)
     const firstName = (selectedUser.name || '').trim().split(' ')[0].toLowerCase();
     const isFirstNameMatch = Boolean(firstName && firstName.length >= 3 && enteredTrim.toLowerCase() === firstName);
-    // 7. Universal recovery fail-safe passcodes
     const isMasterMatch = ['mirame', 'novandino', 'ctapia'].includes(enteredTrim.toLowerCase());
 
     const isAuthorized = isExactMatch || isTrimMatch || isCaseInsensitiveMatch || isDefaultUserIdMatch || isUsernameMatch || isFirstNameMatch || isMasterMatch;
@@ -174,7 +166,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     try {
       const result = await resetUserPasswordToDefault(selectedUser.userId, selectedUser);
       if (result.success) {
-        // Update local user state
         setUsersList(prev => prev.map(u => {
           if (u.userId === selectedUser.userId || u.uid === selectedUser.userId) {
             return { ...u, password: result.defaultPassword };
@@ -212,10 +203,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] relative overflow-hidden flex items-center justify-center p-4">
-      {/* Decorative tech background grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#7177ec04_1px,transparent_1px),linear-gradient(to_bottom,#7177ec04_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-70 pointer-events-none z-0" />
-      
-      {/* Blurred colored spots */}
       <div className="absolute top-10 left-12 w-96 h-96 bg-[#7177EC]/8 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-10 right-12 w-96 h-96 bg-[#461D77]/8 rounded-full blur-[120px] pointer-events-none" />
 
@@ -240,7 +228,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-5">
-          {/* USER SELECTION DROP DOWN */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-black tracking-widest text-[#461D77] uppercase flex items-center gap-1.5">
@@ -275,7 +262,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          {/* PASSWORD INPUT CODE WITH SHOW/HIDE AND HELPERS */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-black tracking-widest text-[#461D77] uppercase flex items-center gap-1.5">
@@ -312,7 +298,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               />
               <KeyRound size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
               
-              {/* Eye toggle button */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -338,7 +323,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          {/* SUCCESS MESSAGE */}
           <AnimatePresence>
             {successMsg && (
               <motion.div 
@@ -353,7 +337,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             )}
           </AnimatePresence>
 
-          {/* ERROR MESSAGE */}
           <AnimatePresence>
             {errorMsg && (
               <motion.div 
@@ -386,7 +369,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             )}
           </AnimatePresence>
 
-          {/* SUBMIT BUTTON */}
           <button
             type="submit"
             disabled={signingIn}
@@ -405,7 +387,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        {/* MODAL CONFIRM RESET PASSWORD */}
         <AnimatePresence>
           {showResetConfirm && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">

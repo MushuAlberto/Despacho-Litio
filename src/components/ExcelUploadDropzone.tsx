@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Upload, CheckCircle2, AlertCircle, FileSpreadsheet, Sparkles, RefreshCw } from 'lucide-react';
+import { Upload, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export interface UploadResult {
@@ -177,12 +177,11 @@ export const ExcelUploadDropzone: React.FC<ExcelUploadDropzoneProps> = ({
   return (
     <div className={`space-y-2 select-none ${className}`}>
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-black uppercase tracking-widest text-violeta">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
           Cargar Datos
         </p>
         {uploadedInfo && status === 'idle' && (
-          <span className="text-[9px] font-bold text-ionizado uppercase tracking-wider flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-ionizado animate-pulse" />
+          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
             Base activa
           </span>
         )}
@@ -194,16 +193,16 @@ export const ExcelUploadDropzone: React.FC<ExcelUploadDropzoneProps> = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`group relative flex flex-col items-center justify-center w-full h-32 rounded-3xl cursor-pointer transition-all duration-300 overflow-hidden ${
+        className={`group relative flex flex-col items-center justify-center w-full h-32 rounded-2xl cursor-pointer transition-all duration-150 ease-out overflow-hidden ${
           status === 'loading'
-            ? 'bg-gradient-to-b from-violeta/[0.04] to-white border-2 border-violeta/50 shadow-md ring-4 ring-violeta/10 cursor-wait'
+            ? 'bg-purple-50/70 border border-[#461D77] cursor-wait'
             : status === 'success'
-            ? 'bg-gradient-to-b from-ionizado/[0.08] to-white border-2 border-ionizado shadow-lg ring-4 ring-ionizado/15'
+            ? 'bg-emerald-50 border border-emerald-500'
             : status === 'dragging'
-            ? 'bg-violeta/[0.08] border-2 border-dashed border-violeta scale-[1.02] shadow-md'
+            ? 'bg-purple-50 border-2 border-dashed border-[#461D77]'
             : status === 'error'
-            ? 'bg-red-50/50 border-2 border-red-300 shadow-sm'
-            : 'bg-white border-2 border-dashed border-violeta/20 hover:border-ionizado hover:bg-calido/60 shadow-xs hover:shadow-md'
+            ? 'bg-rose-50 border border-rose-500'
+            : 'bg-slate-50/80 border-2 border-dashed border-slate-200 hover:border-[#461D77] hover:bg-purple-50/30'
         }`}
       >
         <input
@@ -216,132 +215,74 @@ export const ExcelUploadDropzone: React.FC<ExcelUploadDropzoneProps> = ({
         />
 
         <AnimatePresence mode="wait">
-          {/* ========================================================
-              1. ESTADO: CARGANDO (Animación de Carga)
-              ======================================================== */}
           {status === 'loading' && (
             <motion.div
               key="loading-state"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="flex flex-col items-center justify-center w-full h-full px-5 py-3 text-center relative pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex flex-col items-center justify-center w-full h-full px-5 py-3 text-center pointer-events-none"
             >
-              {/* Background ambient radial glow */}
-              <div className="absolute inset-0 bg-radial from-violeta/10 via-transparent to-transparent opacity-80" />
-
-              {/* Central Animated Excel & Laser Scanner Glyph */}
-              <div className="relative w-11 h-11 flex items-center justify-center mb-1.5">
-                {/* Orbiting ring */}
-                <div className="absolute inset-0 rounded-2xl border-2 border-violeta/25 border-t-violeta animate-spin" />
-                
-                {/* File card container with laser scanner */}
-                <div className="relative w-8 h-9 bg-gradient-to-br from-violeta/15 to-violeta/5 rounded-lg border border-violeta/30 flex items-center justify-center overflow-hidden shadow-xs">
-                  <FileSpreadsheet className="w-5 h-5 text-violeta" />
-                  
-                  {/* Laser scanning beam moving top-down */}
-                  <div className="absolute left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-violeta to-transparent shadow-[0_0_8px_rgba(113,119,236,0.9)] animate-[excel-laser-scanner_1.2s_ease-in-out_infinite]" />
-                </div>
-
-                {/* Floating data particles ascending */}
-                <div className="absolute -left-1 bottom-1 w-1.5 h-1.5 rounded-full bg-violeta animate-[data-particle-ascend_1.4s_ease-in-out_infinite]" />
-                <div className="absolute -right-1 bottom-2 w-1.5 h-1.5 rounded-full bg-ionizado animate-[data-particle-ascend_1.1s_ease-in-out_infinite_0.3s]" />
-              </div>
-
-              {/* Live Stage Text with subtle pulse */}
-              <p className="text-[10px] text-violeta font-black uppercase tracking-wider animate-pulse line-clamp-1">
+              <div className="w-6 h-6 rounded-full border-2 border-purple-200 border-t-[#461D77] animate-spin mb-2" />
+              <p className="text-[11px] text-[#461D77] font-bold uppercase tracking-wider line-clamp-1">
                 {currentStageText}
               </p>
-
-              {/* Smooth Gradient Progress Bar */}
-              <div className="w-full max-w-[190px] h-2 bg-slate-100 rounded-full overflow-hidden mt-2 p-0.5 border border-violeta/20">
+              <div className="w-full max-w-[180px] h-1.5 bg-purple-100 rounded-full overflow-hidden mt-2">
                 <div
-                  className="h-full bg-gradient-to-r from-violeta via-indigo-500 to-ionizado rounded-full transition-all duration-200 relative overflow-hidden"
+                  className="h-full bg-[#461D77] transition-all duration-150"
                   style={{ width: `${progress}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[progress-shimmer_1s_linear_infinite]" />
-                </div>
+                />
               </div>
-
-              {/* Percentage indicator */}
-              <span className="text-[8px] font-black text-slate-400 mt-1 tabular-nums">
+              <span className="text-[10px] font-mono text-slate-500 mt-1 tabular-nums">
                 {progress}%
               </span>
             </motion.div>
           )}
 
-          {/* ========================================================
-              2. ESTADO: TÉRMINO DE CARGA (Animación de Éxito)
-              ======================================================== */}
           {status === 'success' && (
             <motion.div
               key="success-state"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.25 }}
-              className="flex flex-col items-center justify-center w-full h-full px-4 py-2 text-center relative"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex flex-col items-center justify-center w-full h-full px-4 py-2 text-center"
             >
-              {/* Expanding Ripple Waves */}
-              <div className="absolute w-14 h-14 rounded-full border-2 border-ionizado/60 animate-[success-ripple-wave_1.4s_ease-out_infinite] pointer-events-none" />
-              <div className="absolute w-14 h-14 rounded-full border border-violeta/40 animate-[success-ripple-wave_1.4s_ease-out_infinite_0.4s] pointer-events-none" />
-
-              {/* Animated Success Badge with pop-bounce */}
-              <div className="relative z-10 w-10 h-10 rounded-full bg-gradient-to-tr from-ionizado to-emerald-400 flex items-center justify-center shadow-lg shadow-ionizado/30 animate-[success-pop-bounce_0.6s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards] mb-1.5">
-                <CheckCircle2 className="w-6 h-6 text-white stroke-[2.5]" />
-                <Sparkles className="w-3.5 h-3.5 text-calido absolute -top-1 -right-1 animate-ping" />
-              </div>
-
-              {/* Title & Feedback */}
-              <h4 className="text-[11px] text-[#1e5843] font-black uppercase tracking-wider leading-tight flex items-center gap-1">
-                ¡Carga Completada!
+              <CheckCircle2 className="w-6 h-6 text-emerald-600 mb-1.5" />
+              <h4 className="text-xs text-emerald-700 font-bold uppercase tracking-wider">
+                Carga Completada
               </h4>
-
-              {/* Info pills */}
-              <div className="flex items-center gap-1.5 mt-1 bg-white/90 border border-ionizado/30 px-2.5 py-0.5 rounded-full shadow-2xs max-w-[200px]">
-                <FileSpreadsheet size={10} className="text-ionizado shrink-0" />
-                <span className="text-[9px] font-black text-slate-700 truncate tracking-wide">
-                  {uploadedInfo?.recordCount ? `${uploadedInfo.recordCount.toLocaleString('es-CL')} reg.` : 'Base cargada'}
-                </span>
-                <span className="text-ionizado font-bold text-[8px] uppercase tracking-wider">✓ OK</span>
-              </div>
-
-              <span className="text-[8px] text-slate-400 mt-1 font-semibold">
+              <p className="text-[11px] font-bold text-slate-700 tabular-nums mt-0.5">
+                {uploadedInfo?.recordCount ? `${uploadedInfo.recordCount.toLocaleString('es-CL')} registros` : 'Base cargada'}
+              </p>
+              <span className="text-[10px] text-slate-400 mt-1">
                 Clic para cargar otra base
               </span>
             </motion.div>
           )}
 
-          {/* ========================================================
-              3. ESTADO: ERROR AL CARGAR
-              ======================================================== */}
           {status === 'error' && (
             <motion.div
               key="error-state"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center w-full h-full px-4 py-2 text-center"
             >
-              <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-1.5">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-              <p className="text-[10px] font-black text-red-700 uppercase tracking-wider">
+              <AlertCircle className="w-6 h-6 text-rose-600 mb-1.5" />
+              <p className="text-xs font-bold text-rose-700 uppercase tracking-wider">
                 Fallo al cargar
               </p>
-              <p className="text-[8px] text-red-500 font-bold max-w-[190px] truncate mt-0.5">
+              <p className="text-[10px] text-rose-600 font-medium max-w-[200px] truncate mt-0.5">
                 {errorMessage || 'Archivo inválido'}
               </p>
-              <span className="mt-1 text-[8px] font-black uppercase tracking-widest text-violeta flex items-center gap-1 hover:underline">
-                <RefreshCw size={8} /> Reintentar
+              <span className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-[#461D77] flex items-center gap-1 hover:underline">
+                <RefreshCw size={10} /> Reintentar
               </span>
             </motion.div>
           )}
 
-          {/* ========================================================
-              4. ESTADO: REPOSO (Idle) / DRAGGING
-              ======================================================== */}
           {(status === 'idle' || status === 'dragging') && (
             <motion.div
               key="idle-state"
@@ -350,32 +291,23 @@ export const ExcelUploadDropzone: React.FC<ExcelUploadDropzoneProps> = ({
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center p-4 text-center w-full"
             >
-              {/* Dynamic Upload Tray Icon */}
-              <div className="relative mb-2">
-                <Upload
-                  className={`w-8 h-8 transition-all duration-300 ${
-                    status === 'dragging'
-                      ? 'text-violeta scale-125 -translate-y-1'
-                      : 'text-violeta/40 group-hover:text-violeta group-hover:-translate-y-0.5'
-                  }`}
-                />
-                {/* Subtle hover pulse background behind arrow */}
-                <div className="absolute inset-0 rounded-full bg-violeta/10 scale-0 group-hover:scale-125 transition-transform duration-300 -z-10" />
-              </div>
-
-              {/* Main Label matching the user design */}
-              <p
-                className={`text-[10px] uppercase font-black tracking-widest transition-colors ${
+              <Upload
+                className={`w-6 h-6 mb-2 transition-colors duration-150 ${
                   status === 'dragging'
-                    ? 'text-violeta font-black scale-105'
-                    : 'text-violeta/60 group-hover:text-violeta'
+                    ? 'text-[#461D77]'
+                    : 'text-slate-400 group-hover:text-[#461D77]'
+                }`}
+              />
+              <p
+                className={`text-xs uppercase font-bold tracking-wider transition-colors duration-150 ${
+                  status === 'dragging'
+                    ? 'text-[#461D77]'
+                    : 'text-slate-600 group-hover:text-[#461D77]'
                 }`}
               >
-                {status === 'dragging' ? 'Soltar Base Excel' : 'Base Excel'}
+                {status === 'dragging' ? 'Soltar Base Excel' : 'Cargar Base Excel'}
               </p>
-
-              {/* Micro subtext with file extensions */}
-              <span className="text-[8px] font-bold text-slate-400/80 tracking-wider mt-0.5">
+              <span className="text-[10px] font-mono text-slate-400 mt-0.5">
                 .xlsx · .xlsm
               </span>
             </motion.div>
@@ -383,16 +315,13 @@ export const ExcelUploadDropzone: React.FC<ExcelUploadDropzoneProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Persistent subtle footer pill if data is loaded */}
+      {/* Persistent subtle footer if data is loaded */}
       {uploadedInfo && status === 'idle' && (
-        <div className="flex items-center justify-between px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[9px]">
-          <div className="flex items-center gap-1.5 truncate">
-            <span className="w-1.5 h-1.5 rounded-full bg-ionizado shrink-0" />
-            <span className="font-bold text-slate-600 truncate max-w-[130px]">
-              {uploadedInfo.fileName}
-            </span>
-          </div>
-          <span className="font-black text-violeta tabular-nums shrink-0">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px]">
+          <span className="font-medium text-slate-600 truncate max-w-[140px]">
+            {uploadedInfo.fileName}
+          </span>
+          <span className="font-bold text-[#461D77] tabular-nums shrink-0">
             {uploadedInfo.recordCount.toLocaleString('es-CL')} reg.
           </span>
         </div>
