@@ -49,12 +49,12 @@ const MOP_FILTERS = ['Todas', 'Mop 1', 'Mop 2', 'Mop 3', 'Mop 4', 'Mop 5', 'Mop 
 export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack }) => {
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5] p-6">
-        <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 max-w-md text-center space-y-4">
-          <ShieldCheck className="w-10 h-10 text-[#461D77] mx-auto" />
-          <h2 className="text-xl font-black text-slate-800">Sesión requerida</h2>
-          <p className="text-sm text-slate-500">Debes iniciar sesión en Despacho-Litio para utilizar Reporte Stokes.</p>
-          <button onClick={onBack} className="w-full py-3 bg-[#461D77] text-white rounded-xl font-bold cursor-pointer">
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F6F2] p-6">
+        <div className="bg-[#FFFFFF] p-8 rounded-lg border border-[#E2DFD7] max-w-md text-center space-y-4">
+          <ShieldCheck className="w-9 h-9 text-[#461D77] mx-auto" />
+          <h2 className="text-lg font-bold text-[#1C1917]">Sesión requerida</h2>
+          <p className="text-sm text-[#57534E]">Debes iniciar sesión en Despacho-Litio para utilizar Reporte Stokes.</p>
+          <button onClick={onBack} className="w-full py-2.5 bg-[#461D77] hover:bg-[#36155E] text-white rounded-md font-semibold text-xs uppercase tracking-wider cursor-pointer transition-colors duration-150">
             Volver
           </button>
         </div>
@@ -197,27 +197,27 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
         header: 'Guía',
         size: 115,
         cell: (info) => (
-          <span className="font-mono font-bold text-[#461D77] tabular-nums">{String(info.getValue())}</span>
+          <span className="font-mono font-semibold text-[#461D77] tabular-nums">{String(info.getValue())}</span>
         ),
       },
       {
         accessorKey: 'fechaGuia',
         header: 'Fecha',
         size: 105,
-        cell: (info) => <span className="font-mono text-slate-600 tabular-nums">{String(info.getValue())}</span>,
+        cell: (info) => <span className="font-mono text-[#57534E] tabular-nums">{String(info.getValue())}</span>,
       },
       {
         accessorKey: 'producto',
         header: 'Producto',
         size: 150,
-        cell: (info) => <span className="font-semibold text-slate-800">{String(info.getValue())}</span>,
+        cell: (info) => <span className="font-semibold text-[#1C1917]">{String(info.getValue())}</span>,
       },
       {
         accessorKey: 'cantDespacho',
         header: () => <span className="block text-right">TON</span>,
         size: 95,
         cell: (info) => (
-          <span className="block text-right font-mono font-bold text-slate-900 tabular-nums">
+          <span className="block text-right font-mono font-semibold text-[#1C1917] tabular-nums">
             {Number(info.getValue() || 0).toLocaleString('es-CL', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -229,7 +229,7 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
         accessorKey: 'almacenDespachoRaw',
         header: 'Almacén Origen',
         size: 185,
-        cell: (info) => <span className="text-slate-600">{String(info.getValue())}</span>,
+        cell: (info) => <span className="text-[#57534E]">{String(info.getValue())}</span>,
       },
       {
         accessorKey: 'mopPlant',
@@ -238,12 +238,12 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
         cell: (info) => {
           const item = info.row.original;
           return item.origenStokes === 'Salar' ? (
-            <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold">
+            <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#15803D] font-semibold">
               <CheckCircle2 size={13} />
               <span>Salar{item.mopPlant ? ` · ${item.mopPlant}` : ''}</span>
             </span>
           ) : (
-            <span className="text-slate-600">{item.origenStokes}</span>
+            <span className="text-[#57534E]">{item.origenStokes}</span>
           );
         },
       },
@@ -251,20 +251,20 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
         accessorKey: 'almacenDestino',
         header: 'Destino',
         size: 170,
-        cell: (info) => <span className="text-slate-700">{String(info.getValue())}</span>,
+        cell: (info) => <span className="text-[#1C1917]">{String(info.getValue())}</span>,
       },
       {
         accessorKey: 'transportista',
         header: 'Transportista',
         size: 190,
-        cell: (info) => <span className="font-medium text-slate-800">{String(info.getValue())}</span>,
+        cell: (info) => <span className="font-medium text-[#1C1917]">{String(info.getValue())}</span>,
       },
       {
         accessorKey: 'patenteCamion',
         header: 'Patente',
         size: 105,
         cell: (info) => (
-          <span className="font-mono font-bold text-slate-900 tabular-nums">{String(info.getValue())}</span>
+          <span className="font-mono font-semibold text-[#1C1917] tabular-nums">{String(info.getValue())}</span>
         ),
       },
     ],
@@ -309,151 +309,155 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5F8] text-slate-800 p-4 md:p-7">
-      <div className="max-w-[1500px] mx-auto space-y-5">
-        <header className="bg-white rounded-2xl border border-slate-200 p-5 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div className="min-h-screen bg-[#F7F6F2] text-[#1C1917] p-4 md:p-6">
+      <div className="max-w-[102rem] mx-auto space-y-5">
+        <header className="bg-[#FFFFFF] rounded-lg border border-[#E2DFD7] p-5 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               onClick={onBack}
-              className="p-2.5 rounded-xl bg-purple-50 text-[#461D77] hover:bg-purple-100 transition-colors cursor-pointer"
+              className="p-2 rounded-md bg-[#EFECE6] border border-[#E2DFD7] text-[#1C1917] hover:border-[#461D77] hover:text-[#461D77] transition-colors duration-150 cursor-pointer"
               aria-label="Volver"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={16} />
             </button>
             <div>
-              <p className="text-xs font-semibold text-slate-500">Reporte Stokes · Mop 1 a Mop 6</p>
-              <h1 className="text-2xl font-black text-[#461D77] tracking-tight">Ingesta Defensiva y Analítica Stokes</h1>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Validación estricta con Zod, aislamiento en cuarentena de filas corruptas y respaldo offline en IndexedDB.
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[#57534E]">
+                Reporte Stokes · Mop 1 a Mop 6
               </p>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#1C1917] tracking-tight">
+                Ingesta Defensiva y Analítica Stokes
+              </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-xs font-semibold text-slate-600">
+          <div className="flex items-center gap-4 font-mono text-[11px] font-semibold">
             {!isOnline && (
-              <span className="inline-flex items-center gap-1.5 text-amber-700 font-bold">
-                <WifiOff size={14} /> Modo offline activo
+              <span className="inline-flex items-center gap-1.5 text-[#B45309]">
+                <WifiOff size={14} /> Offline
               </span>
             )}
-            <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold">
-              <ShieldCheck size={15} /> Motor Zod + Cuarentena activo
+            <span className="inline-flex items-center gap-1.5 text-[#15803D] bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+              <ShieldCheck size={14} /> Validación Zod + IndexedDB
             </span>
           </div>
         </header>
 
-        <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 flex gap-3 text-blue-950">
-          <Info className="shrink-0 mt-0.5 text-blue-700" size={18} />
-          <div className="text-sm">
-            <p className="font-bold">Autenticación directa en el servidor corporativo ReportServer</p>
-            <p className="text-blue-900/80 mt-0.5">
-              Despacho-Litio procesa el Excel localmente sin enviar contraseñas. Las filas con datos dañados se aíslan en{' '}
-              <strong>Cuarentena</strong> sin interrumpir el resto del reporte.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-5">
-          <section className="bg-white rounded-2xl border border-slate-200 p-5 h-fit space-y-5">
+        <div className="grid grid-cols-1 xl:grid-cols-[340px_1fr] gap-5">
+          {/* Left Rail */}
+          <section className="bg-[#FFFFFF] rounded-lg border border-[#E2DFD7] p-5 h-fit space-y-5">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <ShieldCheck className="text-emerald-600" size={18} />
-                <h2 className="font-bold text-slate-900 text-sm">1. ReportServer Corporativo</h2>
+                <span className="font-mono text-[11px] font-bold text-[#461D77]">01</span>
+                <h2 className="font-bold text-[#1C1917] text-sm">ReportServer Corporativo</h2>
               </div>
-              <p className="text-xs text-slate-500 mb-3">
-                Genera <strong>Historico_guia_transportista</strong> con tus credenciales de red y expórtalo como Excel.
+              <p className="text-xs text-[#57534E] mb-3 leading-relaxed">
+                Genere <strong>Historico_guia_transportista</strong> con credenciales de red y expórtelo como Excel.
               </p>
               <button
                 onClick={abrirStokes}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer whitespace-nowrap"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-md bg-[#EFECE6] hover:bg-[#E2DFD7] border border-[#E2DFD7] text-[#1C1917] font-semibold text-xs transition-colors duration-150 cursor-pointer whitespace-nowrap"
               >
-                <ExternalLink size={15} /> Abrir Stokes en ReportServer
+                <ExternalLink size={14} /> Abrir Stokes en ReportServer
               </button>
             </div>
 
-            <div className="border-t border-slate-100" />
+            <div className="border-t border-[#E2DFD7]" />
 
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <UploadCloud className="text-[#461D77]" size={18} />
-                <h2 className="font-bold text-slate-900 text-sm">2. Cargar Excel Stokes</h2>
+                <span className="font-mono text-[11px] font-bold text-[#461D77]">02</span>
+                <h2 className="font-bold text-[#1C1917] text-sm">Cargar Excel Stokes</h2>
               </div>
-              <p className="text-xs text-slate-500 mb-3">
-                Validación automática de plantas Mop 1–6, tonelajes, fechas y patentes.
+              <p className="text-xs text-[#57534E] mb-3 leading-relaxed">
+                Validación local de plantas Mop 1–6, tonelajes, fechas y patentes sin enviar credenciales.
               </p>
-              <label className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#461D77] hover:bg-[#35145b] text-white cursor-pointer font-bold text-xs transition-colors whitespace-nowrap">
-                <FileSpreadsheet size={15} /> Seleccionar Excel Stokes
+              <label className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-md bg-[#461D77] hover:bg-[#36155E] text-white cursor-pointer font-semibold text-xs transition-colors duration-150 whitespace-nowrap">
+                <UploadCloud size={15} /> Seleccionar Excel Stokes
                 <input type="file" accept=".xlsx,.xls" onChange={cargarExcel} className="hidden" />
               </label>
             </div>
 
             {summary && (
-              <div className="border-t border-slate-100 pt-4 space-y-2 text-xs">
-                <div className="font-bold text-slate-700">Resumen de Ingesta</div>
-                <div className="flex justify-between text-slate-600 tabular-nums">
-                  <span>Filas válidas:</span>
-                  <span className="font-mono font-bold text-emerald-700">{summary.validCount}</span>
+              <div className="border-t border-[#E2DFD7] pt-4 space-y-2 text-xs">
+                <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[#57534E]">
+                  Resumen de Ingesta
                 </div>
-                <div className="flex justify-between text-slate-600 tabular-nums">
+                <div className="flex justify-between text-[#57534E] tabular-nums">
+                  <span>Filas válidas:</span>
+                  <span className="font-mono font-bold text-[#15803D]">{summary.validCount}</span>
+                </div>
+                <div className="flex justify-between text-[#57534E] tabular-nums">
                   <span>En cuarentena:</span>
-                  <span className={`font-mono font-bold ${summary.quarantinedCount > 0 ? 'text-amber-700' : 'text-slate-700'}`}>
+                  <span className={`font-mono font-bold ${summary.quarantinedCount > 0 ? 'text-[#B45309]' : 'text-[#1C1917]'}`}>
                     {summary.quarantinedCount}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-600 tabular-nums">
+                <div className="flex justify-between text-[#57534E] tabular-nums">
                   <span>Tiempo de parseo:</span>
-                  <span className="font-mono font-bold text-slate-800">{summary.durationMs} ms</span>
+                  <span className="font-mono font-bold text-[#1C1917]">{summary.durationMs} ms</span>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 text-xs flex gap-2">
-                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+              <div className="bg-red-50 border border-red-200 text-[#B91C1C] rounded-md p-3 text-xs flex gap-2">
+                <AlertCircle size={15} className="shrink-0 mt-0.5" />
                 <div>
-                  <strong>Error de lectura:</strong> {error}
+                  <strong>Error:</strong> {error}
                 </div>
               </div>
             )}
+
+            <div className="border-t border-[#E2DFD7] pt-4 text-[11px] text-[#57534E] flex items-start gap-2">
+              <Info size={14} className="text-[#461D77] shrink-0 mt-0.5" />
+              <span>
+                Las filas con errores de esquema se aíslan en Cuarentena sin detener la ingesta.
+              </span>
+            </div>
           </section>
 
+          {/* Right Main Workspace */}
           <section className="space-y-4 min-w-0">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 tabular-nums">
-              <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                <div className="text-xs text-slate-500 font-semibold">Guías válidas</div>
-                <div className="text-2xl font-black text-[#461D77] mt-1 font-mono">
-                  {datosFiltrados.length.toLocaleString('es-CL')}
+            {/* Hairline-divided KPI strip */}
+            <div className="bg-[#FFFFFF] rounded-lg border border-[#E2DFD7] overflow-hidden">
+              <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 sm:divide-x divide-[#E2DFD7] tabular-nums">
+                <div className="p-4">
+                  <div className="text-[11px] text-[#57534E] font-semibold uppercase tracking-wider">Guías válidas</div>
+                  <div className="text-2xl font-bold text-[#461D77] mt-1 font-mono">
+                    {datosFiltrados.length.toLocaleString('es-CL')}
+                  </div>
                 </div>
-              </div>
-              <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                <div className="text-xs text-slate-500 font-semibold">Tonelaje acumulado</div>
-                <div className="text-2xl font-black text-slate-900 mt-1 font-mono">
-                  {resumen.toneladas.toLocaleString('es-CL', { maximumFractionDigits: 1 })}
+                <div className="p-4">
+                  <div className="text-[11px] text-[#57534E] font-semibold uppercase tracking-wider">Tonelaje acumulado</div>
+                  <div className="text-2xl font-bold text-[#1C1917] mt-1 font-mono">
+                    {resumen.toneladas.toLocaleString('es-CL', { maximumFractionDigits: 1 })}
+                  </div>
                 </div>
-              </div>
-              <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                <div className="text-xs text-slate-500 font-semibold">Equipos únicos</div>
-                <div className="text-2xl font-black text-slate-900 mt-1 font-mono">{resumen.equipos}</div>
-              </div>
-              <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                <div className="text-xs text-slate-500 font-semibold">En cuarentena</div>
-                <div
-                  className={`text-2xl font-black mt-1 font-mono ${
-                    quarantine.length > 0 ? 'text-amber-600' : 'text-slate-900'
-                  }`}
-                >
-                  {quarantine.length}
+                <div className="p-4">
+                  <div className="text-[11px] text-[#57534E] font-semibold uppercase tracking-wider">Equipos únicos</div>
+                  <div className="text-2xl font-bold text-[#1C1917] mt-1 font-mono">{resumen.equipos}</div>
+                </div>
+                <div className="p-4">
+                  <div className="text-[11px] text-[#57534E] font-semibold uppercase tracking-wider">En cuarentena</div>
+                  <div
+                    className={`text-2xl font-bold mt-1 font-mono ${
+                      quarantine.length > 0 ? 'text-[#B45309]' : 'text-[#1C1917]'
+                    }`}
+                  >
+                    {quarantine.length}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-              <div className="p-4 border-b border-slate-100 flex flex-col gap-3">
+            <div className="bg-[#FFFFFF] rounded-lg border border-[#E2DFD7] overflow-hidden">
+              <div className="p-4 border-b border-[#E2DFD7] flex flex-col gap-3">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div>
-                    <div className="font-bold text-slate-900 flex items-center gap-2 text-sm">
-                      <Database size={16} className="text-[#461D77]" /> Datos Operacionales Stokes
+                    <div className="font-bold text-[#1C1917] flex items-center gap-2 text-sm">
+                      <Database size={15} className="text-[#461D77]" /> Datos Operacionales Stokes
                     </div>
-                    <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                    <div className="font-mono text-[11px] text-[#57534E] mt-0.5 tabular-nums">
                       {ultimaActualizacion
                         ? `Última sincronización local · ${new Date(ultimaActualizacion).toLocaleString('es-CL')}`
                         : 'Sin datos cargados en esta sesión'}
@@ -462,18 +466,18 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
 
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="relative">
-                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57534E]" />
                       <input
                         value={busqueda}
                         onChange={(e) => setBusqueda(e.target.value)}
                         placeholder="Filtrar guía, patente, empresa…"
-                        className="pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium focus:bg-white focus:border-[#461D77] outline-none w-56"
+                        className="pl-8 pr-3 py-1.5 rounded-md border border-[#E2DFD7] bg-[#F7F6F2] text-xs font-medium focus:bg-[#FFFFFF] focus:border-[#461D77] outline-none w-56 transition-colors duration-150"
                       />
                     </div>
                     <button
                       onClick={exportarExcel}
                       disabled={!datosFiltrados.length}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                      className="px-3.5 py-1.5 rounded-md bg-[#461D77] hover:bg-[#36155E] disabled:bg-[#E2DFD7] disabled:text-[#57534E] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 cursor-pointer whitespace-nowrap"
                     >
                       <Download size={14} /> Exportar Excel
                     </button>
@@ -482,41 +486,41 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
 
                 {/* Pestañas de vista y filtro por planta Mop 1-6 */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                  <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
+                  <div className="flex items-center gap-1 p-1 bg-[#EFECE6] border border-[#E2DFD7] rounded-md">
                     <button
                       type="button"
                       onClick={() => setActiveTab('valid')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1 text-xs font-semibold rounded transition-colors duration-150 cursor-pointer whitespace-nowrap ${
                         activeTab === 'valid'
-                          ? 'bg-white text-[#461D77] shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-[#FFFFFF] text-[#461D77] border border-[#E2DFD7]'
+                          : 'text-[#57534E] hover:text-[#1C1917]'
                       }`}
                     >
-                      Guías Válidas ({datosFiltrados.length})
+                      Guías Válidas (<span className="font-mono tabular-nums">{datosFiltrados.length}</span>)
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveTab('quarantine')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      className={`px-3 py-1 text-xs font-semibold rounded transition-colors duration-150 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         activeTab === 'quarantine'
-                          ? 'bg-white text-amber-700 shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-[#FFFFFF] text-[#B45309] border border-[#E2DFD7]'
+                          : 'text-[#57534E] hover:text-[#1C1917]'
                       }`}
                     >
                       <ShieldAlert size={13} />
-                      <span>Cuarentena ({quarantine.length})</span>
+                      <span>Cuarentena (<span className="font-mono tabular-nums">{quarantine.length}</span>)</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveTab('logs')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      className={`px-3 py-1 text-xs font-semibold rounded transition-colors duration-150 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         activeTab === 'logs'
-                          ? 'bg-white text-slate-900 shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-[#FFFFFF] text-[#1C1917] border border-[#E2DFD7]'
+                          : 'text-[#57534E] hover:text-[#1C1917]'
                       }`}
                     >
                       <Terminal size={13} />
-                      <span>Bitácora ({logs.length})</span>
+                      <span>Bitácora (<span className="font-mono tabular-nums">{logs.length}</span>)</span>
                     </button>
                   </div>
 
@@ -527,10 +531,10 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
                           key={plant}
                           type="button"
                           onClick={() => setMopFilter(plant)}
-                          className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer whitespace-nowrap ${
+                          className={`px-2.5 py-1 font-mono text-[11px] font-semibold rounded-md border transition-colors duration-150 cursor-pointer whitespace-nowrap ${
                             mopFilter === plant
-                              ? 'bg-[#461D77] text-white'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              ? 'bg-[#461D77] border-[#461D77] text-white'
+                              : 'bg-[#F7F6F2] border-[#E2DFD7] text-[#57534E] hover:bg-[#EFECE6]'
                           }`}
                         >
                           {plant}
@@ -544,11 +548,11 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
               {activeTab === 'valid' && (
                 <>
                   {!datos.length ? (
-                    <div className="py-20 text-center text-slate-400">
-                      <FileSpreadsheet size={40} className="mx-auto mb-3 text-slate-300" />
-                      <div className="font-bold text-slate-600">Aún no hay datos Stokes cargados</div>
+                    <div className="py-16 text-center text-[#57534E]">
+                      <FileSpreadsheet size={34} className="mx-auto mb-3 text-[#C7C2B6]" />
+                      <div className="font-semibold text-sm text-[#1C1917]">Aún no hay datos Stokes cargados</div>
                       <p className="text-xs mt-1">
-                        Abre ReportServer, exporta el reporte y selecciona el Excel para validarlo con Zod.
+                        Exporte el reporte desde ReportServer y seleccione el Excel para validarlo.
                       </p>
                     </div>
                   ) : (
@@ -565,30 +569,30 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
               {activeTab === 'quarantine' && (
                 <div className="max-h-[580px] overflow-auto">
                   {quarantine.length === 0 ? (
-                    <div className="py-16 text-center text-slate-500 text-sm">
+                    <div className="py-16 text-center text-[#57534E] text-sm">
                       Sin registros rechazados. Todas las filas superaron la validación Zod.
                     </div>
                   ) : (
                     <table className="w-full text-xs text-left border-collapse tabular-nums">
-                      <thead className="sticky top-0 bg-amber-700 text-white">
+                      <thead className="sticky top-0 bg-[#EFECE6] text-[#1C1917] border-b border-[#E2DFD7] font-mono">
                         <tr>
-                          <th className="px-3 py-2.5 font-bold">Fila Excel</th>
-                          <th className="px-3 py-2.5 font-bold">Guía</th>
-                          <th className="px-3 py-2.5 font-bold">Origen Crudo</th>
-                          <th className="px-3 py-2.5 font-bold">Cantidad Cruda</th>
-                          <th className="px-3 py-2.5 font-bold">Motivo de Cuarentena (Zod)</th>
+                          <th className="px-3 py-2.5 font-semibold">Fila Excel</th>
+                          <th className="px-3 py-2.5 font-semibold">Guía</th>
+                          <th className="px-3 py-2.5 font-semibold">Origen Crudo</th>
+                          <th className="px-3 py-2.5 font-semibold">Cantidad Cruda</th>
+                          <th className="px-3 py-2.5 font-semibold">Motivo de Cuarentena (Zod)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-amber-100 bg-amber-50/30">
+                      <tbody className="divide-y divide-[#E2DFD7]">
                         {quarantine.map((item) => (
-                          <tr key={`${item.rowIndex}-${item.timestamp}`} className="hover:bg-amber-50">
-                            <td className="px-3 py-2.5 font-mono font-bold text-amber-800">#{item.rowIndex}</td>
+                          <tr key={`${item.rowIndex}-${item.timestamp}`} className="hover:bg-[#F7F6F2]">
+                            <td className="px-3 py-2.5 font-mono font-bold text-[#B45309]">#{item.rowIndex}</td>
                             <td className="px-3 py-2.5 font-mono">{String(item.rawRow.guia || '—')}</td>
-                            <td className="px-3 py-2.5 text-slate-700">{String(item.rawRow.almacenDespacho || '—')}</td>
-                            <td className="px-3 py-2.5 font-mono text-slate-700">
+                            <td className="px-3 py-2.5 text-[#1C1917]">{String(item.rawRow.almacenDespacho || '—')}</td>
+                            <td className="px-3 py-2.5 font-mono text-[#57534E]">
                               {String(item.rawRow.cantDespacho ?? 'null')}
                             </td>
-                            <td className="px-3 py-2.5 text-rose-700 font-medium">
+                            <td className="px-3 py-2.5 text-[#B91C1C] font-medium">
                               {item.reasons.map((r) => `${r.field}: ${r.message}`).join(' · ')}
                             </td>
                           </tr>
@@ -600,21 +604,21 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
               )}
 
               {activeTab === 'logs' && (
-                <div className="max-h-[580px] overflow-auto divide-y divide-slate-100 font-mono text-[11px] bg-slate-950 text-slate-200">
+                <div className="max-h-[580px] overflow-auto divide-y divide-stone-800 font-mono text-[11px] bg-[#1C1917] text-stone-200">
                   {logs.length === 0 ? (
-                    <div className="py-16 text-center text-slate-400 font-sans text-sm">
+                    <div className="py-16 text-center text-stone-400 font-sans text-sm">
                       No hay eventos de parseo registrados todavía.
                     </div>
                   ) : (
                     logs.map((log, i) => (
                       <div key={`${log.timestamp}-${i}`} className="px-4 py-2 flex items-start gap-3">
-                        <span className="text-slate-500 shrink-0 tabular-nums">
+                        <span className="text-stone-400 shrink-0 tabular-nums">
                           {new Date(log.timestamp).toLocaleTimeString('es-CL')}
                         </span>
                         <span
                           className={`shrink-0 font-bold uppercase w-12 ${
                             log.level === 'error'
-                              ? 'text-rose-400'
+                              ? 'text-red-400'
                               : log.level === 'warn'
                               ? 'text-amber-400'
                               : 'text-emerald-400'
@@ -622,8 +626,8 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
                         >
                           {log.level}
                         </span>
-                        <span className="text-purple-300 shrink-0">{log.code}</span>
-                        <span className="text-slate-200">{log.message}</span>
+                        <span className="text-stone-300 shrink-0">{log.code}</span>
+                        <span className="text-stone-200">{log.message}</span>
                       </div>
                     ))
                   )}
@@ -631,14 +635,6 @@ export const ModuloStokes: React.FC<ModuloStokesProps> = ({ currentUser, onBack 
               )}
             </div>
           </section>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-xs text-slate-500 flex items-start gap-2">
-          <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-          <p>
-            <strong className="text-slate-700">Privacidad y Resiliencia:</strong> el archivo Excel se valida en memoria con Zod,
-            se cachea en IndexedDB para lectura offline y nunca expone credenciales corporativas.
-          </p>
         </div>
       </div>
     </div>

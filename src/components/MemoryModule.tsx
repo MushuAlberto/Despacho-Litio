@@ -252,157 +252,189 @@ export const MemoryModule: React.FC<MemoryModuleProps> = ({ data, onBack, onSele
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans text-slate-800">
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between sticky top-0 z-40 shadow-sm">
-        <div className="flex items-center gap-6">
-          <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900">
-            <ArrowLeft size={20} />
+    <div className="min-h-screen bg-[#F7F6F2] flex flex-col font-sans text-[#1C1917]">
+      <header className="bg-[#FFFFFF] border-b border-[#E2DFD7] px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sticky top-0 z-40">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="p-2 bg-[#FFFFFF] hover:bg-[#F7F6F2] border border-[#E2DFD7] rounded-md transition-colors duration-150 ease-out text-[#57534E] hover:text-[#1C1917] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
+            title="Volver"
+          >
+            <ArrowLeft size={18} />
           </button>
-          <div className="h-8 w-px bg-slate-200" />
+          <div className="h-6 w-px bg-[#E2DFD7]" />
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl">
-              <History size={20} />
+            <div className="p-2 bg-[#F3EEF8] text-[#461D77] border border-[#461D77]/15 rounded-md">
+              <History size={18} />
             </div>
-            <div className="flex flex-col">
-              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">Memoria Operativa & Nube Firebase</h1>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Archivo de Historiales JSON Sincronizado</p>
+            <div>
+              <h1 className="text-lg font-bold text-[#1C1917] tracking-[-0.02em] leading-tight">
+                Memoria Operativa y Nube Firebase
+              </h1>
+              <p className="text-xs text-[#78716C]">
+                Archivo de historiales JSON sincronizado
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button 
+        <div className="flex flex-wrap items-center gap-2">
+          <button
             onClick={handleSyncToFirebase}
             disabled={isSyncingToCloud}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-indigo-200 cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-[#461D77] hover:bg-[#36155E] disabled:opacity-50 text-white rounded-md text-xs font-semibold transition-colors duration-150 ease-out cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
           >
             {isSyncingToCloud ? (
               <>
-                <RefreshCw size={14} className="animate-spin" /> Guardando en Nube...
+                <RefreshCw size={14} className="animate-spin" />
+                <span>Guardando en nube...</span>
               </>
             ) : (
               <>
-                <CloudUpload size={14} /> Guardar Historial en Firebase
+                <CloudUpload size={14} />
+                <span>Guardar Historial en Firebase</span>
               </>
             )}
           </button>
-          <button 
+          <button
             onClick={downloadBackupJSON}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all text-slate-600 shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#FFFFFF] border border-[#E2DFD7] rounded-md text-xs font-semibold hover:bg-[#F7F6F2] transition-colors duration-150 ease-out text-[#1C1917] cursor-pointer"
           >
-            <Download size={14} /> Descargar .json Local
+            <Download size={14} className="text-[#57534E]" />
+            <span>Descargar .json</span>
           </button>
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all text-slate-600 shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#FFFFFF] border border-[#E2DFD7] rounded-md text-xs font-semibold hover:bg-[#F7F6F2] transition-colors duration-150 ease-out text-[#1C1917] cursor-pointer"
           >
-            <Upload size={14} /> Importar .json Local
+            <Upload size={14} className="text-[#57534E]" />
+            <span>Importar .json</span>
           </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImportBackup} 
-            accept=".json" 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportBackup}
+            accept=".json"
+            className="hidden"
           />
         </div>
       </header>
 
-      <main className="flex-1 p-8 max-w-5xl mx-auto w-full space-y-10">
+      <main className="flex-1 p-6 md:p-8 max-w-5xl mx-auto w-full space-y-8">
         {cloudSuccessMsg && (
-          <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl flex items-center gap-3 text-emerald-800 text-xs font-bold shadow-sm">
-            <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+          <div className="bg-[#F0FDF4] border border-[#BBF7D0] px-4 py-3 rounded-lg flex items-center gap-3 text-[#15803D] text-xs font-semibold">
+            <CheckCircle2 size={16} className="shrink-0" />
             <span>{cloudSuccessMsg}</span>
           </div>
         )}
 
-        {/* Banner informativo Firebase Cloud */}
-        <div className="bg-gradient-to-r from-indigo-900 to-slate-900 text-white p-7 rounded-[2.5rem] shadow-xl relative overflow-hidden flex items-start gap-5 border border-indigo-700/30">
-          <div className="p-3 bg-indigo-500/20 rounded-2xl text-indigo-300 border border-indigo-400/20 shrink-0 mt-1">
-            <Database size={28} />
+        {/* Editorial Info Strip */}
+        <div className="bg-[#FFFFFF] border border-[#E2DFD7] rounded-lg p-5 flex items-start gap-4">
+          <div className="p-2.5 bg-[#F3EEF8] border border-[#461D77]/15 rounded-md text-[#461D77] shrink-0">
+            <Database size={20} />
           </div>
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 bg-indigo-500/30 border border-indigo-400/30 rounded-full text-[9px] font-black uppercase tracking-widest text-indigo-200">
-                Firebase Firestore Activo
-              </span>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">• Sincronización Multidispositivo</span>
+          <div className="space-y-1 flex-1">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[#78716C]">
+              <span className="font-semibold text-[#461D77]">Firebase Firestore</span>
+              <span aria-hidden="true">·</span>
+              <span>Sincronización multidispositivo</span>
             </div>
-            <h3 className="text-lg font-black uppercase tracking-tight text-white">Historial Centralizado en la Nube</h3>
-            <p className="text-xs text-slate-300 leading-relaxed font-medium max-w-3xl">
-              Los informes y respaldos .json guardados en Firebase Firestore están disponibles instantáneamente para consulta desde **cualquier computador** de la red. Al presionar **"Guardar Historial en Firebase"**, la información queda respaldada en el servidor sin depender del almacenamiento local de un solo equipo.
+            <h2 className="text-base font-bold text-[#1C1917] tracking-[-0.01em]">
+              Historial Centralizado en la Nube
+            </h2>
+            <p className="text-xs text-[#57534E] leading-relaxed max-w-3xl">
+              Los informes y respaldos .json guardados en Firebase Firestore quedan disponibles para consulta desde cualquier equipo. Al presionar Guardar Historial en Firebase, la memoria operativa actual se respalda en el servidor.
             </p>
           </div>
         </div>
 
         {/* Sección 1: Informes en Firebase Cloud */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <Cloud size={18} className="text-indigo-600" />
-                <h2 className="text-2xl font-[900] text-[#1e293b] tracking-tighter uppercase">Informes en Nube Firebase</h2>
+                <Cloud size={17} className="text-[#461D77]" />
+                <h2 className="text-lg font-bold text-[#1C1917] tracking-[-0.02em]">
+                  Informes en Nube Firebase
+                </h2>
               </div>
-              <p className="text-slate-400 font-bold text-[10px] tracking-[0.2em] uppercase mt-0.5">Respaldos .json guardados en el servidor central</p>
+              <p className="text-xs text-[#78716C] mt-0.5">
+                Respaldos .json guardados en el servidor central
+              </p>
             </div>
-            <button 
+            <button
               onClick={loadCloudReports}
               disabled={isLoadingCloud}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] border border-[#E2DFD7] hover:bg-[#F7F6F2] text-[#1C1917] rounded-md text-xs font-semibold transition-colors duration-150 cursor-pointer disabled:opacity-50"
             >
-              <RefreshCw size={12} className={isLoadingCloud ? "animate-spin" : ""} /> Actualizar Nube
+              <RefreshCw size={13} className={isLoadingCloud ? "animate-spin text-[#461D77]" : "text-[#57534E]"} />
+              <span>Actualizar</span>
             </button>
           </div>
 
           {isLoadingCloud ? (
-            <div className="py-12 bg-white rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center space-y-3">
-              <RefreshCw size={24} className="animate-spin text-indigo-500" />
-              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Consultando Firebase Firestore...</p>
+            <div className="py-12 bg-[#FFFFFF] rounded-lg border border-[#E2DFD7] flex flex-col items-center justify-center space-y-2.5">
+              <RefreshCw size={20} className="animate-spin text-[#461D77]" />
+              <p className="text-xs font-mono text-[#78716C]">
+                Consultando Firebase Firestore...
+              </p>
             </div>
           ) : cloudReports.length === 0 ? (
-            <div className="py-12 bg-white rounded-[2rem] border border-slate-200/60 p-8 text-center space-y-3">
-              <Cloud size={32} className="mx-auto text-slate-300" />
-              <p className="text-sm font-bold text-slate-700">No hay informes .json guardados en Firebase aún</p>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Haga clic en el botón <strong>"Guardar Historial en Firebase"</strong> para subir la memoria operativa actual a la nube.
+            <div className="py-10 bg-[#FFFFFF] rounded-lg border border-[#E2DFD7] p-6 text-center space-y-2">
+              <Cloud size={26} className="mx-auto text-[#A8A29E]" />
+              <p className="text-sm font-semibold text-[#1C1917]">
+                No hay informes .json guardados en Firebase
+              </p>
+              <p className="text-xs text-[#78716C] max-w-md mx-auto">
+                Usa el botón Guardar Historial en Firebase para subir la memoria operativa actual a la nube.
               </p>
             </div>
           ) : (
-            <div className="grid gap-3">
+            <div className="bg-[#FFFFFF] rounded-lg border border-[#E2DFD7] divide-y divide-[#E2DFD7] overflow-hidden">
               {cloudReports.map((report) => (
-                <div 
+                <div
                   key={report.id}
-                  className="bg-white p-5 rounded-[2rem] border border-indigo-100/80 shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-4"
+                  className="px-5 py-4 hover:bg-[#F7F6F2]/70 transition-colors duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shrink-0">
-                      <CloudDownload size={22} />
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 bg-[#F3EEF8] border border-[#461D77]/15 rounded-md flex items-center justify-center text-[#461D77] shrink-0">
+                      <CloudDownload size={18} />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-black text-slate-900">{formatDateToCL(report.date)}</span>
-                        <span className="text-[9px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{report.date}</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-sm font-bold text-[#1C1917] font-mono tabular-nums">
+                          {formatDateToCL(report.date)}
+                        </span>
+                        <span className="text-xs font-mono tabular-nums text-[#78716C]">
+                          {report.date}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-                        <span>Guardado por: <strong className="text-slate-700">{report.updatedBy || 'Sistema'}</strong></span>
-                        <span>•</span>
-                        <span>{new Date(report.updatedAt).toLocaleDateString('es-CL')} {new Date(report.updatedAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-[#78716C] mt-0.5">
+                        <span>
+                          Guardado por <strong className="font-semibold text-[#1C1917]">{report.updatedBy || 'Sistema'}</strong>
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span className="font-mono tabular-nums">
+                          {new Date(report.updatedAt).toLocaleDateString('es-CL')}{' '}
+                          {new Date(report.updatedAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => handleRestoreFromCloud(report)}
                       title="Cargar este informe en esta computadora"
-                      className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F3EEF8] hover:bg-[#461D77] text-[#461D77] hover:text-white border border-[#461D77]/20 rounded-md text-xs font-semibold transition-colors duration-150 cursor-pointer"
                     >
-                      <CloudDownload size={14} /> Cargar en Equipo
+                      <CloudDownload size={14} />
+                      <span>Cargar en Equipo</span>
                     </button>
                     <button
                       onClick={() => handleDownloadCloudJSON(report)}
                       title="Descargar archivo JSON"
-                      className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-all cursor-pointer"
+                      className="p-2 bg-[#FFFFFF] border border-[#E2DFD7] hover:bg-[#F7F6F2] text-[#57534E] hover:text-[#1C1917] rounded-md transition-colors duration-150 cursor-pointer"
                     >
                       <Download size={14} />
                     </button>
@@ -410,7 +442,7 @@ export const MemoryModule: React.FC<MemoryModuleProps> = ({ data, onBack, onSele
                       <button
                         onClick={() => handleDeleteCloudReportClick(report)}
                         title="Eliminar de Firebase"
-                        className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all cursor-pointer"
+                        className="p-2 bg-[#FFFFFF] border border-[#E2DFD7] hover:bg-[#FEF2F2] hover:border-[#FECACA] text-[#B91C1C] rounded-md transition-colors duration-150 cursor-pointer"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -420,111 +452,151 @@ export const MemoryModule: React.FC<MemoryModuleProps> = ({ data, onBack, onSele
               ))}
             </div>
           )}
-        </div>
+        </section>
 
         {/* Sección 2: Historial de Jornadas Locales */}
-        <div className="space-y-4 pt-4 border-t border-slate-200">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-[900] text-[#1e293b] tracking-tighter uppercase">Jornadas en Memoria Local</h2>
-            <p className="text-slate-400 font-bold text-[10px] tracking-[0.2em] uppercase">Seleccione una fecha para revisar o editar sus observaciones</p>
+        <section className="space-y-3 pt-4 border-t border-[#E2DFD7]">
+          <div>
+            <h2 className="text-lg font-bold text-[#1C1917] tracking-[-0.02em]">
+              Jornadas en Memoria Local
+            </h2>
+            <p className="text-xs text-[#78716C] mt-0.5">
+              Selecciona una fecha para revisar o editar sus observaciones
+            </p>
           </div>
 
           {availableDates.length === 0 ? (
-            <div className="py-12 flex flex-col items-center text-center space-y-4 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
-              <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300">
-                <Calendar size={32} />
+            <div className="py-10 flex flex-col items-center text-center space-y-2.5 bg-[#FFFFFF] rounded-lg border border-[#E2DFD7]">
+              <div className="w-11 h-11 bg-[#F7F6F2] border border-[#E2DFD7] rounded-md flex items-center justify-center text-[#78716C]">
+                <Calendar size={20} />
               </div>
               <div className="space-y-1">
-                <p className="text-base font-black text-slate-800">No hay datos en memoria local</p>
-                <p className="text-slate-400 text-xs max-w-xs font-medium">Cargue archivos Excel o restaure un informe guardado en la nube.</p>
+                <p className="text-sm font-semibold text-[#1C1917]">
+                  No hay datos en memoria local
+                </p>
+                <p className="text-xs text-[#78716C] max-w-xs">
+                  Carga archivos Excel o restaura un informe guardado en la nube.
+                </p>
               </div>
             </div>
           ) : (
-            <div className="grid gap-3">
+            <div className="bg-[#FFFFFF] rounded-lg border border-[#E2DFD7] divide-y divide-[#E2DFD7] overflow-hidden">
               {availableDates.map((item) => (
-                <button
+                <div
                   key={item.date}
                   onClick={() => onSelectDate(item.date)}
-                  className="group flex items-center justify-between bg-white p-5 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300 text-left cursor-pointer active:scale-[0.98]"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onSelectDate(item.date);
+                    }
+                  }}
+                  className="group flex items-center justify-between px-5 py-3.5 hover:bg-[#F7F6F2]/80 transition-colors duration-150 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#461D77]"
                 >
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex flex-col items-center justify-center group-hover:bg-indigo-50 transition-colors">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">Día</span>
-                      <span className="text-xl font-black text-slate-800 group-hover:text-indigo-600 leading-none">{item.date.split('-')[2]}</span>
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-11 h-11 bg-[#F7F6F2] border border-[#E2DFD7] rounded-md flex flex-col items-center justify-center group-hover:bg-[#F3EEF8] group-hover:border-[#461D77]/30 transition-colors shrink-0">
+                      <span className="text-[10px] font-medium text-[#78716C] leading-none mb-0.5">
+                        Día
+                      </span>
+                      <span className="text-base font-bold font-mono tabular-nums text-[#1C1917] group-hover:text-[#461D77] leading-none">
+                        {item.date.split('-')[2]}
+                      </span>
                     </div>
-                    
-                    <div className="space-y-1">
-                      <p className="text-lg font-black text-[#1e293b] tracking-tight">{formatDateToCL(item.date)}</p>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          <ClipboardList size={12} className="text-slate-300" /> {item.totalProducts} Productos
-                        </div>
-                        <div className="w-1 h-1 bg-slate-200 rounded-full" />
-                        <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${item.justificationsCount > 0 ? 'text-emerald-500' : 'text-slate-300'}`}>
-                          <MessageSquare size={12} /> {item.justificationsCount} Justificaciones
-                        </div>
+
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-[#1C1917] font-mono tabular-nums">
+                        {formatDateToCL(item.date)}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-[#78716C] mt-0.5">
+                        <span className="inline-flex items-center gap-1 font-mono tabular-nums">
+                          <ClipboardList size={12} className="text-[#A8A29E]" />
+                          {item.totalProducts} productos
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span
+                          className={`inline-flex items-center gap-1 font-mono tabular-nums ${
+                            item.justificationsCount > 0 ? 'text-[#15803D] font-semibold' : 'text-[#78716C]'
+                          }`}
+                        >
+                          <MessageSquare size={12} />
+                          {item.justificationsCount} justificaciones
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 pr-2 relative z-10">
-                     {(currentUser?.role === 'admin' || currentUser?.username === 'ctapia') && (
-                       <button
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           handleDeleteDateClick(item.date);
-                         }}
-                         title="Eliminar justificaciones locales de este día"
-                         className="w-9 h-9 rounded-full bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 flex items-center justify-center transition-all cursor-pointer"
-                       >
-                         <Trash2 size={15} />
-                       </button>
-                     )}
-                     <div className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-inner">
-                        <ChevronRight size={18} />
-                     </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {(currentUser?.role === 'admin' || currentUser?.username === 'ctapia') && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteDateClick(item.date);
+                        }}
+                        title="Eliminar justificaciones locales de este día"
+                        className="w-8 h-8 rounded-md bg-[#FFFFFF] border border-[#E2DFD7] hover:bg-[#FEF2F2] hover:border-[#FECACA] text-[#B91C1C] flex items-center justify-center transition-colors duration-150 cursor-pointer"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                    <div className="w-8 h-8 rounded-md bg-[#F7F6F2] border border-[#E2DFD7] flex items-center justify-center text-[#78716C] group-hover:bg-[#461D77] group-hover:border-[#461D77] group-hover:text-white transition-colors duration-150">
+                      <ChevronRight size={16} />
+                    </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}
-        </div>
+        </section>
       </main>
 
-      <footer className="bg-white border-t border-slate-100 p-8 flex justify-center no-print">
-        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.4em]">ARCHIVO HISTÓRICO FIREBASE • 2026</p>
+      <footer className="bg-[#FFFFFF] border-t border-[#E2DFD7] px-6 py-5 flex justify-center no-print">
+        <p className="text-xs font-mono text-[#78716C]">
+          Archivo Histórico Firebase · 2026
+        </p>
       </footer>
 
       {/* Modal Confirmar Eliminación Local */}
       {dateToDelete && (
-        <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 no-print">
-          <div className="bg-white max-w-md w-full rounded-[2rem] p-8 shadow-2xl border border-slate-100 flex flex-col space-y-6">
-            <div className="flex justify-between items-start">
+        <div className="fixed inset-0 z-[1000] bg-[#1C1917]/60 flex items-center justify-center p-4 no-print">
+          <div className="bg-[#FFFFFF] max-w-md w-full rounded-lg p-6 shadow-lg border border-[#E2DFD7] flex flex-col space-y-5">
+            <div className="flex justify-between items-start gap-3">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
-                  <ShieldAlert size={24} />
+                <div className="p-2.5 bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] rounded-md">
+                  <ShieldAlert size={20} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-[#1c1917] text-lg uppercase tracking-tight">Confirmar Eliminación Local</h3>
-                  <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-1">Acción Destructiva Local</p>
+                  <h3 className="font-bold text-[#1C1917] text-base tracking-[-0.01em]">
+                    Confirmar Eliminación Local
+                  </h3>
+                  <p className="text-xs font-mono text-[#B91C1C]">
+                    Acción destructiva local
+                  </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setDateToDelete(null)}
-                className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-400"
+                className="p-1.5 hover:bg-[#F7F6F2] rounded-md transition-colors text-[#78716C] hover:text-[#1C1917] cursor-pointer"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
-            
-            <p className="text-xs text-slate-500 leading-relaxed font-medium">
-              Por motivos de seguridad, para eliminar todas las observaciones registradas localmente para el día <strong className="text-slate-800">{formatDateToCL(dateToDelete)}</strong>, debe ingresar su contraseña de administrador.
+
+            <p className="text-xs text-[#57534E] leading-relaxed">
+              Para eliminar todas las observaciones registradas localmente del día{' '}
+              <strong className="text-[#1C1917] font-mono tabular-nums">
+                {formatDateToCL(dateToDelete)}
+              </strong>
+              , ingresa tu contraseña de administrador.
             </p>
 
-            <div className="space-y-2">
-              <label className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Contraseña de Administrador</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#1C1917] block">
+                Contraseña de Administrador
+              </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-[1.125rem] w-4 h-4 text-slate-400" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716C]" />
                 <input
                   type="password"
                   value={adminPasswordConfirm}
@@ -533,27 +605,31 @@ export const MemoryModule: React.FC<MemoryModuleProps> = ({ data, onBack, onSele
                     setPasswordError(false);
                   }}
                   autoFocus
-                  placeholder="Ingrese contraseña..."
-                  className={`w-full py-3.5 pl-11 pr-4 bg-slate-50 border-2 rounded-xl text-sm font-bold text-slate-800 outline-none transition-all ${
-                    passwordError ? 'border-red-500 focus:border-red-500 bg-red-50' : 'border-transparent focus:border-[#461D77] focus:bg-white focus:shadow-md'
+                  placeholder="Ingresa contraseña..."
+                  className={`w-full py-2.5 pl-10 pr-3.5 bg-[#F7F6F2] border rounded-md text-sm font-medium text-[#1C1917] outline-none transition-colors ${
+                    passwordError
+                      ? 'border-[#B91C1C] bg-[#FEF2F2]'
+                      : 'border-[#E2DFD7] focus:border-[#461D77] focus:bg-[#FFFFFF]'
                   }`}
                 />
               </div>
               {passwordError && (
-                <p className="text-[10px] text-red-600 font-extrabold uppercase tracking-widest mt-1">Contraseña Incorrecta</p>
+                <p className="text-xs text-[#B91C1C] font-semibold">
+                  Contraseña incorrecta
+                </p>
               )}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2.5 pt-1">
               <button
                 onClick={() => setDateToDelete(null)}
-                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer"
+                className="flex-1 py-2.5 bg-[#FFFFFF] border border-[#E2DFD7] hover:bg-[#F7F6F2] text-[#57534E] text-xs font-semibold rounded-md transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirmDeleteJustifications}
-                className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-red-200 cursor-pointer"
+                className="flex-1 py-2.5 bg-[#B91C1C] hover:bg-[#991B1B] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer"
               >
                 Eliminar Todo
               </button>
@@ -564,34 +640,44 @@ export const MemoryModule: React.FC<MemoryModuleProps> = ({ data, onBack, onSele
 
       {/* Modal Confirmar Eliminación en Firebase Cloud */}
       {cloudReportToDelete && (
-        <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 no-print">
-          <div className="bg-white max-w-md w-full rounded-[2rem] p-8 shadow-2xl border border-slate-100 flex flex-col space-y-6">
-            <div className="flex justify-between items-start">
+        <div className="fixed inset-0 z-[1000] bg-[#1C1917]/60 flex items-center justify-center p-4 no-print">
+          <div className="bg-[#FFFFFF] max-w-md w-full rounded-lg p-6 shadow-lg border border-[#E2DFD7] flex flex-col space-y-5">
+            <div className="flex justify-between items-start gap-3">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
-                  <ShieldAlert size={24} />
+                <div className="p-2.5 bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] rounded-md">
+                  <ShieldAlert size={20} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-[#1c1917] text-lg uppercase tracking-tight">Eliminar de Firebase Nube</h3>
-                  <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-1">Servidor Cloud</p>
+                  <h3 className="font-bold text-[#1C1917] text-base tracking-[-0.01em]">
+                    Eliminar de Firebase Nube
+                  </h3>
+                  <p className="text-xs font-mono text-[#B91C1C]">
+                    Servidor Cloud
+                  </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setCloudReportToDelete(null)}
-                className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-400"
+                className="p-1.5 hover:bg-[#F7F6F2] rounded-md transition-colors text-[#78716C] hover:text-[#1C1917] cursor-pointer"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
-            
-            <p className="text-xs text-slate-500 leading-relaxed font-medium">
-              Esta acción eliminará de forma permanente el informe .json del día <strong className="text-slate-800">{formatDateToCL(cloudReportToDelete.date)}</strong> de la base de datos de Firebase. Ingrese su contraseña de administrador para proceder.
+
+            <p className="text-xs text-[#57534E] leading-relaxed">
+              Esta acción eliminará permanentemente el informe .json del día{' '}
+              <strong className="text-[#1C1917] font-mono tabular-nums">
+                {formatDateToCL(cloudReportToDelete.date)}
+              </strong>{' '}
+              de Firebase. Ingresa tu contraseña de administrador para confirmar.
             </p>
 
-            <div className="space-y-2">
-              <label className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Contraseña de Administrador</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#1C1917] block">
+                Contraseña de Administrador
+              </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-[1.125rem] w-4 h-4 text-slate-400" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716C]" />
                 <input
                   type="password"
                   value={adminPasswordConfirm}
@@ -600,27 +686,31 @@ export const MemoryModule: React.FC<MemoryModuleProps> = ({ data, onBack, onSele
                     setPasswordError(false);
                   }}
                   autoFocus
-                  placeholder="Ingrese contraseña..."
-                  className={`w-full py-3.5 pl-11 pr-4 bg-slate-50 border-2 rounded-xl text-sm font-bold text-slate-800 outline-none transition-all ${
-                    passwordError ? 'border-red-500 focus:border-red-500 bg-red-50' : 'border-transparent focus:border-[#461D77] focus:bg-white focus:shadow-md'
+                  placeholder="Ingresa contraseña..."
+                  className={`w-full py-2.5 pl-10 pr-3.5 bg-[#F7F6F2] border rounded-md text-sm font-medium text-[#1C1917] outline-none transition-colors ${
+                    passwordError
+                      ? 'border-[#B91C1C] bg-[#FEF2F2]'
+                      : 'border-[#E2DFD7] focus:border-[#461D77] focus:bg-[#FFFFFF]'
                   }`}
                 />
               </div>
               {passwordError && (
-                <p className="text-[10px] text-red-600 font-extrabold uppercase tracking-widest mt-1">Contraseña Incorrecta</p>
+                <p className="text-xs text-[#B91C1C] font-semibold">
+                  Contraseña incorrecta
+                </p>
               )}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2.5 pt-1">
               <button
                 onClick={() => setCloudReportToDelete(null)}
-                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer"
+                className="flex-1 py-2.5 bg-[#FFFFFF] border border-[#E2DFD7] hover:bg-[#F7F6F2] text-[#57534E] text-xs font-semibold rounded-md transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirmDeleteCloudReport}
-                className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-red-200 cursor-pointer"
+                className="flex-1 py-2.5 bg-[#B91C1C] hover:bg-[#991B1B] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer"
               >
                 Eliminar de Nube
               </button>

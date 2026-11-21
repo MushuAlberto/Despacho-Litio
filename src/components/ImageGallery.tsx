@@ -997,84 +997,89 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   }, [sortedImages.length, nextSlide, prevSlide, isFullScreen, onBack]);
 
   return (
-    <div className="min-h-screen bg-calido flex flex-col font-sans text-tecnico relative">
+    <div className="min-h-screen bg-[#F7F6F2] flex flex-col font-sans text-[#1C1917] relative">
       {/* Header */}
-      <header className="bg-white border-b border-violeta/10 p-6 flex justify-between items-center sticky top-0 z-30">
-        <div className="flex items-center gap-6">
-          <button 
+      <header className="bg-[#FFFFFF] border-b border-[#E2DFD7] px-6 py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4 sticky top-0 z-30">
+        <div className="flex flex-wrap items-center gap-4">
+          <button
             onClick={onBack}
-            className="flex items-center gap-2 text-violeta hover:text-nucleo font-black text-[10px] uppercase tracking-widest transition-colors group"
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F7F6F2] border border-[#E2DFD7] rounded-md text-xs font-semibold text-[#1C1917] transition-colors duration-150 ease-out cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
           >
-            <Home size={14} className="group-hover:-translate-x-1 transition-transform" /> Menú
+            <Home size={14} className="text-[#57534E]" />
+            <span>Menú</span>
           </button>
-          <div className="h-8 w-px bg-violeta/10" />
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-[950] text-nucleo tracking-tighter uppercase leading-none">Galería Operativa</h1>
-            <p className="text-[10px] font-bold text-violeta/60 uppercase tracking-[0.3em] mt-1">Registro Visual de Faena</p>
+          <div className="h-6 w-px bg-[#E2DFD7]" />
+          <div>
+            <h1 className="text-lg font-bold text-[#1C1917] tracking-[-0.02em] leading-tight">
+              Galería Operativa
+            </h1>
+            <p className="text-xs text-[#78716C]">
+              Registro visual de faena y capturas automáticas
+            </p>
           </div>
 
           {/* Firebase Cloud Sync Controls & Status */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleManualLoadFromFirebase}
               disabled={isLoadingFirebase}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer border ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors duration-150 border ${
                 isLoadingFirebase
-                  ? 'bg-violeta/10 border-violeta/20 text-violeta cursor-wait animate-pulse'
-                  : 'bg-violeta/5 hover:bg-violeta/10 border-violeta/15 hover:border-violeta/30 text-violeta'
+                  ? 'bg-[#F3EEF8] border-[#461D77]/20 text-[#461D77] cursor-wait'
+                  : 'bg-[#FFFFFF] hover:bg-[#F7F6F2] border-[#E2DFD7] text-[#1C1917] cursor-pointer'
               }`}
               title="Carga los datos operativos e informes más recientes guardados en Firebase Firestore."
             >
               {isLoadingFirebase ? (
-                <Loader2 size={12} className="animate-spin text-violeta" />
+                <Loader2 size={13} className="animate-spin text-[#461D77]" />
               ) : (
-                <CloudDownload size={12} className="text-violeta" />
+                <CloudDownload size={13} className="text-[#461D77]" />
               )}
-              {isLoadingFirebase ? 'Cargando de Firebase...' : 'Cargar de Firebase'}
+              <span>{isLoadingFirebase ? 'Cargando de Firebase...' : 'Cargar de Firebase'}</span>
             </button>
 
             {lastSyncedDate && (
-              <div 
-                className="hidden xl:flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider"
-                title={`Datos cargados desde la base de datos Firebase para la jornada ${formatDateToCL(lastSyncedDate)}.`}
+              <div
+                className="hidden xl:flex items-center gap-1.5 text-xs font-mono tabular-nums text-[#57534E] px-2"
+                title={`Datos cargados desde Firebase para la jornada ${formatDateToCL(lastSyncedDate)}.`}
               >
-                <Database size={11} className="text-emerald-600 shrink-0" />
+                <Database size={12} className="text-[#15803D] shrink-0" />
                 <span>Nube: {formatDateToCL(lastSyncedDate)}</span>
               </div>
             )}
 
             {isGeneratingAuto ? (
-              <div className="flex items-center gap-2 bg-ionizado/10 px-4 py-2 rounded-full border border-ionizado/20 animate-pulse">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-ionizado" />
-                <span className="text-[9px] font-black text-ionizado uppercase tracking-wider">Sincronizando reportes...</span>
+              <div className="flex items-center gap-1.5 bg-[#F3EEF8] px-3 py-1.5 rounded-md border border-[#461D77]/20 text-xs font-semibold text-[#461D77]">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Sincronizando reportes...</span>
               </div>
             ) : (
               operationalData.length > 0 && effectiveDate && (
                 <button
                   onClick={handleRegenerateAutoImages}
-                  className="flex items-center gap-1.5 bg-violeta/5 hover:bg-violeta/10 border border-violeta/15 hover:border-violeta/30 text-violeta font-black text-[9px] uppercase tracking-wider px-3 py-2 rounded-xl transition-all cursor-pointer"
-                  title="Regenera todas las capturas automáticas para incluir las últimas modificaciones o justificaciones de desempeño."
+                  className="flex items-center gap-1.5 bg-[#FFFFFF] hover:bg-[#F7F6F2] border border-[#E2DFD7] text-[#1C1917] font-semibold text-xs px-3 py-1.5 rounded-md transition-colors duration-150 cursor-pointer"
+                  title="Regenera todas las capturas automáticas para incluir las últimas modificaciones."
                 >
-                  <RefreshCw size={12} className="text-violeta" />
-                  Actualizar Reportes
+                  <RefreshCw size={13} className="text-[#461D77]" />
+                  <span>Actualizar Reportes</span>
                 </button>
               )
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Date Selector */}
           {availableDates.length > 0 && (
-            <div className="bg-calido/50 rounded-2xl p-1.5 flex items-center gap-1.5 border border-violeta/10 px-3">
-              <span className="text-[9px] font-black uppercase text-violeta/50 tracking-wider">Jornada:</span>
+            <div className="bg-[#F7F6F2] rounded-md px-2.5 py-1.5 flex items-center gap-2 border border-[#E2DFD7]">
+              <span className="text-xs text-[#78716C] font-medium">Jornada:</span>
               <select
                 value={effectiveDate}
                 onChange={(e) => {
                   setActiveDate(e.target.value);
                   setCurrentIndex(0);
                 }}
-                className="bg-transparent text-[10px] font-black text-violeta uppercase outline-none cursor-pointer border-none p-0 focus:ring-0 font-mono"
+                className="bg-transparent text-xs font-semibold text-[#1C1917] outline-none cursor-pointer border-none p-0 focus:ring-0 font-mono tabular-nums"
               >
                 {availableDates.map((d, i) => (
                   <option key={d} value={d}>
@@ -1087,15 +1092,15 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
           {/* Sorting Option */}
           {sortedImages.length > 0 && (
-            <div className="bg-calido/50 rounded-2xl p-1.5 flex items-center gap-1.5 border border-violeta/5 px-3">
-              <span className="text-[9px] font-black uppercase text-violeta/50 tracking-wider">Ordenar:</span>
+            <div className="bg-[#F7F6F2] rounded-md px-2.5 py-1.5 flex items-center gap-2 border border-[#E2DFD7]">
+              <span className="text-xs text-[#78716C] font-medium">Orden:</span>
               <select
                 value={sortBy}
                 onChange={(e) => {
                   setSortBy(e.target.value as any);
-                  setCurrentIndex(0); // Reset to first image in sorted list
+                  setCurrentIndex(0);
                 }}
-                className="bg-transparent text-[10px] font-black text-violeta uppercase outline-none cursor-pointer border-none p-0 focus:ring-0"
+                className="bg-transparent text-xs font-semibold text-[#1C1917] outline-none cursor-pointer border-none p-0 focus:ring-0"
               >
                 <option value="report-order">Orden del Informe</option>
                 <option value="recent">Recientes primero</option>
@@ -1109,21 +1114,25 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
           {/* Autoplay Controls */}
           {sortedImages.length > 0 && (
-            <div className="bg-calido/50 rounded-2xl p-1 flex items-center gap-1 border border-violeta/5">
-              <button 
+            <div className="bg-[#F7F6F2] rounded-md p-0.5 flex items-center gap-1 border border-[#E2DFD7]">
+              <button
                 onClick={handleToggleAutoPlay}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${autoPlay ? 'bg-ionizado text-white shadow-lg' : 'bg-white text-violeta hover:bg-white'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-colors duration-150 cursor-pointer ${
+                  autoPlay
+                    ? 'bg-[#461D77] text-white'
+                    : 'bg-[#FFFFFF] text-[#1C1917] hover:bg-[#EFECE6]'
+                }`}
               >
                 {autoPlay ? <Pause size={12} fill="currentColor" /> : <Play size={12} fill="currentColor" />}
-                {autoPlay ? 'Reproduciendo' : 'Autoplay'}
+                <span>{autoPlay ? 'Pausar' : 'Autoplay'}</span>
               </button>
-              
-              <div className="flex items-center gap-2 px-3">
-                <Timer size={12} className="text-violeta/40" />
-                <select 
-                  value={intervalTime} 
+
+              <div className="flex items-center gap-1.5 px-2">
+                <Timer size={12} className="text-[#78716C]" />
+                <select
+                  value={intervalTime}
                   onChange={(e) => setIntervalTime(Number(e.target.value))}
-                  className="bg-transparent text-[10px] font-black text-violeta uppercase outline-none cursor-pointer"
+                  className="bg-transparent text-xs font-mono tabular-nums font-semibold text-[#1C1917] outline-none cursor-pointer"
                 >
                   <option value={5}>5s</option>
                   <option value={10}>10s</option>
@@ -1136,14 +1145,15 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             </div>
           )}
 
-          <label className="bg-nucleo text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-nucleo/90 transition-all cursor-pointer shadow-lg shadow-nucleo/10 active:scale-95">
-            <Plus size={14} strokeWidth={3} /> Subir Imágenes
-            <input 
-              type="file" 
-              className="hidden" 
-              multiple 
-              accept="image/*" 
-              onChange={(e) => handleFileUpload(e.target.files)} 
+          <label className="bg-[#461D77] hover:bg-[#36155E] text-white px-4 py-2 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 cursor-pointer">
+            <Plus size={14} />
+            <span>Subir Imágenes</span>
+            <input
+              type="file"
+              className="hidden"
+              multiple
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e.target.files)}
             />
           </label>
         </div>
@@ -1151,54 +1161,62 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
       {/* Cloud Notification Banner */}
       {firebaseNotice && (
-        <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2.5 flex items-center justify-between text-emerald-800 text-[10px] font-black uppercase tracking-wider animate-in fade-in transition-all">
+        <div className="bg-[#F0FDF4] border-b border-[#BBF7D0] px-6 py-2.5 flex items-center justify-between text-[#15803D] text-xs font-semibold">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+            <CheckCircle2 size={14} className="shrink-0" />
             <span>{firebaseNotice}</span>
           </div>
-          <button 
-            onClick={() => setFirebaseNotice(null)} 
-            className="text-emerald-700/60 hover:text-emerald-900 cursor-pointer p-1"
+          <button
+            onClick={() => setFirebaseNotice(null)}
+            className="text-[#15803D]/70 hover:text-[#15803D] cursor-pointer p-1"
           >
-            <X size={12} />
+            <X size={13} />
           </button>
         </div>
       )}
 
       {/* Quota Limit Notice Banner */}
       {quotaNotice && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center justify-between text-amber-900 text-[10px] font-black uppercase tracking-wider animate-in fade-in transition-all">
+        <div className="bg-[#FFFBEB] border-b border-[#FDE68A] px-6 py-2.5 flex items-center justify-between text-[#B45309] text-xs font-semibold">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={14} className="text-amber-600 shrink-0" />
-            <span>Límite diario de operaciones gratuitas de Firebase alcanzado (se reinicia a medianoche). La galería continúa operando con respaldo en memoria local.</span>
+            <AlertTriangle size={14} className="shrink-0" />
+            <span>Límite diario gratuito de Firebase alcanzado (se reinicia a medianoche). La galería continúa operando con respaldo local.</span>
           </div>
-          <button 
-            onClick={() => setQuotaNotice(false)} 
-            className="text-amber-700/60 hover:text-amber-900 cursor-pointer p-1"
+          <button
+            onClick={() => setQuotaNotice(false)}
+            className="text-[#B45309]/70 hover:text-[#B45309] cursor-pointer p-1"
           >
-            <X size={12} />
+            <X size={13} />
           </button>
         </div>
       )}
 
-      <main className="flex-1 p-8 max-w-7xl mx-auto w-full space-y-12">
+      <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8">
         {isLoadingFirebase && sortedImages.length === 0 ? (
-          <div className="w-full h-[60vh] border-4 border-dashed rounded-[3rem] border-violeta/10 bg-white/50 flex flex-col items-center justify-center space-y-4">
-            <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-ionizado shadow-sm border border-violeta/5">
-              <Loader2 size={36} className="animate-spin text-ionizado" />
+          <div className="w-full h-[55vh] border border-dashed rounded-lg border-[#D6D3CB] bg-[#FFFFFF] flex flex-col items-center justify-center space-y-3">
+            <div className="w-12 h-12 bg-[#F3EEF8] border border-[#461D77]/20 rounded-md flex items-center justify-center text-[#461D77]">
+              <Loader2 size={24} className="animate-spin" />
             </div>
             <div className="text-center">
-              <h2 className="text-xl font-black text-nucleo uppercase tracking-tight">Cargando datos desde Firebase</h2>
-              <p className="text-violeta/60 font-medium text-xs mt-1">Conectando a la nube y recuperando los registros operativos...</p>
+              <h2 className="text-base font-bold text-[#1C1917] tracking-[-0.01em]">
+                Cargando datos desde Firebase
+              </h2>
+              <p className="text-[#78716C] text-xs mt-1">
+                Recuperando registros operativos y capturas...
+              </p>
             </div>
           </div>
         ) : sortedImages.length === 0 ? (
-          <div 
-            className={`
-              w-full h-[60vh] border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center space-y-6 transition-all duration-500
-              ${dragActive ? 'border-ionizado bg-ionizado/5' : 'border-violeta/10 bg-white/50'}
-            `}
-            onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+          <div
+            className={`w-full h-[55vh] border border-dashed rounded-lg flex flex-col items-center justify-center space-y-4 transition-colors duration-150 ${
+              dragActive
+                ? 'border-[#461D77] bg-[#F3EEF8]/50'
+                : 'border-[#D6D3CB] bg-[#FFFFFF]'
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragActive(true);
+            }}
             onDragLeave={() => setDragActive(false)}
             onDrop={(e) => {
               e.preventDefault();
@@ -1206,73 +1224,78 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
               handleFileUpload(e.dataTransfer.files);
             }}
           >
-            <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center text-violeta/20 shadow-sm border border-violeta/5">
-              <ImageIcon size={48} />
+            <div className="w-14 h-14 bg-[#F7F6F2] border border-[#E2DFD7] rounded-lg flex items-center justify-center text-[#78716C]">
+              <ImageIcon size={28} />
             </div>
             <div className="text-center">
-              <h2 className="text-2xl font-black text-nucleo uppercase tracking-tight">No hay imágenes</h2>
-              <p className="text-violeta/60 font-medium mt-1">Arrastra tus archivos aquí o usa el botón de subida.</p>
+              <h2 className="text-lg font-bold text-[#1C1917] tracking-[-0.02em]">
+                No hay imágenes cargadas
+              </h2>
+              <p className="text-[#78716C] text-xs mt-1">
+                Arrastra archivos aquí o usa el botón Subir Imágenes.
+              </p>
             </div>
           </div>
         ) : (
           <>
             {/* Main Carousel */}
             <section className="relative group">
-              <div className="aspect-[21/9] w-full bg-tecnico rounded-[3rem] overflow-hidden shadow-2xl relative carousel-container">
+              <div className="aspect-[21/9] w-full bg-[#1C1917] rounded-lg overflow-hidden border border-[#E2DFD7] relative carousel-container">
                 {sortedImages.map((img, idx) => (
                   <div
                     key={img.id}
-                    className={`
-                      absolute inset-0 transition-all duration-700 ease-in-out flex items-center justify-center
-                      ${idx === currentIndex ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-110 pointer-events-none z-0'}
-                    `}
+                    className={`absolute inset-0 transition-opacity duration-300 ease-out flex items-center justify-center ${
+                      idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                    }`}
                   >
-                    <img 
-                      src={img.url} 
-                      alt={img.name} 
+                    <img
+                      src={img.url}
+                      alt={img.name}
                       className="w-full h-full object-cover"
                     />
-                    
-
                   </div>
                 ))}
 
-                {/* Single Stable Fullscreen Button */}
-                <div className="absolute bottom-12 right-12 z-40">
-                  <button 
+                {/* Fullscreen Trigger */}
+                <div className="absolute bottom-5 right-5 z-40">
+                  <button
                     onClick={openFullScreen}
-                    className="w-16 h-16 bg-white/20 backdrop-blur-2xl rounded-2xl flex items-center justify-center text-white hover:bg-white hover:text-nucleo transition-all border border-white/30 cursor-pointer shadow-[0_0_40px_rgba(0,0,0,0.3)] group/btn"
+                    className="w-11 h-11 bg-[#1C1917]/80 hover:bg-[#461D77] rounded-md flex items-center justify-center text-white transition-colors duration-150 border border-white/20 cursor-pointer"
                     title="Pantalla Completa"
                   >
-                    <Maximize2 size={28} className="group-hover/btn:scale-110 transition-transform" />
+                    <Maximize2 size={18} />
                   </button>
                 </div>
 
                 {/* Controls */}
-                <div className="absolute inset-y-0 left-0 w-32 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                  <button 
+                <div className="absolute inset-y-0 left-0 w-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20">
+                  <button
                     onClick={prevSlide}
-                    className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-nucleo transition-all border border-white/20"
+                    className="w-10 h-10 bg-[#1C1917]/80 hover:bg-[#FFFFFF] rounded-md flex items-center justify-center text-white hover:text-[#1C1917] transition-colors duration-150 border border-white/20 cursor-pointer"
+                    title="Anterior"
                   >
-                    <ChevronLeft size={32} />
+                    <ChevronLeft size={20} />
                   </button>
                 </div>
-                <div className="absolute inset-y-0 right-0 w-32 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                  <button 
+                <div className="absolute inset-y-0 right-0 w-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20">
+                  <button
                     onClick={nextSlide}
-                    className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-nucleo transition-all border border-white/20"
+                    className="w-10 h-10 bg-[#1C1917]/80 hover:bg-[#FFFFFF] rounded-md flex items-center justify-center text-white hover:text-[#1C1917] transition-colors duration-150 border border-white/20 cursor-pointer"
+                    title="Siguiente"
                   >
-                    <ChevronRight size={32} />
+                    <ChevronRight size={20} />
                   </button>
                 </div>
 
                 {/* Indicators */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 bg-[#1C1917]/60 px-2.5 py-1.5 rounded-md border border-white/15">
                   {sortedImages.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentIndex(idx)}
-                      className={`h-1.5 transition-all duration-500 rounded-full ${idx === currentIndex ? 'w-8 bg-white' : 'w-2 bg-white/30'}`}
+                      className={`h-1.5 transition-all duration-150 rounded-sm cursor-pointer ${
+                        idx === currentIndex ? 'w-6 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
+                      }`}
                     />
                   ))}
                 </div>
@@ -1280,33 +1303,39 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             </section>
 
             {/* Grid View / Management */}
-            <section className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-1.5 h-6 bg-ionizado rounded-full" />
-                  <h2 className="text-xl font-black text-nucleo uppercase tracking-tight">Biblioteca de Medios</h2>
-                </div>
-                <p className="text-[10px] font-black text-violeta/40 uppercase tracking-widest">{sortedImages.length} Archivos</p>
+            <section className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E2DFD7] pb-3">
+                <h2 className="text-base font-bold text-[#1C1917] tracking-[-0.01em]">
+                  Biblioteca de Medios
+                </h2>
+                <p className="text-xs font-mono tabular-nums text-[#78716C]">
+                  {sortedImages.length} archivos
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {sortedImages.map((img, idx) => (
-                  <div 
+                  <div
                     key={img.id}
-                    className={`
-                      group relative aspect-square rounded-3xl overflow-hidden border-2 transition-all duration-300 cursor-pointer
-                      ${idx === currentIndex ? 'border-ionizado ring-4 ring-ionizado/10' : 'border-transparent hover:border-violeta/20'}
-                    `}
+                    className={`group relative aspect-square rounded-lg overflow-hidden border transition-colors duration-150 cursor-pointer bg-[#FFFFFF] ${
+                      idx === currentIndex
+                        ? 'border-[#461D77] ring-2 ring-[#461D77]/25'
+                        : 'border-[#E2DFD7] hover:border-[#461D77]/50'
+                    }`}
                     onClick={() => setCurrentIndex(idx)}
                   >
                     <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
                     {img.id !== 'static_novandino' && !img.id.startsWith('sda_random_') && (
-                      <div className="absolute inset-0 bg-nucleo/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}
-                          className="w-10 h-10 bg-rose-500 text-white rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors shadow-lg"
+                      <div className="absolute inset-0 bg-[#1C1917]/65 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteImage(img.id);
+                          }}
+                          className="w-9 h-9 bg-[#B91C1C] hover:bg-[#991B1B] text-white rounded-md flex items-center justify-center transition-colors cursor-pointer"
+                          title="Eliminar imagen"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     )}
@@ -1320,70 +1349,62 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
       {/* Fullscreen Overlay */}
       {isFullScreen && sortedImages[currentIndex] && (
-        <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden animate-in fade-in duration-300">
-          {/* Background image blurred to fill space beautifully (ambient glow) */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center scale-110 blur-3xl opacity-30 select-none pointer-events-none" 
-            style={{ backgroundImage: `url(${sortedImages[currentIndex].url})` }}
-          />
+        <div className="fixed inset-0 z-[9999] bg-[#0C0A09] flex items-center justify-center overflow-hidden">
+          {/* Top Right Floating Control */}
+          <div className="absolute top-5 right-5 flex items-center gap-2 z-50">
+            <button
+              onClick={() => setAutoPlay(!autoPlay)}
+              className={`w-11 h-11 rounded-md flex items-center justify-center transition-colors duration-150 border cursor-pointer ${
+                autoPlay
+                  ? 'bg-[#461D77] text-white border-[#461D77]'
+                  : 'bg-[#1C1917]/85 text-white border-white/20 hover:bg-[#FFFFFF] hover:text-[#1C1917]'
+              }`}
+              title={autoPlay ? "Pausar Reproducción" : "Iniciar Reproducción"}
+            >
+              {autoPlay ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+            </button>
 
-          {/* Floating Top Header Control */}
-          <div className="absolute top-6 left-6 right-6 flex justify-end items-start z-50 pointer-events-none">
-            {/* Floating Control buttons */}
-            <div className="flex items-center gap-3 pointer-events-auto">
-              <button 
-                onClick={() => setAutoPlay(!autoPlay)}
-                className={`w-14 h-14 backdrop-blur-md rounded-full flex items-center justify-center transition-all border border-white/15 shadow-2xl cursor-pointer hover:scale-105 active:scale-95 ${autoPlay ? 'bg-ionizado text-white border-ionizado' : 'bg-black/40 text-white hover:bg-white hover:text-black'}`}
-                title={autoPlay ? "Pausar Reproducción" : "Iniciar Reproducción"}
-              >
-                {autoPlay ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
-              </button>
-
-              <button 
-                onClick={closeFullScreen}
-                className="w-14 h-14 bg-black/40 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/15 shadow-2xl cursor-pointer hover:scale-105 active:scale-95"
-                title="Cerrar Pantalla Completa"
-              >
-                <X size={26} />
-              </button>
-            </div>
+            <button
+              onClick={closeFullScreen}
+              className="w-11 h-11 bg-[#1C1917]/85 text-white rounded-md flex items-center justify-center hover:bg-[#FFFFFF] hover:text-[#1C1917] transition-colors duration-150 border border-white/20 cursor-pointer"
+              title="Cerrar Pantalla Completa"
+            >
+              <X size={20} />
+            </button>
           </div>
-          
+
           {/* Main Full-Size Image Container */}
-          <div className="w-full h-full flex items-center justify-center relative p-0 select-none">
-            {/* Prev Trigger */}
-            <div className="absolute left-6 top-1/2 -translate-y-1/2 z-50">
-              <button 
-                onClick={prevSlide} 
-                className="w-16 h-16 bg-black/40 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/10 shadow-2xl cursor-pointer hover:scale-105 active:scale-95"
+          <div className="w-full h-full flex items-center justify-center relative select-none">
+            <div className="absolute left-5 top-1/2 -translate-y-1/2 z-50">
+              <button
+                onClick={prevSlide}
+                className="w-11 h-11 bg-[#1C1917]/85 text-white rounded-md flex items-center justify-center hover:bg-[#FFFFFF] hover:text-[#1C1917] transition-colors duration-150 border border-white/20 cursor-pointer"
                 title="Imagen Anterior"
               >
-                <ChevronLeft size={36} />
+                <ChevronLeft size={24} />
               </button>
             </div>
 
-            {/* Image (Fills absolute maximum space with object-contain) */}
-            <img 
-              src={sortedImages[currentIndex].url} 
-              alt={sortedImages[currentIndex].name} 
-              className="w-full h-full max-w-full max-h-full object-contain shadow-2xl z-10 select-none animate-in fade-in zoom-in-95 duration-300" 
+            <img
+              src={sortedImages[currentIndex].url}
+              alt={sortedImages[currentIndex].name}
+              className="w-full h-full max-w-full max-h-full object-contain z-10 select-none"
             />
 
-            {/* Next Trigger */}
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 z-50">
-              <button 
-                onClick={nextSlide} 
-                className="w-16 h-16 bg-black/40 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/10 shadow-2xl cursor-pointer hover:scale-105 active:scale-95"
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 z-50">
+              <button
+                onClick={nextSlide}
+                className="w-11 h-11 bg-[#1C1917]/85 text-white rounded-md flex items-center justify-center hover:bg-[#FFFFFF] hover:text-[#1C1917] transition-colors duration-150 border border-white/20 cursor-pointer"
                 title="Siguiente Imagen"
               >
-                <ChevronRight size={36} />
+                <ChevronRight size={24} />
               </button>
             </div>
           </div>
 
-          {/* Bottom Slides Counter and Help Overlay */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 bg-black/40 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 shadow-2xl pointer-events-none">
-            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">
+          {/* Bottom Slides Counter */}
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-50 bg-[#1C1917]/85 px-4 py-1.5 rounded-md border border-white/20 pointer-events-none">
+            <span className="text-xs font-mono tabular-nums font-semibold text-white">
               {currentIndex + 1} / {sortedImages.length}
             </span>
           </div>
@@ -1421,21 +1442,19 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                 </div>
               </div>
               
-              <div className="bg-white rounded-[2rem] p-8 border-2 border-ionizado/10 border-l-[12px] border-l-ionizado space-y-6 shadow-sm mt-8">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-ionizado">
-                    <span className="font-black uppercase tracking-[0.3em] text-[9px]">KPIs OPERATIVOS</span>
-                  </div>
-                  <h2 className="text-3xl font-[900] text-nucleo tracking-tighter uppercase">Cumplimiento Global Novandino</h2>
+              <div className="bg-white rounded-lg p-7 border border-[#E2DFD7] space-y-5 mt-8">
+                <div className="space-y-1 pb-4 border-b border-[#E2DFD7]">
+                  <span className="font-semibold uppercase tracking-widest text-[10px] text-[#461D77] block">KPIs Operativos</span>
+                  <h2 className="text-2xl font-bold text-[#1C1917] tracking-[-0.02em] uppercase">Cumplimiento Global Novandino</h2>
                 </div>
-                <div className="grid grid-cols-4 gap-3 pt-4">
+                <div className="grid grid-cols-4 divide-x divide-[#E2DFD7] border border-[#E2DFD7] rounded-md">
                   {novandinoKPIs?.map((kpi, idx) => (
-                    <div key={idx} className="bg-white p-4 rounded-2xl border border-calido flex flex-col gap-1 shadow-sm border-b-4 border-b-levanda">
-                      <div className="flex items-center gap-1.5 text-black">
+                    <div key={idx} className="bg-white p-4 flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5 text-[#57534E]">
                         {kpi.icon}
-                        <span className="text-[9px] font-black text-black uppercase tracking-widest">{kpi.label}</span>
+                        <span className="text-[10px] font-semibold text-[#57534E] uppercase tracking-wider">{kpi.label}</span>
                       </div>
-                      <span className={`text-xl font-[900] ${kpi.status === 'danger' ? 'text-rose-600' : 'text-black'} tracking-tighter`}>
+                      <span className={`text-xl font-bold font-mono tabular-nums ${kpi.status === 'danger' ? 'text-[#B91C1C]' : 'text-[#1C1917]'} tracking-tight`}>
                         {kpi.value}
                       </span>
                     </div>
@@ -1501,21 +1520,19 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                 </div>
               </div>
               
-              <div className="bg-white rounded-[2rem] p-8 border-2 border-ionizado/10 border-l-[12px] border-l-ionizado space-y-6 shadow-sm mt-8">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-ionizado">
-                    <span className="font-black uppercase tracking-[0.3em] text-[9px]">KPIs OPERATIVOS</span>
-                  </div>
-                  <h2 className="text-3xl font-[900] text-nucleo tracking-tighter uppercase">Cumplimiento Global SQM NY</h2>
+              <div className="bg-white rounded-lg p-7 border border-[#E2DFD7] space-y-5 mt-8">
+                <div className="space-y-1 pb-4 border-b border-[#E2DFD7]">
+                  <span className="font-semibold uppercase tracking-widest text-[10px] text-[#461D77] block">KPIs Operativos</span>
+                  <h2 className="text-2xl font-bold text-[#1C1917] tracking-[-0.02em] uppercase">Cumplimiento Global SQM NY</h2>
                 </div>
-                <div className="grid grid-cols-4 gap-3 pt-4">
+                <div className="grid grid-cols-4 divide-x divide-[#E2DFD7] border border-[#E2DFD7] rounded-md">
                   {sqmKPIs?.map((kpi, idx) => (
-                    <div key={idx} className="bg-white p-4 rounded-2xl border border-calido flex flex-col gap-1 shadow-sm border-b-4 border-b-levanda">
-                      <div className="flex items-center gap-1.5 text-black">
+                    <div key={idx} className="bg-white p-4 flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5 text-[#57534E]">
                         {kpi.icon}
-                        <span className="text-[9px] font-black text-black uppercase tracking-widest">{kpi.label}</span>
+                        <span className="text-[10px] font-semibold text-[#57534E] uppercase tracking-wider">{kpi.label}</span>
                       </div>
-                      <span className={`text-xl font-[900] ${kpi.status === 'danger' ? 'text-rose-600' : 'text-black'} tracking-tighter`}>
+                      <span className={`text-xl font-bold font-mono tabular-nums ${kpi.status === 'danger' ? 'text-[#B91C1C]' : 'text-[#1C1917]'} tracking-tight`}>
                         {kpi.value}
                       </span>
                     </div>
