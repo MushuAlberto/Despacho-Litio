@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { 
-  ArrowLeft, Upload, X, ChevronLeft, ChevronRight, BarChart3, TrendingUp, TrendingDown, AlertCircle, 
-  Calendar, CheckCircle, HelpCircle, Activity, ClipboardCheck, Target, Gauge, Zap, Package, Truck,
-  Download, Loader2, Image as ImageIcon, FileText, MessageSquare
+  ArrowLeft, Upload, X, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertCircle, 
+  Calendar, CheckCircle, Activity, ClipboardCheck, Target, Gauge,
+  Download, Loader2, FileText
 } from 'lucide-react';
 import { 
   BarChart, Bar, Cell, LineChart, Line, AreaChart, Area, XAxis, YAxis, 
-  CartesianGrid, Tooltip, ResponsiveContainer, Legend 
+  CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { toPng } from 'html-to-image';
 import { NovandinoLogo } from '../BrandLogo';
@@ -348,7 +348,7 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
       const dataUrl = await toPng(element, {
         width: width,
         height: height,
-        backgroundColor: '#FAF5E6',
+        backgroundColor: '#ECEAE3',
         pixelRatio: 2,
         filter: (node) => {
           if (node instanceof HTMLElement && node.getAttribute('data-ignore-capture') === 'true') {
@@ -399,142 +399,145 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="flex h-screen bg-[#FAF5E6] font-sans text-[#171717] overflow-hidden relative">
+    <div className="flex h-screen bg-[#ECEAE3] font-sans text-[#181615] overflow-hidden relative">
       
       {/* PESTAÑA PARA MOSTRAR / OCULTAR */}
       <button
         type="button"
         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        className={`fixed top-20 z-50 bg-[#461D77] text-white hover:bg-[#381660] border border-l-0 border-white/20 rounded-r-2xl p-3 shadow-2xl flex items-center justify-center transition-all duration-300 cursor-pointer no-print group ${
-          isSidebarCollapsed ? 'left-0' : 'left-[300px]'
+        className={`fixed top-20 z-50 bg-[#461D77] text-white hover:bg-[#36155E] border border-l-0 border-[#461D77] rounded-r-md p-2.5 flex items-center justify-center transition-all duration-150 ease-out cursor-pointer no-print shadow-[2px_2px_8px_rgba(24,22,21,0.16)] ${
+          isSidebarCollapsed ? 'left-0' : 'left-[288px]'
         }`}
-        aria-label={isSidebarCollapsed ? 'Mostrar' : 'Ocultar'}
+        aria-label={isSidebarCollapsed ? 'Mostrar barra lateral' : 'Ocultar barra lateral'}
       >
         {isSidebarCollapsed ? (
-          <ChevronRight size={20} className="text-[#4FD1C5] group-hover:translate-x-0.5 transition-transform" />
+          <ChevronRight size={18} />
         ) : (
-          <ChevronLeft size={20} className="text-[#4FD1C5] group-hover:-translate-x-0.5 transition-transform" />
+          <ChevronLeft size={18} />
         )}
       </button>
 
       {/* SIDEBAR FOR ACTIONS */}
-      <aside className={`bg-[#DCDDEE] border-r border-[#7177EC]/20 flex flex-col no-print shrink-0 relative transition-all duration-300 ${
-        isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden border-r-0' : 'w-[300px] opacity-100'
+      <aside className={`bg-[#E5E2D9] border-r border-[#D5D0C5] flex flex-col no-print shrink-0 relative transition-all duration-150 ease-out ${
+        isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden border-r-0' : 'w-[288px] opacity-100'
       }`}>
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
-          <button 
-            onClick={onBack} 
-            className="flex items-center gap-2 text-[#461D77] hover:text-[#34155b] font-black text-[10px] uppercase tracking-widest transition-colors mb-2 group cursor-pointer"
-          >
-            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver a Módulo PQL
-          </button>
+        <div className="p-5 overflow-y-auto flex-1 divide-y divide-[#D5D0C5] space-y-5">
+          <div className="pb-4">
+            <button 
+              onClick={onBack} 
+              className="flex items-center gap-2 text-[#461D77] hover:text-[#36155E] font-semibold text-xs uppercase tracking-wider transition-colors duration-150 cursor-pointer whitespace-nowrap"
+            >
+              <ArrowLeft size={14} /> Volver a Módulo PQL
+            </button>
+          </div>
 
-          <div className="bg-white p-5 rounded-3xl border border-[#DCDDEE] flex flex-col gap-3 shadow-sm">
-            <div className="flex items-center gap-2 text-[#7177EC]">
-              <ClipboardCheck size={18} />
-              <span className="font-black text-[10px] tracking-wider uppercase">CUMPLIMIENTO PQL</span>
+          <div className="pb-5 space-y-2">
+            <div className="flex items-center gap-2 text-[#461D77]">
+              <ClipboardCheck size={16} />
+              <span className="font-bold text-[11px] tracking-wider uppercase">Cumplimiento PQL</span>
             </div>
-            <p className="text-xs text-slate-600 font-medium leading-relaxed">
-              Monitoreo integral de cumplimiento de metas de despacho M&Q, toneladas y rendimiento de flota mensual.
+            <p className="text-xs text-[#57534E] leading-relaxed">
+              Monitoreo de cumplimiento de metas de despacho M&Q, toneladas y rendimiento mensual de flota.
             </p>
           </div>
 
           {/* EXPORT ACTIONS */}
-          <div className="space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#7177EC]">Exportación de Reporte</p>
-            <div className="bg-white p-5 rounded-3xl border border-[#DCDDEE] space-y-3 shadow-sm">
-              <button
-                type="button"
-                onClick={handleDownloadPNG}
-                disabled={!file || currentData.length === 0 || downloadingPng}
-                className="w-full bg-[#461D77] hover:bg-[#381660] text-white disabled:bg-slate-300 disabled:cursor-not-allowed font-black text-xs uppercase tracking-wider py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-md hover:shadow-lg active:scale-98 cursor-pointer"
-              >
-                {downloadingPng ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin text-[#3FAA88]" />
-                    <span>Generando PNG...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download size={16} className="text-[#4FD1C5]" />
-                    <span>Descargar Imagen PNG</span>
-                  </>
-                )}
-              </button>
-              <p className="text-[10px] text-slate-500 font-medium text-center leading-tight">
-                Incluye encabezado Novandino, métricas, gráficos y tabla completa.
-              </p>
-            </div>
+          <div className="pb-5 space-y-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#57534E]">Exportación</p>
+            <button
+              type="button"
+              onClick={handleDownloadPNG}
+              disabled={!file || currentData.length === 0 || downloadingPng}
+              className="w-full bg-[#461D77] hover:bg-[#36155E] text-white disabled:bg-[#D5D0C5] disabled:text-[#78716C] disabled:cursor-not-allowed font-semibold text-xs uppercase tracking-wider py-2.5 px-4 rounded-md flex items-center justify-center gap-2 transition-colors duration-150 cursor-pointer shadow-[0_1px_2px_rgba(24,22,21,0.12)]"
+            >
+              {downloadingPng ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  <span>Generando PNG...</span>
+                </>
+              ) : (
+                <>
+                  <Download size={15} />
+                  <span>Descargar Imagen PNG</span>
+                </>
+              )}
+            </button>
+            <p className="text-[11px] text-[#78716C] leading-snug">
+              Incluye encabezado Novandino, KPIs, gráficos y tabla operativa.
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#7177EC]">Configuración de Visualización</p>
-            <div className="bg-white p-5 rounded-3xl border border-[#DCDDEE] space-y-4 shadow-sm">
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Mes / Hoja Operativa</label>
-                <select 
-                  value={selectedSheet} 
-                  onChange={(e) => setSelectedSheet(e.target.value)}
-                  disabled={Object.keys(workbookSheets).length === 0}
-                  className="w-full bg-[#F8FAFC] border border-[#DCDDEE] rounded-xl px-3 py-2 text-xs font-bold text-[#171717] outline-none focus:border-[#7177EC] focus:ring-2 focus:ring-[#7177EC]/20 focus:bg-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {Object.keys(workbookSheets).length === 0 ? (
-                    <option>— Sin datos —</option>
-                  ) : (
-                    Object.keys(workbookSheets).map(sheetName => (
-                      <option key={sheetName} value={sheetName}>{sheetName}</option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              {file && (
-                <div className="pt-2 border-t border-[#DCDDEE] flex items-center justify-between">
-                  <span className="text-[8px] font-black bg-[#3FAA88]/15 text-[#3FAA88] border border-[#3FAA88]/30 px-2.5 py-0.5 rounded-full uppercase truncate max-w-[150px]">
-                    {file.name}
-                  </span>
-                  <button 
-                    onClick={resetState}
-                    className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                    title="Remover Archivo"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              )}
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#57534E]">Configuración</p>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-[#57534E] uppercase tracking-wider block">Mes / Hoja Operativa</label>
+              <select 
+                value={selectedSheet} 
+                onChange={(e) => setSelectedSheet(e.target.value)}
+                disabled={Object.keys(workbookSheets).length === 0}
+                className="w-full bg-white border border-[#D8D4CA] rounded-md px-3 py-2 text-xs font-semibold text-[#181615] outline-none focus:border-[#461D77] transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {Object.keys(workbookSheets).length === 0 ? (
+                  <option>— Sin datos —</option>
+                ) : (
+                  Object.keys(workbookSheets).map(sheetName => (
+                    <option key={sheetName} value={sheetName}>{sheetName}</option>
+                  ))
+                )}
+              </select>
             </div>
+
+            {file && (
+              <div className="pt-3 border-t border-[#D5D0C5] flex items-center justify-between gap-2">
+                <span className="text-[11px] font-mono font-medium bg-white text-[#181615] border border-[#D8D4CA] px-2.5 py-1 rounded-md truncate max-w-[190px]">
+                  {file.name}
+                </span>
+                <button 
+                  onClick={resetState}
+                  className="p-1.5 rounded-md text-[#78716C] hover:text-[#B91C1C] hover:bg-white border border-transparent hover:border-[#D8D4CA] transition-colors duration-150 cursor-pointer"
+                  title="Remover Archivo"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </aside>
 
       {/* MAIN PANEL */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#FAF5E6] overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#ECEAE3] overflow-y-auto">
         
         {/* HEADER BAR */}
-        <header className="bg-white/90 backdrop-blur-md border-b border-[#DCDDEE] px-8 py-5 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-xs">
+        <header className="bg-white border-b border-[#D8D4CA] px-8 py-4 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-[0_1px_3px_rgba(24,22,21,0.06),0_4px_12px_-4px_rgba(24,22,21,0.05)]">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded-full bg-[#4FD1C5]/15 text-[#0d9488] border border-[#4FD1C5]/30 uppercase">
-                PQL • Planta Química Litio
+            <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.08em]">
+              <span className="font-bold text-[#57534E]">
+                PQL &middot; Planta Química Litio
               </span>
               {selectedSheet && (
-                <span className="text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded-full bg-[#461D77]/10 text-[#461D77] border border-[#461D77]/20 uppercase">
-                  PERÍODO: {selectedSheet}
-                </span>
+                <>
+                  <span className="text-[#D8D4CA]">&middot;</span>
+                  <span className="font-bold text-[#461D77]">
+                    Período {selectedSheet}
+                  </span>
+                </>
               )}
             </div>
-            <h1 className="text-xl font-black text-[#171717] tracking-tight uppercase mt-1">
-              Cumplimiento M&Q • Operación SLIT
+            <h1 className="text-xl font-bold text-[#181615] tracking-[-0.02em] uppercase mt-1">
+              Cumplimiento M&Q &middot; Operación SLIT
             </h1>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2 text-xs text-[#57534E]">
             <Calendar size={14} className="text-[#461D77]" />
-            <span className="font-mono text-[11px] font-bold">Última Actualización: {new Date().toLocaleDateString('es-CL')}</span>
+            <span className="font-mono tabular-nums text-xs font-semibold text-[#181615]">
+              {new Date().toLocaleDateString('es-CL')}
+            </span>
           </div>
         </header>
 
         {/* CONTENT */}
-        <div className="p-8 max-w-7xl w-full mx-auto space-y-8">
+        <div className="p-8 max-w-7xl w-full mx-auto space-y-6">
           
           {/* UPLOAD ZONE (If no file is uploaded) */}
           {!file && (
@@ -542,18 +545,20 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
               onDrop={onDrop}
-              className={`border-2 border-dashed rounded-[2.5rem] p-12 text-center transition-all ${
+              className={`border border-dashed rounded-lg p-12 text-center transition-colors duration-150 shadow-[0_1px_2px_rgba(24,22,21,0.04)] ${
                 dragActive 
-                  ? 'border-[#461D77] bg-[#461D77]/5 shadow-md' 
-                  : 'border-[#DCDDEE] bg-white hover:border-[#7177EC] shadow-sm'
+                  ? 'border-[#461D77] bg-[#F3EEF8]' 
+                  : 'border-[#C8C3B6] bg-white hover:border-[#461D77]/60'
               }`}
             >
-              <div className="w-20 h-20 rounded-3xl bg-[#FAF5E6] border border-[#DCDDEE] flex items-center justify-center mx-auto shadow-inner mb-6">
-                <Upload size={38} className="text-[#461D77]" />
+              <div className="w-12 h-12 rounded-lg surface-well flex items-center justify-center mx-auto mb-4">
+                <Upload size={22} className="text-[#461D77]" />
               </div>
-              <h2 className="text-xl font-black text-[#171717] uppercase mb-2">Carga tu Archivo M&Q Mensual</h2>
-              <p className="text-slate-600 text-xs font-medium max-w-md mx-auto leading-relaxed mb-6">
-                Arrastra o haz clic para subir el archivo de cumplimiento de Novandino (.xlsx). El sistema procesará cada pestaña de mes automáticamente.
+              <h2 className="text-lg font-bold text-[#181615] tracking-[-0.02em] uppercase mb-1.5">
+                Carga tu Archivo M&Q Mensual
+              </h2>
+              <p className="text-[#57534E] text-xs max-w-md mx-auto leading-relaxed mb-6">
+                Arrastra o selecciona la planilla de cumplimiento (.xlsx). Cada hoja mensual se procesará automáticamente.
               </p>
               <input 
                 type="file" 
@@ -565,204 +570,193 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
               <button
                 type="button"
                 onClick={() => document.getElementById('pqlFileInput')?.click()}
-                className="bg-[#7177EC] hover:bg-[#5e64e3] text-white font-black text-[10px] uppercase tracking-widest px-8 py-3.5 rounded-2xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+                className="bg-[#461D77] hover:bg-[#36155E] text-white font-semibold text-xs uppercase tracking-wider px-6 py-2.5 rounded-md transition-colors duration-150 cursor-pointer"
               >
-                Buscar Archivo en mi PC
+                Seleccionar Archivo
               </button>
             </div>
           )}
 
           {/* Status Message */}
           {statusMsg && (
-            <div className={`p-4 rounded-2xl border flex items-center gap-3 text-xs shadow-xs ${
+            <div className={`px-4 py-3 rounded-lg border flex items-center gap-3 text-xs ${
               statusMsg.isError 
-                ? 'bg-[#C59E4D]/15 border-[#C59E4D]/30 text-[#8c6b24]' 
-                : 'bg-[#3FAA88]/10 border-[#3FAA88]/30 text-[#256c55]'
+                ? 'bg-[#FEF3C7] border-[#B45309]/30 text-[#B45309]' 
+                : 'bg-[#ECFDF5] border-[#15803D]/30 text-[#15803D]'
             }`}>
-              <AlertCircle size={16} />
-              <span className="font-bold">{statusMsg.text}</span>
+              <AlertCircle size={16} className="shrink-0" />
+              <span className="font-semibold">{statusMsg.text}</span>
             </div>
           )}
 
           {/* DASHBOARD CONTENT (Active only if data exists) */}
           {file && currentData.length > 0 && kpis && (
-            <div id="cumplimiento-mq-dashboard-capture" className="space-y-6 animate-fade-in p-2">
+            <div id="cumplimiento-mq-dashboard-capture" className="space-y-6 p-1">
               
               {/* ENCABEZADO INTEGRADO: LOGO NOVANDINO, FECHA Y OPERACIÓN */}
-              <div className="bg-white px-7 py-5 rounded-[2.2rem] border border-[#DCDDEE] shadow-sm flex flex-col gap-4">
-                {/* Fila Superior: Logo Novandino y Fecha Jornada */}
-                <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#DCDDEE]/60">
+              <div className="surface-card border-t-2 border-t-[#461D77] px-6 py-5 rounded-lg flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#D8D4CA]">
                   <div className="flex items-center">
-                    <NovandinoLogo className="h-20 md:h-24 w-auto" variant="medium" />
+                    <NovandinoLogo className="h-16 md:h-20 w-auto" variant="medium" />
                   </div>
-                  <div className="text-right flex flex-col items-end">
-                    <p className="text-[10px] md:text-xs font-black text-[#7177EC] tracking-[0.2em] uppercase">
-                      FECHA JORNADA
+                  <div className="bg-[#181615] text-[#F7F6F2] px-4 py-2 rounded-md border border-[#2C2826] text-right flex flex-col items-end shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                    <p className="text-[10px] font-mono font-semibold text-[#A8A29E] tracking-[0.12em] uppercase">
+                      Fecha Jornada
                     </p>
-                    <p className="text-sm md:text-base font-black text-[#3FAA88] tracking-tight font-mono mt-0.5">
+                    <p className="text-base font-bold text-white font-mono tabular-nums mt-0.5">
                       {lastDateStr || '—'}
                     </p>
                   </div>
                 </div>
 
-                {/* Fila Inferior: Logo Empresa y Título Operación */}
                 <div className="flex items-center gap-4">
-                  <div className="bg-white p-2.5 rounded-2xl border border-[#DCDDEE] shadow-sm flex items-center justify-center h-16 w-24 shrink-0 overflow-hidden">
+                  <div className="surface-well p-2 rounded-md flex items-center justify-center h-14 w-24 shrink-0 overflow-hidden">
                     <img 
                       src="/mq.png" 
                       alt="Logo M&Q" 
-                      className="max-h-full max-w-full object-contain scale-110"
+                      className="max-h-full max-w-full object-contain"
                       referrerPolicy="no-referrer"
                     />
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2.5">
-                    <h2 className="text-lg md:text-xl font-black text-[#171717] tracking-tight">
+                    <h2 className="text-lg font-bold text-[#181615] tracking-[-0.02em]">
                       Cumplimiento M&Q
                     </h2>
-                    <span className="hidden sm:inline-block text-slate-300 font-bold">•</span>
-                    <span className="text-xs md:text-sm font-bold text-[#7177EC] uppercase tracking-wider">
+                    <span className="hidden sm:inline-block text-[#D8D4CA]">&middot;</span>
+                    <span className="text-xs font-semibold text-[#461D77] uppercase tracking-wider">
                       Operación SLIT
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* KPI CARDS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* CUMPLIMIENTO DEL MES */}
-                <div className="bg-white p-6 rounded-[2.2rem] border border-[#DCDDEE] shadow-[0_4px_24px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(70,29,119,0.06)] hover:border-[#7177EC]/30 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group">
-                  <div className="flex items-center justify-between">
-                    <div className="w-11 h-11 rounded-2xl bg-[#461D77]/5 text-[#461D77] flex items-center justify-center group-hover:bg-[#461D77] group-hover:text-white transition-all duration-300">
-                      <Target className="w-5 h-5" />
-                    </div>
-                    <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tight ${
+              {/* KPI HAIRLINE GRID */}
+              <div className="surface-card rounded-lg grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#D8D4CA] overflow-hidden">
+                {/* CUMPLIMIENTO DEL MES — High-contrast dark carbon anchor */}
+                <div className={`p-5 flex flex-col justify-between bg-[#181615] text-[#F7F6F2] border-t-2 ${
+                  kpis.cumplPct >= 90 ? 'border-t-[#461D77]' : 'border-t-[#B45309]'
+                }`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#A8A29E] uppercase tracking-wider">
+                      <Target className="w-3.5 h-3.5 text-[#A78BFA]" />
+                      Cumplimiento Mes
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
                       kpis.cumplPct >= 95 
-                        ? 'bg-[#3FAA88]/10 text-[#3FAA88] border border-[#3FAA88]/30' 
-                        : 'bg-[#C59E4D]/15 text-[#C59E4D] border border-[#C59E4D]/30'
+                        ? 'text-[#4ADE80]' 
+                        : 'text-[#FBBF24]'
                     }`}>
                       {kpis.cumplPct >= 100 ? 'Meta Superada' : kpis.cumplPct >= 90 ? 'En Rango' : 'Bajo Meta'}
                     </span>
                   </div>
-                  <div className="mt-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">CUMPLIMIENTO DEL MES</p>
-                    <h3 className="text-3xl lg:text-4xl font-[900] text-[#171717] tracking-tight flex items-baseline gap-1 font-sans">
-                      {kpis.cumplPct.toFixed(1)}<span className="text-slate-400 text-sm font-bold">%</span>
-                    </h3>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-[#DCDDEE]/60 flex items-center justify-between text-xs font-mono">
-                    <span className="text-slate-500 font-medium">{kpis.totalReal} de {kpis.totalSol} vueltas</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Realizadas</span>
+                  <h3 className="text-3xl font-bold text-white font-mono tabular-nums tracking-[-0.02em] mt-3">
+                    {kpis.cumplPct.toFixed(1)}<span className="text-[#A8A29E] text-sm font-semibold ml-0.5">%</span>
+                  </h3>
+                  <div className="mt-3 pt-3 border-t border-[#2C2826] flex items-center justify-between text-xs font-mono tabular-nums">
+                    <span className="text-[#D6D3D1]">{kpis.totalReal} / {kpis.totalSol} vueltas</span>
+                    <span className="text-[10px] font-sans font-semibold text-[#78716C] uppercase">Realizadas</span>
                   </div>
                 </div>
 
                 {/* DÉFICIT ACUMULADO */}
-                <div className="bg-white p-6 rounded-[2.2rem] border border-[#DCDDEE] shadow-[0_4px_24px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(70,29,119,0.06)] hover:border-[#7177EC]/30 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group">
-                  <div className="flex items-center justify-between">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                <div className="p-5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#57534E] uppercase tracking-wider">
+                      {kpis.deficitVueltas >= 0 ? (
+                        <TrendingUp className="w-3.5 h-3.5 text-[#15803D]" />
+                      ) : (
+                        <TrendingDown className="w-3.5 h-3.5 text-[#B45309]" />
+                      )}
+                      Déficit Acumulado
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
                       kpis.deficitVueltas >= 0 
-                        ? 'bg-[#3FAA88]/10 text-[#3FAA88] group-hover:bg-[#3FAA88] group-hover:text-white' 
-                        : 'bg-[#C59E4D]/15 text-[#C59E4D] group-hover:bg-[#C59E4D] group-hover:text-white'
+                        ? 'text-[#15803D]' 
+                        : 'text-[#B45309]'
                     }`}>
-                      {kpis.deficitVueltas >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                    </div>
-                    <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tight ${
-                      kpis.deficitVueltas >= 0 
-                        ? 'bg-[#3FAA88]/10 text-[#3FAA88] border border-[#3FAA88]/30' 
-                        : 'bg-[#C59E4D]/15 text-[#C59E4D] border border-[#C59E4D]/30'
-                    }`}>
-                      {kpis.deficitVueltas >= 0 ? '+ Superávit' : 'Déficit'}
+                      {kpis.deficitVueltas >= 0 ? 'Superávit' : 'Déficit'}
                     </span>
                   </div>
-                  <div className="mt-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">DÉFICIT ACUMULADO</p>
-                    <h3 className={`text-3xl lg:text-4xl font-[900] tracking-tight flex items-baseline gap-1.5 font-sans ${
-                      kpis.deficitVueltas >= 0 ? 'text-[#3FAA88]' : 'text-[#C59E4D]'
-                    }`}>
-                      {kpis.deficitVueltas > 0 ? `+${kpis.deficitVueltas}` : kpis.deficitVueltas}
-                      <span className="text-slate-400 text-xs font-semibold uppercase">vueltas</span>
-                    </h3>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-[#DCDDEE]/60 flex items-center justify-between text-xs font-mono">
-                    <span className={`font-bold ${kpis.deficitVueltas >= 0 ? 'text-[#3FAA88]' : 'text-[#C59E4D]'}`}>
+                  <h3 className={`text-3xl font-bold font-mono tabular-nums tracking-[-0.02em] mt-3 ${
+                    kpis.deficitVueltas >= 0 ? 'text-[#15803D]' : 'text-[#B45309]'
+                  }`}>
+                    {kpis.deficitVueltas > 0 ? `+${kpis.deficitVueltas}` : kpis.deficitVueltas}
+                    <span className="text-[#78716C] text-xs font-sans font-semibold uppercase ml-1.5">vueltas</span>
+                  </h3>
+                  <div className="mt-3 pt-3 border-t border-[#E5E2D9] flex items-center justify-between text-xs font-mono tabular-nums">
+                    <span className={`font-semibold ${kpis.deficitVueltas >= 0 ? 'text-[#15803D]' : 'text-[#B45309]'}`}>
                       {Math.round(kpis.deficitTon).toLocaleString('es-CL')} ton
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">vs. Plan</span>
+                    <span className="text-[10px] font-sans font-semibold text-[#78716C] uppercase">vs. Plan</span>
                   </div>
                 </div>
 
                 {/* PRODUCTIVIDAD PROMEDIO */}
-                <div className="bg-white p-6 rounded-[2.2rem] border border-[#DCDDEE] shadow-[0_4px_24px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(70,29,119,0.06)] hover:border-[#7177EC]/30 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group">
-                  <div className="flex items-center justify-between">
-                    <div className="w-11 h-11 rounded-2xl bg-[#461D77]/5 text-[#461D77] flex items-center justify-center group-hover:bg-[#461D77] group-hover:text-white transition-all duration-300">
-                      <Gauge className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tight bg-[#4FD1C5]/10 text-[#0d9488] border border-[#4FD1C5]/30">
+                <div className="p-5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#57534E] uppercase tracking-wider">
+                      <Gauge className="w-3.5 h-3.5 text-[#461D77]" />
+                      Productividad
+                    </span>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#57534E]">
                       Rendimiento
                     </span>
                   </div>
-                  <div className="mt-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">PRODUCTIVIDAD PROMEDIO</p>
-                    <h3 className="text-3xl lg:text-4xl font-[900] text-[#171717] tracking-tight flex items-baseline gap-1.5 font-sans">
-                      {kpis.avgProd.toFixed(2)}<span className="text-slate-400 text-xs font-semibold uppercase">ton/vuelta</span>
-                    </h3>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-[#DCDDEE]/60 flex items-center justify-between text-xs font-mono">
-                    <span className="text-slate-500 font-medium">Promedio del mes</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Días activos</span>
+                  <h3 className="text-3xl font-bold text-[#181615] font-mono tabular-nums tracking-[-0.02em] mt-3">
+                    {kpis.avgProd.toFixed(2)}
+                    <span className="text-[#78716C] text-xs font-sans font-semibold uppercase ml-1.5">ton/vuelta</span>
+                  </h3>
+                  <div className="mt-3 pt-3 border-t border-[#E5E2D9] flex items-center justify-between text-xs">
+                    <span className="text-[#57534E]">Promedio mensual</span>
+                    <span className="text-[10px] font-semibold text-[#78716C] uppercase">Días activos</span>
                   </div>
                 </div>
 
                 {/* TENDENCIA ÚLTIMOS 3 DÍAS */}
-                <div className="bg-white p-6 rounded-[2.2rem] border border-[#DCDDEE] shadow-[0_4px_24px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(70,29,119,0.06)] hover:border-[#7177EC]/30 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group">
-                  <div className="flex items-center justify-between">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                <div className="p-5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#57534E] uppercase tracking-wider">
+                      <Activity className="w-3.5 h-3.5 text-[#461D77]" />
+                      Tendencia 3 Días
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
                       kpis.last3Sum >= 0 
-                        ? 'bg-[#3FAA88]/10 text-[#3FAA88] group-hover:bg-[#3FAA88] group-hover:text-white' 
-                        : 'bg-[#C59E4D]/15 text-[#C59E4D] group-hover:bg-[#C59E4D] group-hover:text-white'
-                    }`}>
-                      <Activity className="w-5 h-5" />
-                    </div>
-                    <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tight ${
-                      kpis.last3Sum >= 0 
-                        ? 'bg-[#3FAA88]/10 text-[#3FAA88] border border-[#3FAA88]/30' 
-                        : 'bg-[#C59E4D]/15 text-[#C59E4D] border border-[#C59E4D]/30'
+                        ? 'text-[#15803D]' 
+                        : 'text-[#B91C1C]'
                     }`}>
                       {kpis.last3Sum >= 0 ? 'Positiva' : 'Crítica'}
                     </span>
                   </div>
-                  <div className="mt-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">TENDENCIA ÚLTIMOS 3 DÍAS</p>
-                    <h3 className={`text-3xl lg:text-4xl font-[900] tracking-tight flex items-baseline gap-1.5 font-sans ${
-                      kpis.last3Sum >= 0 ? 'text-[#3FAA88]' : 'text-[#C59E4D]'
-                    }`}>
-                      {kpis.last3Sum > 0 ? `+${kpis.last3Sum}` : kpis.last3Sum}
-                      <span className="text-slate-400 text-xs font-semibold uppercase">vueltas</span>
-                    </h3>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-[#DCDDEE]/60 flex items-center justify-between text-xs font-mono">
-                    <span className={`font-bold ${kpis.last3Sum >= 0 ? 'text-[#3FAA88]' : 'text-[#C59E4D]'}`}>
+                  <h3 className={`text-3xl font-bold font-mono tabular-nums tracking-[-0.02em] mt-3 ${
+                    kpis.last3Sum >= 0 ? 'text-[#15803D]' : 'text-[#B91C1C]'
+                  }`}>
+                    {kpis.last3Sum > 0 ? `+${kpis.last3Sum}` : kpis.last3Sum}
+                    <span className="text-[#78716C] text-xs font-sans font-semibold uppercase ml-1.5">vueltas</span>
+                  </h3>
+                  <div className="mt-3 pt-3 border-t border-[#E5E2D9] flex items-center justify-between text-xs">
+                    <span className={`font-semibold ${kpis.last3Sum >= 0 ? 'text-[#15803D]' : 'text-[#B91C1C]'}`}>
                       {kpis.last3Sum >= 0 ? 'Revirtiendo déficit' : 'Profundizando déficit'}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">3 Días</span>
+                    <span className="text-[10px] font-semibold text-[#78716C] uppercase">3 Días</span>
                   </div>
                 </div>
               </div>
 
               {/* ROUTE CHART */}
-              <div className="bg-white p-8 rounded-[2.5rem] border border-[#DCDDEE] shadow-[0_4px_30px_rgba(0,0,0,0.01)]">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <div className="surface-card p-6 rounded-lg">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 mb-5 border-b border-[#D8D4CA]">
                   <div>
-                    <h2 className="text-base font-black text-[#171717] uppercase">CUMPLIMIENTO DIARIO</h2>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">Vueltas Reales vs. Meta Diaria</p>
+                    <h2 className="text-sm font-bold text-[#181615] uppercase tracking-wider">Cumplimiento Diario</h2>
+                    <p className="text-xs text-[#78716C] mt-0.5">Vueltas Reales vs. Meta Diaria</p>
                   </div>
-                  <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-wide text-slate-600">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-full bg-[#461D77]" />
-                      <span className="text-[#171717]">Cumple Meta</span>
+                  <div className="flex items-center gap-5 text-xs font-semibold text-[#57534E]">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#461D77]" />
+                      <span className="text-[#181615]">Cumple Meta</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-full bg-[#C59E4D]" />
-                      <span className="text-[#171717]">Déficit</span>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#B45309]" />
+                      <span className="text-[#181615]">Déficit</span>
                     </div>
                   </div>
                 </div>
@@ -770,29 +764,29 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
                 <div className="h-[320px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={currentData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EAE7DF" />
                       <XAxis 
                         dataKey="dayLabel" 
-                        stroke="#94a3b8" 
+                        stroke="#78716C" 
                         fontSize={10} 
-                        fontWeight="bold" 
+                        fontWeight="600" 
                         tickLine={false} 
                       />
-                      <YAxis stroke="#94a3b8" fontSize={10} fontWeight="bold" tickLine={false} />
+                      <YAxis stroke="#78716C" fontSize={10} fontWeight="600" tickLine={false} />
                       <Tooltip 
-                        contentStyle={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #DCDDEE', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)' }} 
-                        labelStyle={{ fontWeight: 'black', fontSize: '11px', color: '#461D77' }}
+                        contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '6px', border: '1px solid #D8D4CA', fontSize: '12px' }} 
+                        labelStyle={{ fontWeight: '700', fontSize: '11px', color: '#461D77' }}
                       />
                       <Bar 
                         dataKey="real" 
                         name="Vueltas Reales" 
-                        radius={[4, 4, 0, 0]}
+                        radius={[3, 3, 0, 0]}
                         maxBarSize={28}
                       >
                         {currentData.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
-                            fill={entry.defDia >= 0 ? '#461D77' : '#C59E4D'} 
+                            fill={entry.defDia >= 0 ? '#461D77' : '#B45309'} 
                           />
                         ))}
                       </Bar>
@@ -800,7 +794,7 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
                         type="monotone" 
                         dataKey="sol" 
                         name="Meta Planificada" 
-                        stroke="#7177EC" 
+                        stroke="#57534E" 
                         strokeWidth={1.75} 
                         strokeDasharray="5 5" 
                         dot={false}
@@ -813,25 +807,27 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
               </div>
 
               {/* TWO COLUMNS CHARTS */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="surface-card rounded-lg grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#D8D4CA] overflow-hidden">
                 {/* Cumulative Deficit Chart */}
-                <div className="bg-white p-8 rounded-[2.5rem] border border-[#DCDDEE] shadow-[0_4px_30px_rgba(0,0,0,0.01)]">
-                  <h2 className="text-base font-black text-[#171717] uppercase">Déficit Acumulado del Mes</h2>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mt-0.5 mb-6">Brecha acumulada en Toneladas</p>
+                <div className="p-6">
+                  <div className="pb-4 mb-5 border-b border-[#D8D4CA]">
+                    <h2 className="text-sm font-bold text-[#181615] uppercase tracking-wider">Déficit Acumulado del Mes</h2>
+                    <p className="text-xs text-[#78716C] mt-0.5">Brecha acumulada en toneladas</p>
+                  </div>
                   
                   <div className="h-[260px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={currentData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="pqlGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#461D77" stopOpacity={0.25} />
+                            <stop offset="5%" stopColor="#461D77" stopOpacity={0.2} />
                             <stop offset="95%" stopColor="#461D77" stopOpacity={0.01} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="dayLabel" stroke="#94a3b8" fontSize={9} fontWeight="bold" tickLine={false} />
-                        <YAxis stroke="#94a3b8" fontSize={9} fontWeight="bold" tickLine={false} />
-                        <Tooltip contentStyle={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #DCDDEE' }} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EAE7DF" />
+                        <XAxis dataKey="dayLabel" stroke="#78716C" fontSize={10} fontWeight="600" tickLine={false} />
+                        <YAxis stroke="#78716C" fontSize={10} fontWeight="600" tickLine={false} />
+                        <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '6px', border: '1px solid #D8D4CA', fontSize: '12px' }} />
                         <Area 
                           type="monotone" 
                           dataKey="defAcumTon" 
@@ -847,24 +843,26 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
                 </div>
 
                 {/* Productivity Chart */}
-                <div className="bg-white p-8 rounded-[2.5rem] border border-[#DCDDEE] shadow-[0_4px_30px_rgba(0,0,0,0.01)]">
-                  <h2 className="text-base font-black text-[#171717] uppercase">Productividad Diaria</h2>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mt-0.5 mb-6">Rendimiento Promedio de Toneladas por Vuelta</p>
+                <div className="p-6">
+                  <div className="pb-4 mb-5 border-b border-[#D8D4CA]">
+                    <h2 className="text-sm font-bold text-[#181615] uppercase tracking-wider">Productividad Diaria</h2>
+                    <p className="text-xs text-[#78716C] mt-0.5">Rendimiento promedio de toneladas por vuelta</p>
+                  </div>
                   
                   <div className="h-[260px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={currentData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="dayLabel" stroke="#94a3b8" fontSize={9} fontWeight="bold" tickLine={false} />
-                        <YAxis stroke="#94a3b8" fontSize={9} fontWeight="bold" tickLine={false} />
-                        <Tooltip contentStyle={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #DCDDEE' }} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EAE7DF" />
+                        <XAxis dataKey="dayLabel" stroke="#78716C" fontSize={10} fontWeight="600" tickLine={false} />
+                        <YAxis stroke="#78716C" fontSize={10} fontWeight="600" tickLine={false} />
+                        <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '6px', border: '1px solid #D8D4CA', fontSize: '12px' }} />
                         <Line 
                           type="monotone" 
                           dataKey="prod" 
                           name="Ton/Vuelta" 
-                          stroke="#3FAA88" 
+                          stroke="#15803D" 
                           strokeWidth={2}
-                          dot={{ r: 3, fill: '#3FAA88', strokeWidth: 0 }}
+                          dot={{ r: 3, fill: '#15803D', strokeWidth: 0 }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -874,17 +872,17 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
 
               {/* ANOMALIES/CRITICAL DAYS */}
               {criticalDays.length > 0 && (
-                <div className="bg-white p-8 rounded-[2.5rem] border border-[#DCDDEE] shadow-sm">
-                  <h2 className="text-base font-black text-[#171717] uppercase mb-1">Días Críticos del Mes</h2>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide mb-6">Jornadas con Mayor Caída de Cumplimiento Planificado</p>
+                <div className="surface-card p-6 rounded-lg">
+                  <div className="pb-4 mb-4 border-b border-[#D8D4CA]">
+                    <h2 className="text-sm font-bold text-[#181615] uppercase tracking-wider">Días Críticos del Mes</h2>
+                    <p className="text-xs text-[#78716C] mt-0.5">Jornadas con mayor caída respecto a la meta planificada</p>
+                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#D8D4CA] surface-well rounded-md">
                     {criticalDays.map((day, idx) => (
-                      <div key={idx} className="bg-[#FAF5E6] p-5 rounded-3xl border border-[#C59E4D]/30 border-l-4 border-l-[#C59E4D] relative flex flex-col justify-between shadow-xs">
-                        <div>
-                          <p className="text-sm md:text-base font-black text-[#171717] uppercase tracking-wider">{day.dayLabel}</p>
-                          <p className="text-2xl font-black text-[#C59E4D] mt-2 mb-1">{day.defDia} Vueltas</p>
-                        </div>
+                      <div key={idx} className="p-4 flex items-center justify-between gap-3">
+                        <span className="text-sm font-mono font-bold text-[#181615] uppercase">{day.dayLabel}</span>
+                        <span className="text-lg font-mono tabular-nums font-bold text-[#B45309]">{day.defDia} vueltas</span>
                       </div>
                     ))}
                   </div>
@@ -892,44 +890,44 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
               )}
 
               {/* DAILY DETAILS TABLE */}
-              <div className="bg-white p-8 rounded-[2.5rem] border border-[#DCDDEE] shadow-sm overflow-hidden">
-                <div className="mb-6">
-                  <h2 className="text-base font-black text-[#171717] uppercase">Detalle Diario de Operación</h2>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide mt-0.5">Registro unificado del cumplimiento M&Q SLIT</p>
+              <div className="surface-card p-6 rounded-lg overflow-hidden">
+                <div className="pb-4 mb-4 border-b border-[#D8D4CA]">
+                  <h2 className="text-sm font-bold text-[#181615] uppercase tracking-wider">Detalle Diario de Operación</h2>
+                  <p className="text-xs text-[#78716C] mt-0.5">Registro unificado del cumplimiento M&Q SLIT</p>
                 </div>
 
-                <div className="overflow-x-auto rounded-3xl border border-[#DCDDEE] no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <table className="min-w-full text-xs font-mono">
+                <div className="overflow-x-auto rounded-md border border-[#D8D4CA] no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <table className="min-w-full text-xs font-mono tabular-nums">
                     <thead>
-                      <tr className="bg-[#DCDDEE]/30 text-slate-700 border-b border-[#DCDDEE]">
-                        <th className="px-6 py-4 text-left font-black tracking-widest uppercase">Fecha</th>
-                        <th className="px-4 py-4 text-right font-black tracking-widest uppercase">Solicitadas</th>
-                        <th className="px-4 py-4 text-right font-black tracking-widest uppercase">Real</th>
-                        <th className="px-4 py-4 text-right font-black tracking-widest uppercase">N° Equipos</th>
-                        <th className="px-4 py-4 text-right font-black tracking-widest uppercase">Tonelaje</th>
-                        <th className="px-4 py-4 text-right font-black tracking-widest uppercase">Productividad</th>
-                        <th className="px-4 py-4 text-right font-black tracking-widest uppercase">Déficit Día</th>
-                        <th className="px-4 py-4 text-right font-black tracking-widest uppercase">Déficit Acum.</th>
-                        <th className="px-4 py-4 text-right font-black tracking-widest uppercase">Déficit Ton</th>
-                        <th className="px-4 py-4 text-right font-black tracking-widest uppercase">Acum. Ton</th>
+                      <tr className="bg-[#E7E4DC] text-[#44403C] border-b border-[#D8D4CA]">
+                        <th className="px-4 py-3 text-left font-bold tracking-wider uppercase font-sans text-[11px]">Fecha</th>
+                        <th className="px-4 py-3 text-right font-bold tracking-wider uppercase font-sans text-[11px]">Solicitadas</th>
+                        <th className="px-4 py-3 text-right font-bold tracking-wider uppercase font-sans text-[11px]">Real</th>
+                        <th className="px-4 py-3 text-right font-bold tracking-wider uppercase font-sans text-[11px]">N° Equipos</th>
+                        <th className="px-4 py-3 text-right font-bold tracking-wider uppercase font-sans text-[11px]">Tonelaje</th>
+                        <th className="px-4 py-3 text-right font-bold tracking-wider uppercase font-sans text-[11px]">Productividad</th>
+                        <th className="px-4 py-3 text-right font-bold tracking-wider uppercase font-sans text-[11px]">Déficit Día</th>
+                        <th className="px-4 py-3 text-right font-bold tracking-wider uppercase font-sans text-[11px]">Déficit Acum.</th>
+                        <th className="px-4 py-3 text-right font-bold tracking-wider uppercase font-sans text-[11px]">Déficit Ton</th>
+                        <th className="px-4 py-3 text-right font-bold tracking-wider uppercase font-sans text-[11px]">Acum. Ton</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#DCDDEE] bg-white">
+                    <tbody className="divide-y divide-[#E5E2D9] bg-white">
                       {currentData.map((row, idx) => (
                         <tr 
                           key={idx} 
-                          className="bg-white hover:bg-slate-50/80 transition-colors"
+                          className="hover:bg-[#F4F2EC] transition-colors duration-150"
                         >
-                          <td className="px-6 py-4 text-left font-bold text-[#461D77]">{row.dayLabel}</td>
-                          <td className="px-4 py-4 text-right font-bold text-slate-800">{row.sol}</td>
-                          <td className="px-4 py-4 text-right font-bold text-slate-800">{row.real}</td>
-                          <td className="px-4 py-4 text-right font-bold text-slate-800">{row.equipos}</td>
-                          <td className="px-4 py-4 text-right font-bold text-slate-800">{row.ton.toLocaleString('es-CL')}</td>
-                          <td className="px-4 py-4 text-right font-bold text-slate-800">{row.prod.toFixed(2)}</td>
-                          <td className={`px-4 py-4 text-right font-bold ${row.defDia < 0 ? 'text-[#C59E4D]' : 'text-[#3FAA88]'}`}>{row.defDia}</td>
-                          <td className={`px-4 py-4 text-right font-bold ${row.defAcumVueltas < 0 ? 'text-[#C59E4D]' : 'text-[#3FAA88]'}`}>{row.defAcumVueltas}</td>
-                          <td className={`px-4 py-4 text-right font-bold ${row.defTonDia < 0 ? 'text-[#C59E4D]' : 'text-[#3FAA88]'}`}>{Math.round(row.defTonDia).toLocaleString('es-CL')}</td>
-                          <td className={`px-4 py-4 text-right font-bold ${row.defAcumTon < 0 ? 'text-[#C59E4D]' : 'text-[#3FAA88]'}`}>{Math.round(row.defAcumTon).toLocaleString('es-CL')}</td>
+                          <td className="px-4 py-2.5 text-left font-bold text-[#461D77]">{row.dayLabel}</td>
+                          <td className="px-4 py-2.5 text-right text-[#181615]">{row.sol}</td>
+                          <td className="px-4 py-2.5 text-right font-semibold text-[#181615]">{row.real}</td>
+                          <td className="px-4 py-2.5 text-right text-[#57534E]">{row.equipos}</td>
+                          <td className="px-4 py-2.5 text-right text-[#181615]">{row.ton.toLocaleString('es-CL')}</td>
+                          <td className="px-4 py-2.5 text-right text-[#57534E]">{row.prod.toFixed(2)}</td>
+                          <td className={`px-4 py-2.5 text-right font-semibold ${row.defDia < 0 ? 'text-[#B45309]' : 'text-[#15803D]'}`}>{row.defDia}</td>
+                          <td className={`px-4 py-2.5 text-right font-semibold ${row.defAcumVueltas < 0 ? 'text-[#B45309]' : 'text-[#15803D]'}`}>{row.defAcumVueltas}</td>
+                          <td className={`px-4 py-2.5 text-right font-semibold ${row.defTonDia < 0 ? 'text-[#B45309]' : 'text-[#15803D]'}`}>{Math.round(row.defTonDia).toLocaleString('es-CL')}</td>
+                          <td className={`px-4 py-2.5 text-right font-semibold ${row.defAcumTon < 0 ? 'text-[#B45309]' : 'text-[#15803D]'}`}>{Math.round(row.defAcumTon).toLocaleString('es-CL')}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -937,20 +935,19 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
                 </div>
 
                 {/* CUADRO DE NOTAS / OBSERVACIONES OPERATIVAS */}
-                {/* Formulario Interactivo (visible en pantalla para editar, ignorado en la captura para mostrar la tarjeta limpia) */}
-                <div data-ignore-capture="true" className="mt-5 pt-5 border-t border-[#DCDDEE]">
+                <div data-ignore-capture="true" className="mt-5 pt-5 border-t border-[#D8D4CA]">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">
-                      <FileText size={16} className="text-[#7177EC]" />
-                      <span className="text-xs font-black uppercase tracking-wider text-[#171717]">Notas y Observaciones de la Jornada</span>
+                      <FileText size={15} className="text-[#461D77]" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#181615]">Notas y Observaciones de la Jornada</span>
                     </div>
                     {noteText.trim().length > 0 ? (
-                      <span className="text-[10px] font-bold text-[#3FAA88] bg-[#3FAA88]/10 border border-[#3FAA88]/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <CheckCircle size={12} /> Se incluirá en la exportación PNG
+                      <span className="text-[11px] font-semibold text-[#15803D] bg-[#ECFDF5] border border-[#15803D]/25 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                        <CheckCircle size={12} /> Incluido en exportación PNG
                       </span>
                     ) : (
-                      <span className="text-[10px] font-semibold text-slate-400">
-                        Opcional (se omite en el PNG si está vacío)
+                      <span className="text-[11px] text-[#78716C]">
+                        Opcional (se omite en PNG si está vacío)
                       </span>
                     )}
                   </div>
@@ -960,15 +957,15 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
                     onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Escribe aquí notas, justificaciones de desvíos, condiciones climáticas o comentarios operacionales (opcional)..."
                     rows={3}
-                    className="w-full text-xs font-medium text-slate-800 bg-[#FAF5E6]/60 hover:bg-[#FAF5E6] focus:bg-white border border-[#DCDDEE] focus:border-[#7177EC] rounded-2xl p-3.5 outline-none transition-all resize-y shadow-2xs placeholder:text-slate-400 placeholder:italic"
+                    className="w-full text-xs text-[#181615] bg-[#F2F0EA] focus:bg-white border border-[#D8D4CA] focus:border-[#461D77] rounded-md p-3 outline-none transition-colors duration-150 resize-y placeholder:text-[#78716C]"
                   />
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 px-1">
-                    <span>* Si no ingresas texto, el reporte PNG omitirá automáticamente este cuadro sin dejar espacios vacíos.</span>
+                  <div className="flex items-center justify-between text-[11px] text-[#78716C] mt-1.5">
+                    <span>Si no ingresas texto, el reporte PNG omitirá este bloque.</span>
                     {noteText.length > 0 && (
                       <button 
                         type="button"
                         onClick={() => setNoteText('')}
-                        className="text-slate-400 hover:text-red-500 font-bold transition-colors cursor-pointer"
+                        className="text-[#57534E] hover:text-[#B91C1C] font-semibold transition-colors duration-150 cursor-pointer"
                       >
                         Limpiar nota
                       </button>
@@ -976,13 +973,13 @@ export const CumplimientoMQ: React.FC<CumplimientoMQProps> = ({ onBack }) => {
                   </div>
                 </div>
 
-                {/* TARJETA FORMATEADA DE NOTAS (Se muestra en la captura y en la vista cuando hay texto; se omite al 100% si está vacío) */}
+                {/* TARJETA FORMATEADA DE NOTAS */}
                 {noteText.trim().length > 0 && (
-                  <div className="mt-4 p-5 rounded-3xl bg-[#FAF5E6] border border-[#7177EC]/30 border-l-4 border-l-[#7177EC] shadow-2xs">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-[#7177EC] mb-2 flex items-center gap-1.5">
-                      <FileText size={14} className="text-[#7177EC]" /> Notas y Observaciones Operativas
+                  <div className="mt-4 p-4 rounded-md surface-well">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#461D77] mb-1.5 flex items-center gap-1.5">
+                      <FileText size={13} className="text-[#461D77]" /> Notas y Observaciones Operativas
                     </p>
-                    <p className="text-xs font-medium text-[#171717] leading-relaxed whitespace-pre-wrap">
+                    <p className="text-xs text-[#181615] leading-relaxed whitespace-pre-wrap">
                       {noteText.trim()}
                     </p>
                   </div>
