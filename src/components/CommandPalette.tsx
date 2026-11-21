@@ -329,53 +329,53 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-md"
+            className="fixed inset-0 bg-[#1C1917]/50"
           />
 
           {/* Dialog Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: -10 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
-            className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col z-10"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="relative w-full max-w-2xl bg-[#FFFFFF] rounded-lg shadow-xl border border-[#E2DFD7] overflow-hidden flex flex-col z-10"
             onKeyDown={handleKeyDown}
           >
             {/* Search Input Bar */}
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/60">
-              <Search className="text-[#461D77] shrink-0" size={20} />
+            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#E2DFD7] bg-[#F7F6F2]">
+              <Search className="text-[#461D77] shrink-0" size={18} />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Escribe para buscar módulos, reportes, guías o funciones... (Esc para salir)"
-                className="w-full bg-transparent text-slate-800 text-sm font-semibold placeholder:text-slate-400 focus:outline-none"
+                placeholder="Buscar módulos, reportes o funciones... (Esc para salir)"
+                className="w-full bg-transparent text-[#1C1917] text-sm font-medium placeholder:text-[#8C877F] focus:outline-none"
               />
               {query && (
                 <button
                   onClick={() => setQuery('')}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
+                  className="p-1 rounded-md text-[#57534E] hover:text-[#1C1917] hover:bg-[#EFECE6]"
                   title="Borrar texto"
                 >
-                  <X size={16} />
+                  <X size={15} />
                 </button>
               )}
-              <div className="hidden sm:flex items-center gap-1 bg-white border border-slate-200 px-2 py-1 rounded-lg shadow-2xs">
-                <kbd className="text-[10px] font-bold text-slate-500 font-mono">ESC</kbd>
+              <div className="hidden sm:flex items-center gap-1 bg-[#FFFFFF] border border-[#E2DFD7] px-2 py-0.5 rounded">
+                <kbd className="text-[10px] font-semibold text-[#57534E] font-mono">ESC</kbd>
               </div>
             </div>
 
             {/* Results List */}
             <div
               ref={listRef}
-              className="max-h-[380px] overflow-y-auto p-2 divide-y divide-slate-50"
+              className="max-h-[380px] overflow-y-auto divide-y divide-[#E2DFD7]/60"
             >
               {filteredItems.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 space-y-2">
-                  <ShieldAlert size={32} className="mx-auto text-slate-300" />
-                  <p className="text-sm font-semibold">No se encontraron resultados para &ldquo;{query}&rdquo;</p>
-                  <p className="text-xs text-slate-400">Intenta buscar por &ldquo;stokes&rdquo;, &ldquo;turno&rdquo;, &ldquo;informe&rdquo; o &ldquo;pantalla&rdquo;.</p>
+                <div className="py-12 text-center text-[#57534E] space-y-2">
+                  <ShieldAlert size={28} className="mx-auto text-[#C7C2B6]" />
+                  <p className="text-sm font-semibold text-[#1C1917]">No se encontraron resultados para &ldquo;{query}&rdquo;</p>
+                  <p className="text-xs text-[#57534E]">Intenta buscar por &ldquo;stokes&rdquo;, &ldquo;turno&rdquo;, &ldquo;informe&rdquo; o &ldquo;pantalla&rdquo;.</p>
                 </div>
               ) : (
                 filteredItems.map((item, index) => {
@@ -388,33 +388,33 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                       data-active={isSelected}
                       onClick={() => executeItem(item)}
                       onMouseEnter={() => setSelectedIndex(index)}
-                      className={`group flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl cursor-pointer transition-all ${
+                      className={`group flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer transition-colors duration-150 ease-out ${
                         isSelected
-                          ? 'bg-[#461D77] text-white shadow-sm'
-                          : 'hover:bg-slate-50 text-slate-700'
+                          ? 'bg-[#461D77] text-white'
+                          : 'hover:bg-[#F7F6F2] text-[#1C1917]'
                       }`}
                     >
-                      <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                          className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 border transition-colors duration-150 ${
                             isSelected
-                              ? 'bg-white/15 text-white'
-                              : 'bg-slate-100 text-[#461D77] group-hover:bg-[#461D77]/10'
+                              ? 'bg-white/15 border-white/20 text-white'
+                              : 'bg-[#F7F6F2] border-[#E2DFD7] text-[#461D77]'
                           }`}
                         >
-                          <Icon size={18} />
+                          <Icon size={16} />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm tracking-tight truncate">
+                            <span className="font-semibold text-sm tracking-tight truncate">
                               {item.title}
                             </span>
                             {item.badge && (
                               <span
-                                className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                className={`font-mono text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded ${
                                   isSelected
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    : 'bg-[#EFECE6] text-[#461D77] border border-[#E2DFD7]'
                                 }`}
                               >
                                 {item.badge}
@@ -423,7 +423,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                           </div>
                           <p
                             className={`text-xs truncate ${
-                              isSelected ? 'text-purple-100' : 'text-slate-400'
+                              isSelected ? 'text-white/80' : 'text-[#57534E]'
                             }`}
                           >
                             {item.subtitle}
@@ -433,16 +433,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
                       <div className="flex items-center gap-2 shrink-0">
                         <span
-                          className={`text-[10px] font-bold uppercase tracking-wider hidden sm:inline ${
-                            isSelected ? 'text-purple-200' : 'text-slate-400'
+                          className={`font-mono text-[10px] font-medium uppercase tracking-wider hidden sm:inline ${
+                            isSelected ? 'text-white/75' : 'text-[#57534E]'
                           }`}
                         >
                           {item.category}
                         </span>
                         <ArrowRight
-                          size={15}
-                          className={`transition-transform group-hover:translate-x-0.5 ${
-                            isSelected ? 'text-white' : 'text-slate-300'
+                          size={14}
+                          className={`transition-transform duration-150 group-hover:translate-x-0.5 ${
+                            isSelected ? 'text-white' : 'text-[#C7C2B6]'
                           }`}
                         />
                       </div>
@@ -453,21 +453,21 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             </div>
 
             {/* Footer / Shortcuts Help */}
-            <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            <div className="px-4 py-2.5 bg-[#EFECE6]/60 border-t border-[#E2DFD7] flex items-center justify-between text-[11px] text-[#57534E] font-medium">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1">
-                  <kbd className="bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold">↑</kbd>
-                  <kbd className="bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold">↓</kbd>
-                  <span className="text-slate-400">navegar</span>
+                  <kbd className="bg-[#FFFFFF] border border-[#E2DFD7] px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold">↑</kbd>
+                  <kbd className="bg-[#FFFFFF] border border-[#E2DFD7] px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold">↓</kbd>
+                  <span>navegar</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold">↵</kbd>
-                  <span className="text-slate-400">seleccionar</span>
+                  <kbd className="bg-[#FFFFFF] border border-[#E2DFD7] px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold">↵</kbd>
+                  <span>seleccionar</span>
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <Command size={12} />
-                <span>Navegación Rápida Corporativa</span>
+              <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider">
+                <Command size={11} />
+                <span>Despacho Litio</span>
               </div>
             </div>
           </motion.div>

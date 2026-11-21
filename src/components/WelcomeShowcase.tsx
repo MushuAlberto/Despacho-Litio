@@ -10,6 +10,7 @@ interface SdaPhotoItem {
   alt: string;
   caption: string;
   objectPosition?: string;
+  imageClassName?: string;
 }
 
 interface ShowcaseSlide {
@@ -57,6 +58,7 @@ const SDA_PHOTOS: SdaPhotoItem[] = [
     alt: 'Identidad operativa Novandino sobre vista aérea del Salar de Atacama',
     caption: 'Centro de Despacho · Novandino',
     objectPosition: 'object-left',
+    imageClassName: 'scale-[1.95] origin-left',
   },
   {
     id: 'sda-5',
@@ -168,7 +170,7 @@ const MosaicTile: React.FC<{
   return (
     <div
       style={transformStyle}
-      className={`relative aspect-[16/10] rounded-2xl overflow-hidden border transition-[opacity,filter,transform,border-color] duration-500 ease-out will-change-transform ${
+      className={`relative aspect-[16/10] rounded-2xl overflow-hidden bg-[#0B0D14] border transition-[opacity,filter,transform,border-color] duration-500 ease-out will-change-transform ${
         isSpotlight
           ? 'opacity-95 border-white/25 shadow-[0_18px_45px_rgba(0,0,0,0.7)] brightness-105'
           : 'opacity-40 border-white/10 shadow-xl brightness-75 saturate-75'
@@ -184,11 +186,13 @@ const MosaicTile: React.FC<{
           alt={photo.alt}
           referrerPolicy="no-referrer"
           loading="eager"
+          decoding="async"
           onError={() => setHasError(true)}
-          className={`w-full h-full object-cover ${photo.objectPosition || 'object-center'} select-none pointer-events-none`}
+          className={`w-full h-full object-cover ${photo.objectPosition || 'object-center'} ${photo.imageClassName || ''} select-none pointer-events-none`}
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/20 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-l from-black/35 via-transparent to-transparent pointer-events-none" />
     </div>
   );
 });

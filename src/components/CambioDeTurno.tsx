@@ -136,122 +136,125 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = React.memo(({
   };
 
   return (
-    <div className="space-y-6">
-      <div id={`chart-table-container-${title.replace(/\s+/g, '_')}`} className="space-y-6 flex flex-col">
-        <div className="bg-white p-4 rounded-2xl border border-violeta/10 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-tighter ${colorIdx === 1 ? 'bg-nucleo/10 text-nucleo' : 'bg-mineral/10 text-mineral'}`}>
-          {title}
-        </h2>
-        {uniqueDates.length > 0 && (
-          <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100 w-full sm:w-auto">
-            <div className="flex flex-col">
-              <span className="text-[8px] font-black text-slate-400 uppercase px-2">Desde</span>
-              <input 
-                type="date"
-                value={range.start}
-                min={uniqueDates[0]}
-                max={uniqueDates[uniqueDates.length - 1]}
-                onChange={(e) => setRange({ ...range, start: e.target.value })}
-                className="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 cursor-pointer [color-scheme:light]"
-              />
+    <div className="space-y-5">
+      <div id={`chart-table-container-${title.replace(/\s+/g, '_')}`} className="space-y-5 flex flex-col">
+        <div className="bg-white p-4 rounded-lg border border-[#E2DFD7] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h2 className={`text-xs font-mono font-bold px-2.5 py-1 rounded border uppercase tracking-wider ${
+            colorIdx === 1 
+              ? 'bg-[#F3EEF8] text-[#461D77] border-[#461D77]/20' 
+              : 'bg-[#F7F6F2] text-[#1C1917] border-[#E2DFD7]'
+          }`}>
+            {title}
+          </h2>
+          {uniqueDates.length > 0 && (
+            <div className="flex items-center gap-2 bg-[#F7F6F2] p-1 rounded-md border border-[#E2DFD7] w-full sm:w-auto">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-semibold text-[#57534E] uppercase px-2">Desde</span>
+                <input 
+                  type="date"
+                  value={range.start}
+                  min={uniqueDates[0]}
+                  max={uniqueDates[uniqueDates.length - 1]}
+                  onChange={(e) => setRange({ ...range, start: e.target.value })}
+                  className="bg-transparent text-xs font-mono font-semibold text-[#1C1917] outline-none px-2 cursor-pointer [color-scheme:light]"
+                />
+              </div>
+              <div className="w-px h-5 bg-[#E2DFD7]" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-semibold text-[#57534E] uppercase px-2">Hasta</span>
+                <input 
+                  type="date"
+                  value={range.end}
+                  min={range.start || uniqueDates[0]}
+                  max={uniqueDates[uniqueDates.length - 1]}
+                  onChange={(e) => setRange({ ...range, end: e.target.value })}
+                  className="bg-transparent text-xs font-mono font-semibold text-[#1C1917] outline-none px-2 cursor-pointer [color-scheme:light]"
+                />
+              </div>
             </div>
-            <div className="w-px h-4 bg-slate-200" />
-            <div className="flex flex-col">
-              <span className="text-[8px] font-black text-slate-400 uppercase px-2">Hasta</span>
-              <input 
-                type="date"
-                value={range.end}
-                min={range.start || uniqueDates[0]}
-                max={uniqueDates[uniqueDates.length - 1]}
-                onChange={(e) => setRange({ ...range, end: e.target.value })}
-                className="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 cursor-pointer [color-scheme:light]"
-              />
-            </div>
+          )}
+        </div>
+
+        <CambioAnalisisComparativoChart data={data} title={title} />
+
+        <div className="bg-white rounded-lg border border-[#E2DFD7] overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-[#E2DFD7] bg-[#EFECE6]/40 flex items-center justify-between">
+            <h3 className="text-[11px] font-mono font-semibold text-[#57534E] uppercase tracking-wider">Resumen por Producto</h3>
           </div>
-        )}
-      </div>
-
-      <CambioAnalisisComparativoChart data={data} title={title} />
-
-      <div className="bg-white rounded-[2.5rem] border border-violeta/10 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">RESUMEN POR PRODUCTO</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[750px]">
-            <thead>
-              <tr className="bg-slate-50/50">
-                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Prod.</th>
-                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Prog. Ton</th>
-                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Ton</th>
-                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Meta Hrs</th>
-                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Real Hrs</th>
-                <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Estado / Semáforo</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 tabular-nums">
-              {data.map((item) => {
-                const progTon = item.Ton_Prog || 0;
-                const realTon = item.Ton_Real || 0;
-                const metaTime = item.faenaMetaHours || 0;
-                const realTime = item.faenaRealHours || 0;
-
-                let alertType: 'red' | 'orange' | 'green' = 'green';
-                let alertMessage = '🟢 Dentro de Rango';
-
-                if (realTon > 0 && realTime <= 0) {
-                  alertType = 'orange';
-                  alertMessage = '🔶 Falla MIGTRA';
-                } else if (progTon > 0 && realTon < (progTon * 0.90)) {
-                  alertType = 'red';
-                  alertMessage = '🔴 Bajo Ton. (<90%)';
-                } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
-                  alertType = 'red';
-                  alertMessage = '🔴 Exc. Tiempo (>10m)';
-                }
-
-                let badgeStyle = "bg-emerald-50 text-emerald-700 border border-emerald-200";
-                if (alertType === 'red') {
-                  badgeStyle = "bg-rose-50 text-rose-700 border border-rose-200 animate-pulse";
-                } else if (alertType === 'orange') {
-                  badgeStyle = "bg-amber-50 text-amber-700 border border-amber-200 font-extrabold";
-                }
-
-                return (
-                  <tr key={item.name} className="hover:bg-slate-50/30 transition-colors">
-                    <td className="px-4 py-3 text-[11px] font-bold text-slate-700">{item.name}</td>
-                    <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
-                      {Math.round(progTon).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-[11px] font-bold text-right">
-                      <span className="text-violeta">{Math.round(realTon).toLocaleString()}</span>
-                    </td>
-                    <td className="px-4 py-3 text-[11px] font-bold text-right text-slate-400">
-                      {formatDecimalToHHMM(metaTime)}
-                    </td>
-                    <td className="px-4 py-3 text-[11px] font-bold text-right text-mineral">
-                      {formatDecimalToHHMM(realTime)}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap ${badgeStyle}`}>
-                        {alertMessage}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-              {data.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400 font-medium italic text-xs">Sin datos</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="bg-[#F7F6F2] border-b border-[#E2DFD7]">
+                  <th className="px-4 py-2.5 text-[11px] font-semibold text-[#57534E] uppercase tracking-wider">Prod.</th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold text-[#57534E] uppercase tracking-wider text-right">Prog. Ton</th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold text-[#57534E] uppercase tracking-wider text-right">Real Ton</th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold text-[#57534E] uppercase tracking-wider text-right">Meta Hrs</th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold text-[#57534E] uppercase tracking-wider text-right">Real Hrs</th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold text-[#57534E] uppercase tracking-wider text-center">Estado</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[#E2DFD7] tabular-nums">
+                {data.map((item) => {
+                  const progTon = item.Ton_Prog || 0;
+                  const realTon = item.Ton_Real || 0;
+                  const metaTime = item.faenaMetaHours || 0;
+                  const realTime = item.faenaRealHours || 0;
+
+                  let alertType: 'red' | 'orange' | 'green' = 'green';
+                  let alertMessage = 'En Rango';
+
+                  if (realTon > 0 && realTime <= 0) {
+                    alertType = 'orange';
+                    alertMessage = 'Falla MIGTRA';
+                  } else if (progTon > 0 && realTon < (progTon * 0.90)) {
+                    alertType = 'red';
+                    alertMessage = 'Bajo Ton. (<90%)';
+                  } else if (realTime > 0 && metaTime > 0 && (realTime - metaTime) > (10 / 60)) {
+                    alertType = 'red';
+                    alertMessage = 'Exc. Tiempo (>10m)';
+                  }
+
+                  let badgeStyle = "bg-emerald-50 text-[#15803D] border border-emerald-200";
+                  if (alertType === 'red') {
+                    badgeStyle = "bg-red-50 text-[#B91C1C] border border-red-200";
+                  } else if (alertType === 'orange') {
+                    badgeStyle = "bg-amber-50 text-[#B45309] border border-amber-200";
+                  }
+
+                  return (
+                    <tr key={item.name} className="hover:bg-[#F7F6F2] transition-colors duration-150">
+                      <td className="px-4 py-2.5 text-xs font-semibold text-[#1C1917]">{item.name}</td>
+                      <td className="px-4 py-2.5 text-xs font-mono text-right text-[#57534E]">
+                        {Math.round(progTon).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono font-semibold text-right text-[#461D77]">
+                        {Math.round(realTon).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono text-right text-[#57534E]">
+                        {formatDecimalToHHMM(metaTime)}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono font-semibold text-right text-[#1C1917]">
+                        {formatDecimalToHHMM(realTime)}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase whitespace-nowrap ${badgeStyle}`}>
+                          {alertMessage}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {data.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-[#57534E] text-xs">Sin datos en el rango</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-      </div>
 
-      {/* Gráfico y tabla de tendencia diario del producto */}
       {data.length > 0 && (
         <CambioAnalisisProductoChart 
           allData={allData} 
@@ -260,111 +263,105 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = React.memo(({
         />
       )}
 
-      {/* Panel de Análisis Operativo Local */}
-      <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-          <FileText className="w-24 h-24 text-white" />
-        </div>
-        
-        <div className="relative z-10 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-violeta p-2 rounded-xl">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h4 className="text-white text-sm font-black uppercase tracking-widest">Resumen y Análisis Operativo</h4>
-                <p className="text-slate-400 text-[10px] font-bold">Cálculos analíticos automáticos basados en datos de faena</p>
-              </div>
+      {/* Panel de Análisis Operativo */}
+      <div className="bg-[#1C1917] rounded-lg p-6 border border-[#2E2925] space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#461D77] p-2 rounded-md">
+              <TrendingUp className="w-4 h-4 text-white" />
             </div>
-            
-            <div className="flex flex-wrap items-center gap-2">
-              {(globalAiSettings.enableGemini || globalAiSettings.enableGlm) && (
-                <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-white/5 mr-1">
-                  {globalAiSettings.enableGemini && (
-                    <button
-                      type="button"
-                      onClick={() => setAiEngine('gemini')}
-                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
-                        aiEngine === 'gemini'
-                          ? 'bg-violeta text-white'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Gemini 3.5
-                    </button>
-                  )}
-                  {globalAiSettings.enableGlm && (
-                    <button
-                      type="button"
-                      onClick={() => setAiEngine('glm')}
-                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all uppercase cursor-pointer ${
-                        aiEngine === 'glm'
-                          ? 'bg-amber-500 text-slate-950'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Gemma (OpenRouter)
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {analysis && !isAnalyzing && (
-                <button 
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="px-4 py-2 bg-slate-800 text-white text-[10px] font-black rounded-xl hover:bg-slate-700 transition-all uppercase tracking-widest"
-                >
-                  {isEditing ? 'Vista Previa' : 'Editar Texto'}
-                </button>
-              )}
-              <button 
-                onClick={() => generateShiftReportPDF({ title, data, range, analysis })}
-                disabled={data.length === 0}
-                className="px-4 py-2 bg-violeta text-white text-[10px] font-black rounded-xl hover:bg-violeta/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2 uppercase tracking-widest"
-              >
-                <Download className="w-3.5 h-3.5" /> Descargar PDF
-              </button>
-              <button 
-                onClick={handleRunAnalysis}
-                disabled={isAnalyzing || data.length === 0}
-                className="px-6 py-2 bg-white text-slate-900 text-xs font-black rounded-xl hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <div className="w-3 h-3 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4" />
-                    Generar Reporte
-                  </>
-                )}
-              </button>
+            <div>
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider">Resumen y Análisis Operativo</h4>
+              <p className="text-[#A8A29E] text-xs">Compilación analítica de desempeño del turno</p>
             </div>
           </div>
-
-          <div className="min-h-[100px] bg-slate-800/50 rounded-2xl p-6 border border-white/5">
-            {analysis ? (
-              isEditing ? (
-                <textarea
-                  value={analysis}
-                  onChange={(e) => setAnalysis(e.target.value)}
-                  className="w-full h-[300px] bg-transparent text-slate-300 text-sm font-medium leading-relaxed outline-none border-none resize-none focus:ring-0"
-                  placeholder="Edita el análisis aquí..."
-                />
-              ) : (
-                <div className="prose prose-invert prose-sm max-w-full text-slate-300 leading-relaxed">
-                  <SimpleMarkdown content={analysis} />
-                </div>
-              )
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full py-8 text-slate-500 italic space-y-2">
-                <p className="text-xs font-medium">Haz clic en "Generar Reporte" para compilar el resumen operativo automático.</p>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            {(globalAiSettings.enableGemini || globalAiSettings.enableGlm) && (
+              <div className="flex items-center gap-1 bg-[#292524] p-1 rounded-md border border-white/10 mr-1">
+                {globalAiSettings.enableGemini && (
+                  <button
+                    type="button"
+                    onClick={() => setAiEngine('gemini')}
+                    className={`px-2.5 py-1 rounded text-[10px] font-mono font-semibold transition-colors duration-150 uppercase cursor-pointer ${
+                      aiEngine === 'gemini'
+                        ? 'bg-[#461D77] text-white'
+                        : 'text-[#A8A29E] hover:text-white'
+                    }`}
+                  >
+                    Gemini 3.5
+                  </button>
+                )}
+                {globalAiSettings.enableGlm && (
+                  <button
+                    type="button"
+                    onClick={() => setAiEngine('glm')}
+                    className={`px-2.5 py-1 rounded text-[10px] font-mono font-semibold transition-colors duration-150 uppercase cursor-pointer ${
+                      aiEngine === 'glm'
+                        ? 'bg-white text-[#1C1917]'
+                        : 'text-[#A8A29E] hover:text-white'
+                    }`}
+                  >
+                    Gemma
+                  </button>
+                )}
               </div>
             )}
+
+            {analysis && !isAnalyzing && (
+              <button 
+                onClick={() => setIsEditing(!isEditing)}
+                className="px-3 py-1.5 bg-[#292524] text-white text-xs font-semibold rounded-md hover:bg-[#3F3A36] transition-colors duration-150 cursor-pointer"
+              >
+                {isEditing ? 'Vista Previa' : 'Editar Texto'}
+              </button>
+            )}
+            <button 
+              onClick={() => generateShiftReportPDF({ title, data, range, analysis })}
+              disabled={data.length === 0}
+              className="px-3.5 py-1.5 bg-[#461D77] text-white text-xs font-semibold rounded-md hover:bg-[#36155E] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" /> PDF
+            </button>
+            <button 
+              onClick={handleRunAnalysis}
+              disabled={isAnalyzing || data.length === 0}
+              className="px-4 py-1.5 bg-white text-[#1C1917] text-xs font-semibold rounded-md hover:bg-[#F7F6F2] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center gap-1.5 cursor-pointer"
+            >
+              {isAnalyzing ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-[#1C1917] border-t-transparent rounded-full animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-3.5 h-3.5" />
+                  Generar Reporte
+                </>
+              )}
+            </button>
           </div>
+        </div>
+
+        <div className="min-h-[100px] bg-[#292524]/70 rounded-md p-5 border border-white/10">
+          {analysis ? (
+            isEditing ? (
+              <textarea
+                value={analysis}
+                onChange={(e) => setAnalysis(e.target.value)}
+                className="w-full h-[280px] bg-transparent text-[#E7E5E4] text-sm leading-relaxed outline-none border-none resize-none focus:ring-0"
+                placeholder="Edita el análisis aquí..."
+              />
+            ) : (
+              <div className="prose prose-invert prose-sm max-w-full text-[#E7E5E4] leading-relaxed">
+                <SimpleMarkdown content={analysis} />
+              </div>
+            )
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full py-6 text-[#A8A29E]">
+              <p className="text-xs">Haz clic en "Generar Reporte" para compilar el resumen operativo del turno.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -917,205 +914,266 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
   };
 
   return (
-    <div 
+    <div
       onDragOver={handleDragOver}
-      onDragOverCapture={(e) => { e.preventDefault(); setIsDragging(true); }}
-      className="min-h-screen bg-calido p-4 md:p-8 max-w-[1800px] mx-auto space-y-6 relative"
+      onDragOverCapture={(e) => {
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      className="min-h-screen bg-[#F7F6F2] text-[#1C1917] p-4 md:p-8 max-w-[1600px] mx-auto space-y-6 relative"
     >
       {/* Screen-wide Drag & Drop Overlay Portal */}
       {isDragging && (
-        <div 
+        <div
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex flex-col items-center justify-center border-8 border-dashed border-violeta m-4 rounded-[3rem] transition-all duration-300"
+          className="fixed inset-0 bg-[#1C1917]/85 z-[9999] flex flex-col items-center justify-center border-2 border-dashed border-[#461D77] m-4 rounded-lg transition-opacity duration-150 ease-out"
         >
-          <div className="text-center p-8 space-y-4 max-w-md pointer-events-none">
-            <div className="mx-auto w-20 h-20 bg-violeta/10 rounded-full flex items-center justify-center text-violeta animate-bounce">
-              <Upload className="w-10 h-10" />
+          <div className="text-center p-8 space-y-3 max-w-md pointer-events-none bg-[#FFFFFF] border border-[#E2DFD7] rounded-lg shadow-sm">
+            <div className="mx-auto w-12 h-12 bg-[#F3EEF8] border border-[#461D77]/20 rounded-md flex items-center justify-center text-[#461D77]">
+              <Upload className="w-6 h-6" />
             </div>
-            <h2 className="text-2xl font-black text-white uppercase tracking-widest">Suelta para Procesar</h2>
-            <p className="text-slate-300 text-sm font-semibold">
+            <h2 className="text-lg font-bold text-[#1C1917] tracking-[-0.02em]">
+              Suelta para Procesar
+            </h2>
+            <p className="text-[#57534E] text-sm">
               Suelta tu plantilla Excel o archivo JSON de justificación aquí para cargarlos instantáneamente.
             </p>
           </div>
         </div>
       )}
 
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-violeta/10 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={onBack} 
-            className="p-3 hover:bg-slate-50 rounded-2xl border border-slate-100 transition-colors"
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-[#FFFFFF] p-5 rounded-lg border border-[#E2DFD7]">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="p-2.5 bg-[#FFFFFF] hover:bg-[#F7F6F2] rounded-md border border-[#E2DFD7] transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77] cursor-pointer"
+            title="Volver"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-700" />
+            <ArrowLeft className="w-4 h-4 text-[#1C1917]" />
           </button>
           <div>
-            <h1 className="text-2xl font-black text-violeta tracking-tight">Análisis de Turno</h1>
-            <p className="text-slate-500 text-sm font-medium italic">Modo Comparativo Dual: Suma de Tons vs Promedio de Horas</p>
+            <h1 className="text-xl font-bold text-[#1C1917] tracking-[-0.02em]">
+              Análisis de Turno
+            </h1>
+            <p className="text-[#57534E] text-xs">
+              Comparativa dual: suma de toneladas vs. promedio de horas
+            </p>
           </div>
         </div>
-        
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
+
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
           {complianceFiles.length > 0 && (
-            <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200">
-              <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
+            <div className="flex items-center gap-2 bg-[#FEF3C7]/60 px-3 py-1.5 rounded-md border border-[#F59E0B]/40">
+              <span className="text-xs font-mono tabular-nums font-semibold text-[#B45309]">
                 {complianceFiles.length} JSONs Incumplimiento
               </span>
-              <button onClick={clearCompliance} className="p-1 hover:bg-amber-200 rounded-lg text-amber-600">
-                <AlertCircle className="w-3 h-3" />
+              <button
+                onClick={clearCompliance}
+                className="p-0.5 hover:bg-[#F59E0B]/20 rounded text-[#B45309] transition-colors duration-150 cursor-pointer"
+                title="Limpiar archivos de incumplimiento"
+              >
+                <AlertCircle className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
-          <div className="flex flex-wrap gap-2">
-            <button 
+          <div className="flex flex-wrap items-center gap-2">
+            <button
               onClick={() => downloadPDF('novandino')}
               disabled={aggregatedData1.length === 0 || downloadingPdf}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-nucleo border-2 border-nucleo/10 hover:border-nucleo/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#1C1917] border border-[#E2DFD7] hover:bg-[#F7F6F2] rounded-md transition-colors duration-150 ease-out bg-[#FFFFFF] disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
             >
               {downloadingPdf ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#461D77]" />
               ) : (
-                <FileText className="w-4 h-4" />
+                <FileText className="w-3.5 h-3.5 text-[#57534E]" />
               )}
-              PDF Novandino
+              <span>PDF Novandino</span>
             </button>
-            <button 
+            <button
               onClick={() => downloadPNG('novandino')}
               disabled={aggregatedData1.length === 0}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-nucleo border-2 border-nucleo/10 hover:border-nucleo/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#1C1917] border border-[#E2DFD7] hover:bg-[#F7F6F2] rounded-md transition-colors duration-150 ease-out bg-[#FFFFFF] disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
             >
-              <Image className="w-4 h-4" /> PNG Novandino
+              <Image className="w-3.5 h-3.5 text-[#57534E]" />
+              <span>PNG Novandino</span>
             </button>
-            <button 
+            <button
               onClick={() => downloadPDF('sqm')}
               disabled={aggregatedData2.length === 0 || downloadingPdf}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-mineral border-2 border-mineral/10 hover:border-mineral/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#1C1917] border border-[#E2DFD7] hover:bg-[#F7F6F2] rounded-md transition-colors duration-150 ease-out bg-[#FFFFFF] disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
             >
               {downloadingPdf ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#461D77]" />
               ) : (
-                <FileText className="w-4 h-4" />
+                <FileText className="w-3.5 h-3.5 text-[#57534E]" />
               )}
-              PDF SQM
+              <span>PDF SQM</span>
             </button>
-            <button 
+            <button
               onClick={() => downloadPNG('sqm')}
               disabled={aggregatedData2.length === 0}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-mineral border-2 border-mineral/10 hover:border-mineral/30 rounded-xl transition-all active:scale-95 bg-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#1C1917] border border-[#E2DFD7] hover:bg-[#F7F6F2] rounded-md transition-colors duration-150 ease-out bg-[#FFFFFF] disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
             >
-              <Image className="w-4 h-4" /> PNG SQM
+              <Image className="w-3.5 h-3.5 text-[#57534E]" />
+              <span>PNG SQM</span>
             </button>
-            <button onClick={downloadTemplate} className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-violeta border-2 border-violeta/10 hover:border-violeta/30 rounded-xl transition-all active:scale-95 bg-white">
-              <Download className="w-4 h-4" /> Plantilla
+            <button
+              onClick={downloadTemplate}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#1C1917] border border-[#E2DFD7] hover:bg-[#F7F6F2] rounded-md transition-colors duration-150 ease-out bg-[#FFFFFF] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77]"
+            >
+              <Download className="w-3.5 h-3.5 text-[#57534E]" />
+              <span>Plantilla</span>
             </button>
-            <label className="flex items-center gap-2 px-6 py-3 bg-violeta text-white font-bold rounded-xl cursor-pointer hover:bg-violeta/90 transition-all shadow-lg active:scale-95">
-              <Upload className="w-4 h-4" /> <span>Cargar Archivos</span>
-              <input type="file" className="hidden" accept=".xlsx, .xls, .csv, .xlsm, .json" multiple onChange={handleFileUpload} />
+            <label className="flex items-center gap-2 px-4 py-2 bg-[#461D77] hover:bg-[#36155E] text-white text-xs font-semibold rounded-md cursor-pointer transition-colors duration-150 ease-out focus-within:ring-2 focus-within:ring-[#461D77] focus-within:ring-offset-1">
+              <Upload className="w-3.5 h-3.5" />
+              <span>Cargar Archivos</span>
+              <input
+                type="file"
+                className="hidden"
+                accept=".xlsx, .xls, .csv, .xlsm, .json"
+                multiple
+                onChange={handleFileUpload}
+              />
             </label>
           </div>
         </div>
       </header>
 
       {fileName && (
-        <div className={`flex items-center gap-3 p-4 rounded-2xl border transition-all duration-300 ${status === 'success' ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
-          {status === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <AlertCircle className="w-5 h-5 text-rose-500" />}
-          <div className="flex-1">
-            <span className="font-bold text-sm text-slate-800">{fileName}</span>
-            {error && <p className="text-xs mt-1 font-medium text-rose-600">{error}</p>}
+        <div
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors duration-150 ${
+            status === 'success'
+              ? 'bg-[#FFFFFF] border-[#E2DFD7]'
+              : 'bg-[#FEF2F2] border-[#FECACA]'
+          }`}
+        >
+          {status === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-[#15803D] shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-[#B91C1C] shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <span className="font-mono text-xs font-semibold text-[#1C1917] truncate block">
+              {fileName}
+            </span>
+            {error && (
+              <p className="text-xs mt-0.5 font-medium text-[#B91C1C]">{error}</p>
+            )}
           </div>
           {status === 'success' && (
-            <span className="text-[10px] font-black uppercase tracking-widest bg-violeta text-white px-3 py-1 rounded-lg">Cargado Exitosamente</span>
+            <span className="text-[11px] font-mono font-semibold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-0.5 rounded-md shrink-0">
+              Cargado
+            </span>
           )}
         </div>
       )}
 
-      {/* Advanced interactive Drag & Drop landing zone if no data is loaded */}
+      {/* Interactive Drag & Drop zone when no data is loaded */}
       {allData.length === 0 ? (
-        <div 
+        <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative overflow-hidden min-h-[420px] flex flex-col items-center justify-center border-4 border-dashed rounded-[3rem] p-12 transition-all duration-300 bg-white ${
-            isDragging 
-              ? 'border-violeta bg-violeta/5 scale-[1.01] shadow-2xl' 
-              : 'border-slate-200 hover:border-violeta/30 hover:bg-slate-50/50 shadow-sm'
+          className={`min-h-[400px] flex flex-col items-center justify-center border border-dashed rounded-lg p-10 transition-colors duration-150 ease-out bg-[#FFFFFF] ${
+            isDragging
+              ? 'border-[#461D77] bg-[#F3EEF8]/50'
+              : 'border-[#D6D3CB] hover:border-[#461D77]/50'
           }`}
         >
           {isUploading ? (
-            <div className="flex flex-col items-center space-y-6 max-w-md w-full text-center">
-              <div className="relative flex items-center justify-center w-20 h-20 bg-violeta/5 rounded-full">
-                <Loader2 className="w-12 h-12 text-violeta animate-spin" />
-                <span className="absolute text-[11px] font-black text-slate-800">{uploadProgress}%</span>
+            <div className="flex flex-col items-center space-y-5 max-w-md w-full text-center">
+              <div className="relative flex items-center justify-center w-16 h-16 bg-[#F3EEF8] border border-[#461D77]/20 rounded-lg">
+                <Loader2 className="w-7 h-7 text-[#461D77] animate-spin" />
               </div>
-              <div className="space-y-2 w-full">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Procesando Archivo Operativo</h3>
-                <p className="text-[11px] text-slate-500 font-bold">Analizando cabeceras dinámicas y mapeando registros...</p>
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-4 border border-slate-200">
-                  <div 
-                    className="h-full bg-violeta rounded-full transition-all duration-100 ease-out" 
+              <div className="space-y-1.5 w-full">
+                <div className="flex items-center justify-between text-xs font-semibold text-[#1C1917]">
+                  <span>Procesando archivo operativo</span>
+                  <span className="font-mono tabular-nums text-[#461D77]">{uploadProgress}%</span>
+                </div>
+                <p className="text-xs text-[#57534E] text-left">
+                  Analizando cabeceras dinámicas y mapeando registros...
+                </p>
+                <div className="w-full h-1.5 bg-[#EFECE6] rounded-full overflow-hidden mt-2">
+                  <div
+                    className="h-full bg-[#461D77] transition-all duration-150 ease-out"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center text-center space-y-6 max-w-xl">
-              <div className="p-6 bg-violeta/10 rounded-full text-violeta mb-1 animate-bounce">
-                <Upload className="w-8 h-8" />
+            <div className="flex flex-col items-center text-center space-y-5 max-w-lg">
+              <div className="w-12 h-12 bg-[#F3EEF8] border border-[#461D77]/20 rounded-md flex items-center justify-center text-[#461D77]">
+                <Upload className="w-5 h-5" />
               </div>
-              <div className="space-y-2">
-                <h2 className="text-lg font-black text-violeta uppercase tracking-widest">Arrastra tus Archivos Aquí</h2>
-                <p className="text-xs text-slate-500 font-semibold max-w-md leading-relaxed">
-                  Soporta plantillas comparativas de turnos en formato <span className="text-emerald-600 font-bold">Excel (.xlsx, .xls)</span> o archivos de justificación <span className="text-amber-500 font-bold">JSON (.json)</span> de desviaciones.
+              <div className="space-y-1.5">
+                <h2 className="text-lg font-bold text-[#1C1917] tracking-[-0.02em]">
+                  Cargar Planilla de Turno
+                </h2>
+                <p className="text-sm text-[#57534E] leading-relaxed">
+                  Arrastra plantillas comparativas en formato Excel (.xlsx, .xls) o archivos JSON de justificación de desviaciones.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-wider">
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" /> Excel Base
-                <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                <FileText className="w-3.5 h-3.5 text-amber-500" /> JSON Justificaciones
+              <div className="flex items-center gap-4 text-xs font-mono text-[#78716C] border-y border-[#E2DFD7] py-2 px-4">
+                <span className="inline-flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#15803D]" /> Excel Base
+                </span>
+                <span aria-hidden="true" className="text-[#D6D3CB]">·</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[#B45309]" /> JSON Justificaciones
+                </span>
               </div>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-                <label className="flex items-center gap-2 px-8 py-3.5 bg-violeta text-white font-black rounded-2xl cursor-pointer hover:bg-violeta/90 transition-all shadow-lg hover:shadow-violeta/20 active:scale-95 uppercase tracking-wider text-[10px]">
-                  <Upload className="w-4 h-4" /> Seleccionar Archivo
-                  <input type="file" className="hidden" accept=".xlsx, .xls, .csv, .xlsm, .json" multiple onChange={handleFileUpload} />
+              <div className="pt-1 flex flex-col sm:flex-row items-center gap-3">
+                <label className="flex items-center gap-2 px-5 py-2.5 bg-[#461D77] hover:bg-[#36155E] text-white text-xs font-semibold rounded-md cursor-pointer transition-colors duration-150 ease-out">
+                  <Upload className="w-4 h-4" />
+                  <span>Seleccionar Archivo</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".xlsx, .xls, .csv, .xlsm, .json"
+                    multiple
+                    onChange={handleFileUpload}
+                  />
                 </label>
-                <button 
-                  onClick={downloadTemplate} 
-                  className="flex items-center gap-2 px-6 py-3.5 text-[10px] font-black text-slate-600 border-2 border-slate-200 hover:border-slate-300 rounded-2xl transition-all active:scale-95 bg-white uppercase tracking-wider cursor-pointer"
+                <button
+                  onClick={downloadTemplate}
+                  className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-[#1C1917] border border-[#E2DFD7] hover:bg-[#F7F6F2] rounded-md transition-colors duration-150 ease-out bg-[#FFFFFF] cursor-pointer"
                 >
-                  <Download className="w-4 h-4" /> Plantilla Base
+                  <Download className="w-4 h-4 text-[#57534E]" />
+                  <span>Plantilla Base</span>
                 </button>
               </div>
             </div>
           )}
         </div>
       ) : (
-        <main className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <AnalysisPanel 
-            title="NOVANDINO" 
-            data={aggregatedData1} 
+        <main className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <AnalysisPanel
+            title="NOVANDINO"
+            data={aggregatedData1}
             allData={allData}
             uniqueDates={uniqueDates}
-            range={range1} 
-            setRange={setRange1} 
-            colorIdx={1} 
-            complianceData={complianceData} 
+            range={range1}
+            setRange={setRange1}
+            colorIdx={1}
+            complianceData={complianceData}
             analysis={novandinoAnalysis}
             setAnalysis={setNovandinoAnalysis}
             globalAiSettings={globalAiSettings}
             userAiEnabled={userAiEnabled}
           />
-          <AnalysisPanel 
-            title="SQM N.Y." 
-            data={aggregatedData2} 
+          <AnalysisPanel
+            title="SQM N.Y."
+            data={aggregatedData2}
             allData={allData}
             uniqueDates={uniqueDates}
-            range={range2} 
-            setRange={setRange2} 
-            colorIdx={2} 
-            complianceData={complianceData} 
+            range={range2}
+            setRange={setRange2}
+            colorIdx={2}
+            complianceData={complianceData}
             analysis={sqmAnalysis}
             setAnalysis={setSqmAnalysis}
             globalAiSettings={globalAiSettings}
@@ -1124,8 +1182,10 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
         </main>
       )}
 
-      <footer className="text-center pb-8 border-t border-slate-100 pt-8 mt-12">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Excel Analytic Platform · Modo Dual Activo</p>
+      <footer className="text-center border-t border-[#E2DFD7] pt-6 pb-8 mt-8">
+        <p className="text-xs font-mono text-[#78716C]">
+          Análisis de Turno · Modo Comparativo Dual
+        </p>
       </footer>
     </div>
   );

@@ -54,7 +54,11 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
+          cleanupOutdatedCaches: true,
+          skipWaiting: true,
+          clientsClaim: true,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          globIgnores: ['**/sda/**', '**/assets/aistudio/**'],
           maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/api\//],

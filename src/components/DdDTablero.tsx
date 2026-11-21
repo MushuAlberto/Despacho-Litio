@@ -1,13 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     Clock, BarChart3, TrendingUp,
-    Target, AlertCircle, Layers, Scale
+    Target, AlertCircle, Layers, Scale, Loader2
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, LineChart, Line, Legend, ReferenceLine, ComposedChart, Area, Cell, AreaChart, LabelList
 } from 'recharts';
-import { formatHoursToTime } from '../utils/dataProcessor';
+import { formatHoursToTime, formatDateToCL } from '../utils/dataProcessor';
+
+declare const html2canvas: any;
 
 interface DdDDataRow {
     Fecha: string;
@@ -107,6 +109,7 @@ const SegmentChart: React.FC<{ title: string; data: any[]; color: string }> = Re
 ));
 
 export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selectedDate }) => {
+    const [isExportingImage, setIsExportingImage] = useState(false);
 
     // 1. Filtrar datos del día seleccionado para la tabla
     const dayData = useMemo(() => data.filter(r => r.Fecha === selectedDate), [data, selectedDate]);
@@ -234,6 +237,49 @@ export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selecte
     };
 
 
+    const handleExportImage = async () => {
+        if (isExportingImage) return;
+        const element = document.getElementById('ddd-dashboard-capture');
+        if (!element) return;
+
+        setIsExportingImage(true);
+        try {
+            let dataUrl = '';
+            if (typeof html2canvas === 'function') {
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                dataUrl = canvas.toDataURL('image/png');
+            } else {
+                const { toPng } = await import('html-to-image');
+                dataUrl = await toPng(element, { pixelRatio: 2, cacheBust: true });
+            }
+
+            const link = document.createElement('a');
+            link.download = `Captura_DdD_${selectedDate}.png`;
+            link.href = dataUrl;
+            link.click();
+
+            // Record download audit log
+            try {
+                const { getCurrentUser } = await import('../auth/authStore');
+                const user = getCurrentUser();
+                if (user) {
+                    const { logActivity } = await import('../services/firebase');
+                    await logActivity(
+                        user,
+                        'Descargó Imagen',
+                        `Descargó captura gráfica del tablero DdD de la fecha ${formatDateToCL(selectedDate)}.`
+                    );
+                }
+            } catch (err) {
+                console.error('Error logging DdD image download:', err);
+            }
+        } catch (err) {
+            console.error('Error exporting DdD image:', err);
+        } finally {
+            setIsExportingImage(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-calido p-4 md:p-8 pb-32 animate-in fade-in duration-700">
             <div className="max-w-[1700px] mx-auto space-y-8" id="ddd-dashboard-capture">
@@ -261,13 +307,23 @@ export const DdDTablero: React.FC<DdDTableroProps> = React.memo(({ data, selecte
                                 <span className="text-xl font-black capitalize tracking-tighter italic">{formatDate(selectedDate)}</span>
                             </div>
 
-                            <div className="bg-white/95 px-4 py-2 rounded-2xl shadow-lg border border-white/20 flex items-center justify-center shrink-0">
+                            <button
+                                type="button"
+                                onClick={handleExportImage}
+                                disabled={isExportingImage}
+                                title="Descargar imagen del tablero"
+                                aria-label="Descargar imagen del tablero"
+                                className="relative bg-white/95 hover:bg-white active:scale-95 px-4 py-2 rounded-2xl shadow-lg border border-white/20 flex items-center justify-center shrink-0 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4FD1C5]"
+                            >
                                 <img
                                     src="/novandino.png"
-                                    alt="Novandino"
-                                    className="h-9 w-auto object-contain"
+                                    alt="Novandino — Descargar imagen del tablero"
+                                    className={`h-9 w-auto object-contain transition-opacity ${isExportingImage ? 'opacity-30' : 'opacity-100'}`}
                                 />
-                            </div>
+                                {isExportingImage && (
+                                    <Loader2 size={18} className="absolute animate-spin text-[#461D77]" />
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>

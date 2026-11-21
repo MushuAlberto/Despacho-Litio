@@ -34,47 +34,45 @@ const BackupReminderModal: React.FC<BackupReminderModalProps> = ({ isOpen, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-nucleo/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl border border-calido overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="relative p-8 text-center space-y-6">
-          <button 
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1C1917]/60">
+      <div className="bg-[#FFFFFF] w-full max-w-md rounded-lg shadow-sm border border-[#E2DFD7] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 bg-[#F7F6F2] border-b border-[#E2DFD7]">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck size={18} className="text-[#461D77]" />
+            <h2 className="text-sm font-bold text-[#1C1917] uppercase tracking-wider">Respaldo en Nube</h2>
+          </div>
+          <button
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 text-violeta/20 hover:text-nucleo transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-[#78716C] hover:text-[#1C1917] hover:bg-[#EFECE6] transition-colors duration-150 ease-out cursor-pointer"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
+        </div>
 
-          <div className="mx-auto w-20 h-20 bg-violeta/10 rounded-3xl flex items-center justify-center text-violeta relative">
-            <ShieldCheck size={40} />
-            <div className="absolute -top-2 -right-2 bg-ionizado text-white p-1.5 rounded-full border-4 border-white">
-              <AlertCircle size={14} />
+        <div className="p-6 space-y-5">
+          <div className="flex items-start gap-3 p-3.5 bg-[#F7F6F2] border border-[#E2DFD7] rounded-md">
+            <AlertCircle size={16} className="text-[#461D77] shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-[#1C1917]">Cambios guardados localmente</p>
+              <p className="text-xs text-[#57534E] leading-relaxed">
+                Tus observaciones están respaldadas en este navegador. Sincronízalas con Firebase para mantener acceso compartido desde cualquier equipo.
+              </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-2xl font-[900] text-nucleo tracking-tighter uppercase">¡Cambios Guardados!</h2>
-            <p className="text-violeta/60 text-sm font-medium leading-relaxed">
-              Tus observaciones están respaldadas. Para hacerlas accesibles desde cualquier otro computador, guárdalas directamente en la nube de Firebase.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 pt-2">
-            <FirebaseSyncButton 
+          <div className="flex flex-col gap-2.5">
+            <FirebaseSyncButton
               onSync={handleSync}
               isSyncingExternal={isSyncing}
-              className="py-4 text-[11px]"
+              className="py-3 text-xs"
             />
-            <button 
+            <button
               onClick={onClose}
-              className="w-full bg-calido hover:bg-calido/80 text-violeta/40 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all cursor-pointer"
+              className="w-full bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E2DFD7] text-[#57534E] hover:text-[#1C1917] py-2.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors duration-150 ease-out cursor-pointer"
             >
               Continuar trabajando
             </button>
           </div>
-          
-          <p className="text-[8px] font-bold text-violeta/20 uppercase tracking-widest">
-            SQM Operaciones • Nube Firebase Sincronizada v2.0
-          </p>
         </div>
       </div>
     </div>
