@@ -135,16 +135,16 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-[#FFFFFF] border border-[#E2DFD7] rounded-md p-3 shadow-md font-sans select-none">
-          <p className="text-xs text-[#1C1917] font-bold font-mono tabular-nums mb-1.5">{label}</p>
+        <div className="bg-white border border-nucleo/15 rounded-lg p-3 shadow-lg font-sans select-none">
+          <p className="text-xs text-tecnico/80 font-bold mb-1.5">{label}</p>
           <div className="space-y-1">
             {payload.map((item: any) => (
               <div key={item.name} className="flex justify-between items-center gap-6">
-                <span className="text-[11px] text-[#57534E] font-medium flex items-center gap-1.5">
+                <span className="text-[10px] text-tecnico/60 font-medium flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color || item.fill }} />
                   {item.name}
                 </span>
-                <span className="text-xs font-bold font-mono tabular-nums" style={{ color: item.color || item.fill }}>
+                <span className="text-xs font-bold font-mono" style={{ color: item.color || item.fill }}>
                   {new Intl.NumberFormat("es-CL").format(item.value)}
                 </span>
               </div>
@@ -158,33 +158,33 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
 
   const chart1Content = (
     <>
-      <CartesianGrid stroke="#EFECE6" strokeDasharray="3 3" vertical={false} />
+      <CartesianGrid stroke="rgba(70, 29, 119, 0.05)" strokeDasharray="3 3" vertical={false} />
       
       <XAxis
         dataKey="name"
-        stroke="#57534E"
-        fontSize={10}
+        stroke="#000000"
+        fontSize={9}
         tickLine={false}
         dy={8}
         axisLine={false}
         tickFormatter={(val) => val.split("-")[0]} // Just show day numbers to de-clutter
       />
       <YAxis
-        stroke="#57534E"
-        fontSize={10}
+        stroke="#000000"
+        fontSize={9}
         axisLine={false}
         tickLine={false}
         domain={[0, "auto"]}
       />
       
-      <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(70, 29, 119, 0.04)" }} />
+      <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(70, 29, 119, 0.02)" }} />
       
       <Legend
         verticalAlign="bottom"
         height={36}
         iconType="circle"
         fontSize={10}
-        wrapperStyle={{ paddingTop: "12px", fontSize: "11px", color: "#1C1917" }}
+        wrapperStyle={{ paddingTop: "12px", fontSize: "10px", color: "#171717" }}
       />
 
       {/* Realized trips / Vueltas Desp. Bar */}
@@ -201,9 +201,9 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
       <Line
         type="monotone"
         dataKey="Viajes Programados (Vueltas Prog.)"
-        stroke="#1C1917"
+        stroke="#171717"
         strokeWidth={1.5}
-        dot={{ r: 1.5, fill: "#1C1917", strokeWidth: 1 }}
+        dot={{ r: 1.5, fill: "#171717", strokeWidth: 1 }}
         activeDot={{ r: 3.5 }}
         name="Vueltas Prog."
         strokeDasharray="3 3"
@@ -214,38 +214,38 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
 
   const chart2Content = (
     <>
-      <CartesianGrid stroke="#EFECE6" strokeDasharray="3 3" vertical={false} />
+      <CartesianGrid stroke="rgba(70, 29, 119, 0.05)" strokeDasharray="3 3" vertical={false} />
       
       <XAxis
         dataKey="day"
-        stroke="#57534E"
-        fontSize={10}
+        stroke="#000000"
+        fontSize={9}
         tickLine={false}
         dy={8}
         axisLine={false}
       />
       <YAxis
-        stroke="#57534E"
-        fontSize={10}
+        stroke="#000000"
+        fontSize={9}
         axisLine={false}
         tickLine={false}
         domain={[0, "auto"]}
       />
       
-      <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(70, 29, 119, 0.04)" }} />
+      <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(70, 29, 119, 0.02)" }} />
       
       <Legend
         verticalAlign="bottom"
         height={36}
         iconType="circle"
         fontSize={10}
-        wrapperStyle={{ paddingTop: "12px", fontSize: "11px", color: "#1C1917" }}
+        wrapperStyle={{ paddingTop: "12px", fontSize: "10px", color: "#171717" }}
       />
 
       {/* LCE actual bar */}
       <Bar
         dataKey="LCE Actual (SdA)"
-        fill="#15803D"
+        fill="#3FAA88"
         name="LCE (SdA)"
         radius={[3, 3, 0, 0]}
         label={renderBar2Label}
@@ -255,20 +255,20 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
   );
 
   return (
-    <div className="grid grid-cols-1 gap-5 select-none">
+    <div className="grid grid-cols-1 gap-6 select-none">
+      
       {/* CHART 1: Viajes Programados vs Viajes Realizados (Diario) */}
-      <div className="bg-[#FFFFFF] rounded-lg p-5 border border-[#E2DFD7] flex flex-col justify-between">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-[#E2DFD7] mb-4">
+      <div className="bg-white rounded-xl p-5 border border-nucleo/10 shadow-sm flex flex-col justify-between">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-4 border-b border-nucleo/5 mb-4">
           <div>
-            <h3 className="text-sm font-bold text-[#1C1917] tracking-[-0.01em]">
-              Viajes Programados vs. Viajes Realizados (Diario)
+            <h3 className="text-sm font-bold text-tecnico uppercase">
+              Viajes Programados vs Viajes Realizados (Diario)
             </h3>
-            <p className="text-xs text-[#78716C] mt-0.5 font-mono tabular-nums">
-              Control diario de {activeMonthLabel} {activeYear} · {activeLogs.length}{" "}
-              {activeLogs.length === 1 ? "día cargado" : "días cargados"}
+            <p className="text-[10px] text-tecnico/50 font-semibold tracking-wider uppercase">
+              Control diario de {activeMonthLabel} {activeYear} &middot; ({activeLogs.length} {activeLogs.length === 1 ? 'día cargado' : 'días cargados'})
             </p>
           </div>
-          <span className="text-xs font-mono font-semibold text-[#461D77] bg-[#F3EEF8] border border-[#461D77]/20 px-2.5 py-0.5 rounded-md">
+          <span className="text-[9px] bg-nucleo/5 text-[#461D77] border border-nucleo/15 px-2 py-0.5 rounded font-mono uppercase tracking-widest font-bold">
             Vueltas Despachadas
           </span>
         </div>
@@ -290,17 +290,17 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
       </div>
 
       {/* CHART 2: LCE SdA (Diario) */}
-      <div className="bg-[#FFFFFF] rounded-lg p-5 border border-[#E2DFD7] flex flex-col justify-between">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-[#E2DFD7] mb-4">
+      <div className="bg-white rounded-xl p-5 border border-nucleo/10 shadow-sm flex flex-col justify-between">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-4 border-b border-nucleo/5 mb-4">
           <div>
-            <h3 className="text-sm font-bold text-[#1C1917] tracking-[-0.01em]">
+            <h3 className="text-sm font-bold text-tecnico uppercase">
               LCE SdA (Diario)
             </h3>
-            <p className="text-xs text-[#78716C] mt-0.5">
+            <p className="text-[10px] text-tecnico/50 font-semibold tracking-wider uppercase">
               Toneladas equivalentes de carbonato de litio diarias
             </p>
           </div>
-          <span className="text-xs font-mono font-semibold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-0.5 rounded-md">
+          <span className="text-[9px] bg-[#3FAA88]/5 text-[#3FAA88] border border-[#3FAA88]/15 px-2 py-0.5 rounded font-mono uppercase tracking-widest font-bold">
             LCE (SdA)
           </span>
         </div>
@@ -321,11 +321,12 @@ export function DashboardCharts({ logs, selectedDate, isCapturing }: DashboardCh
         </div>
       </div>
 
-      <div className="text-center pb-2">
-        <p className="text-[11px] font-mono text-[#78716C]">
-          PWA diseñada por Cristian Tapia Espinoza
+      <div className="text-center" style={{ marginTop: "-8px", paddingBottom: "8px" }}>
+        <p className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "#94a3b8" }}>
+          PWA creada y diseñada por Cristian Tapia Espinoza
         </p>
       </div>
+
     </div>
   );
 }

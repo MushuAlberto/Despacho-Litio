@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { db, logActivity, SystemUser, handleFirestoreError, OperationType } from '../services/firebase';
 import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
-import { Calendar, Search, ArrowLeft, RefreshCw, ClipboardList, Clock, Loader2, Trash2, ShieldAlert, Lock, X, Download } from 'lucide-react';
+import { Calendar, User, Eye, Search, SlidersHorizontal, ArrowLeft, RefreshCw, ClipboardList, Clock, Loader2, Trash2, ShieldAlert, Lock, X, Download } from 'lucide-react';
 
 interface ActivityLog {
   id?: string;
@@ -270,9 +271,9 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
   };
 
   const getRoleBadgeColor = (role: string) => {
-    if (role === 'admin') return 'bg-[#FEF2F2] text-[#B91C1C] border-[#B91C1C]/25';
-    if (role === 'jefe_turno') return 'bg-[#F3EEF8] text-[#461D77] border-[#461D77]/25';
-    return 'bg-[#F7F6F2] text-[#57534E] border-[#E2DFD7]';
+    if (role === 'admin') return 'bg-red-50 text-red-600 border-red-200';
+    if (role === 'jefe_turno') return 'bg-indigo-50 text-indigo-600 border-indigo-200';
+    return 'bg-teal-50 text-teal-600 border-teal-200';
   };
 
   const getRoleLabel = (role: string) => {
@@ -282,75 +283,77 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F6F2] p-6 md:p-10 z-10 relative flex flex-col justify-between text-[#1C1917]">
-      <div className="max-w-6xl mx-auto w-full space-y-6 flex-grow">
+    <div className="min-h-screen bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] p-6 md:p-10 z-10 relative flex flex-col justify-between">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#7177ec02_1px,transparent_1px),linear-gradient(to_bottom,#7177ec02_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-70 pointer-events-none z-0" />
+
+      <div className="max-w-6xl mx-auto w-full space-y-8 flex-grow">
         {/* HEADER SECTION */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between bg-[#FFFFFF] rounded-lg border border-[#E2DFD7] px-6 py-4 gap-4">
+        <header className="flex flex-col sm:flex-row items-center justify-between bg-white/60 backdrop-blur-md rounded-3xl border border-white p-6 gap-4 shadow-sm">
           <div className="flex items-center gap-4">
-            <button
+            <button 
               onClick={onBack}
-              className="p-2.5 bg-[#F7F6F2] border border-[#E2DFD7] rounded-md hover:bg-[#EFECE6] text-[#57534E] hover:text-[#1C1917] transition-colors duration-150 ease-out cursor-pointer"
+              className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 text-slate-600 transition-all cursor-pointer"
             >
               <ArrowLeft size={16} />
             </button>
             <div>
-              <p className="text-[11px] font-mono font-semibold tracking-wider text-[#461D77] uppercase">
-                Auditoría de Sistema
-              </p>
-              <h1 className="text-xl font-bold text-[#1C1917] tracking-[-0.02em]">Historial de Actividades</h1>
+              <span className="text-[9px] font-black tracking-widest text-[#4e2283] uppercase bg-[#4e2283]/10 px-2.5 py-1 rounded-full">
+                AUDITORÍA ACTIVA
+              </span>
+              <h1 className="text-xl font-black text-slate-800 uppercase tracking-tight mt-1">Historial de Actividades</h1>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-3">
             {(currentUser?.role === 'admin' || currentUser?.username === 'ctapia') && (
-              <button
-                onClick={handleClearAllLogsClick}
+              <button 
+                onClick={handleClearAllLogsClick} 
                 disabled={loading || logs.length === 0}
-                className="flex items-center gap-2 bg-[#FEF2F2] hover:bg-[#FEE2E2] border border-[#B91C1C]/30 rounded-md px-4 py-2 text-xs font-semibold text-[#B91C1C] tracking-wider transition-colors duration-150 ease-out cursor-pointer disabled:opacity-40"
+                className="flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-2xl px-5 py-3 text-xs font-black text-red-600 tracking-wider shadow-sm transition-all cursor-pointer active:scale-95"
               >
-                <Trash2 size={14} /> Vaciar Historial
+                <Trash2 size={14} /> VACIAR HISTORIAL
               </button>
             )}
 
-            <button
-              onClick={downloadLogsToExcel}
+            <button 
+              onClick={downloadLogsToExcel} 
               disabled={loading || filteredLogs.length === 0}
-              className="flex items-center gap-2 bg-[#461D77] hover:bg-[#36155E] rounded-md px-4 py-2 text-xs font-semibold text-white tracking-wider transition-colors duration-150 ease-out cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-2xl px-5 py-3 text-xs font-black text-emerald-700 tracking-wider shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download size={14} /> Descargar Excel
+              <Download size={14} /> DESCARGAR EXCEL
             </button>
 
-            <button
-              onClick={fetchLogs}
+            <button 
+              onClick={fetchLogs} 
               disabled={loading}
-              className="flex items-center gap-2 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E2DFD7] rounded-md px-4 py-2 text-xs font-semibold text-[#1C1917] tracking-wider transition-colors duration-150 ease-out cursor-pointer"
+              className="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 text-xs font-black text-slate-700 tracking-wider shadow-sm transition-all cursor-pointer active:scale-95"
             >
-              <RefreshCw size={14} className={loading ? 'animate-spin text-[#461D77]' : 'text-[#57534E]'} /> Refrescar
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> REFRESCAR LOGS
             </button>
           </div>
         </header>
 
         {/* CONTROLS AREA */}
-        <div className="bg-[#FFFFFF] rounded-lg p-5 border border-[#E2DFD7] space-y-4">
-          <div className="flex flex-col md:flex-row gap-3">
+        <div className="bg-white/90 rounded-3xl p-6 border border-white shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
             {/* Search inputs */}
             <div className="flex-1 relative">
               <input
                 type="text"
-                placeholder="Buscar por usuario, acción o detalle..."
+                placeholder="Buscar por usuario, acción, detalle..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[#F7F6F2] border border-[#E2DFD7] focus:border-[#461D77] focus:bg-[#FFFFFF] rounded-md text-xs font-medium text-[#1C1917] outline-none transition-colors duration-150 placeholder:text-[#78716C]"
+                className="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400"
               />
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#78716C]" />
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             </div>
 
             {/* Role filter dropdown */}
-            <div className="w-full md:w-48">
+            <div className="w-full md:w-48 relative">
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-[#F7F6F2] border border-[#E2DFD7] focus:border-[#461D77] focus:bg-[#FFFFFF] rounded-md text-xs font-medium text-[#1C1917] outline-none transition-colors duration-150 cursor-pointer"
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all appearance-none cursor-pointer"
               >
                 <option value="all">Todos los Roles</option>
                 <option value="admin">Administrador</option>
@@ -364,9 +367,9 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
               <select
                 value={selectedActionType}
                 onChange={(e) => setSelectedActionType(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-[#F7F6F2] border border-[#E2DFD7] focus:border-[#461D77] focus:bg-[#FFFFFF] rounded-md text-xs font-medium text-[#1C1917] outline-none transition-colors duration-150 cursor-pointer"
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all appearance-none cursor-pointer"
               >
-                <option value="all">Todas las Acciones</option>
+                <option value="all">Todas las Acciónes</option>
                 <option value="login">Inicios de Sesión</option>
                 <option value="export">Exportaciones</option>
                 <option value="file">Carga de Excel</option>
@@ -375,29 +378,29 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
           </div>
 
           {/* Date range filter subpart */}
-          <div className="pt-3.5 border-t border-[#E2DFD7] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="pt-4 border-t border-slate-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase text-[#57534E] tracking-wider">
-                <Calendar size={13} className="text-[#461D77]" /> Período:
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#4e2283] tracking-wider mr-1">
+                <Calendar size={13} /> Filtrar por Período:
               </div>
-
+              
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-[#78716C] uppercase">Desde</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase">Desde</span>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="px-3 py-1.5 bg-[#F7F6F2] border border-[#E2DFD7] focus:border-[#461D77] focus:bg-[#FFFFFF] rounded-md text-xs font-mono text-[#1C1917] outline-none transition-colors duration-150 cursor-pointer"
+                  className="px-3 py-2 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all cursor-pointer"
                 />
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-[#78716C] uppercase">Hasta</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase">Hasta</span>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="px-3 py-1.5 bg-[#F7F6F2] border border-[#E2DFD7] focus:border-[#461D77] focus:bg-[#FFFFFF] rounded-md text-xs font-mono text-[#1C1917] outline-none transition-colors duration-150 cursor-pointer"
+                  className="px-3 py-2 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-xl text-xs font-bold text-slate-700 outline-none transition-all cursor-pointer"
                 />
               </div>
 
@@ -408,83 +411,83 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
                     setStartDate('');
                     setEndDate('');
                   }}
-                  className="text-[11px] font-semibold uppercase tracking-wider text-[#B91C1C] hover:bg-[#FEF2F2] border border-[#B91C1C]/25 px-2.5 py-1.5 rounded-md transition-colors duration-150 cursor-pointer"
+                  className="text-[9px] font-black uppercase tracking-wider text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 cursor-pointer bg-rose-50 hover:bg-rose-100 border border-rose-100 px-3 py-1.5 rounded-xl ml-1"
                 >
-                  Limpiar
+                  Limpiar Fechas
                 </button>
               )}
             </div>
 
-            <span className="text-xs font-mono tabular-nums text-[#78716C] text-right">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-right">
               Mostrando {filteredLogs.length} de {logs.length} registros
             </span>
           </div>
         </div>
 
         {/* LOGS LIST OR SPINNER */}
-        <div className="bg-[#FFFFFF] border border-[#E2DFD7] rounded-lg overflow-hidden">
+        <div className="bg-white/90 border border-white rounded-[2rem] shadow-sm overflow-hidden p-6">
           {loading ? (
-            <div className="py-20 flex flex-col items-center justify-center text-[#78716C]">
-              <Loader2 className="w-8 h-8 animate-spin text-[#461D77] mb-3" />
-              <p className="font-mono text-xs uppercase tracking-wider">Cargando registros...</p>
+            <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+              <Loader2 className="w-10 h-10 animate-spin text-[#461D77] mb-3" />
+              <p className="font-mono text-xs uppercase tracking-widest text-slate-500">Cargando registros...</p>
             </div>
           ) : filteredLogs.length === 0 ? (
-            <div className="text-center py-16 px-6">
-              <ClipboardList className="mx-auto text-[#78716C] mb-3" size={32} />
-              <h3 className="font-bold text-[#1C1917] text-sm">Sin registros</h3>
-              <p className="text-[#57534E] text-xs mt-1">No hay operaciones registradas con los filtros actuales.</p>
+            <div className="text-center py-20 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+              <ClipboardList className="mx-auto text-slate-300 mb-4" size={40} />
+              <h3 className="font-black text-slate-800 text-sm tracking-tight uppercase">No se hallaron registros</h3>
+              <p className="text-slate-500 font-medium text-xs mt-1">No hay operaciones registradas con los filtros actuales.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-[#E2DFD7] text-[10px] font-mono font-semibold tracking-wider text-[#57534E] uppercase bg-[#F7F6F2]">
-                    <th className="py-3.5 px-4">Fecha / Hora</th>
-                    <th className="py-3.5 px-4">Usuario</th>
-                    <th className="py-3.5 px-4">Rol</th>
-                    <th className="py-3.5 px-4">Operación</th>
-                    <th className="py-3.5 px-4">Detalles</th>
+                  <tr className="border-b border-slate-200 text-[10px] font-black tracking-widest text-[#4e2283] uppercase bg-slate-50/70 rounded-xl">
+                    <th className="py-4.5 px-4 font-black">Timestamp / Fecha</th>
+                    <th className="py-4.5 px-4 font-black">Usuario</th>
+                    <th className="py-4.5 px-4 font-black">Rol</th>
+                    <th className="py-4.5 px-4 font-black">Operación Realizada</th>
+                    <th className="py-4.5 px-4 font-black">Detalles Adicionales</th>
                     {(currentUser?.role === 'admin' || currentUser?.username === 'ctapia') && (
-                      <th className="py-3.5 px-4 text-center">Acción</th>
+                      <th className="py-4.5 px-4 font-black text-center">Acción</th>
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E2DFD7]">
+                <tbody className="divide-y divide-slate-100">
                   {filteredLogs.map((log, index) => (
-                    <tr key={log.id || index} className="hover:bg-[#F7F6F2]/70 transition-colors duration-150 group">
-                      <td className="py-3.5 px-4 font-mono tabular-nums text-xs text-[#57534E] whitespace-nowrap">
+                    <tr key={log.id || index} className="hover:bg-slate-50/30 transition-colors group">
+                      <td className="py-4 px-4 font-mono text-xs text-slate-600 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <Clock size={12} className="text-[#78716C]" />
+                          <Clock size={12} className="text-slate-400" />
                           {formatDate(log.timestamp)}
                         </div>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-4 px-4">
                         <div className="flex flex-col">
-                          <span className="font-semibold text-[#1C1917] text-xs">{log.name}</span>
-                          <span className="font-mono text-[10px] text-[#78716C]">@{log.username}</span>
+                          <span className="font-bold text-slate-800 text-xs">{log.name}</span>
+                          <span className="font-mono text-[10px] text-slate-400">@{log.username}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className={`inline-block border text-[10px] font-mono font-semibold tracking-wider px-2 py-0.5 rounded-md ${getRoleBadgeColor(log.role)}`}>
+                      <td className="py-4 px-4 whitespace-nowrap">
+                        <span className={`inline-block border text-[9px] font-black tracking-wider px-2 py-0.5 rounded-full ${getRoleBadgeColor(log.role)}`}>
                           {getRoleLabel(log.role)}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-semibold text-[#461D77] text-xs">
+                      <td className="py-4 px-4">
+                        <span className="font-black text-[#461D77] text-xs uppercase tracking-wide">
                           {log.action}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <span className="text-[#57534E] text-xs block max-w-sm break-words leading-relaxed">
+                      <td className="py-4 px-4">
+                        <span className="font-medium text-slate-600 text-xs block max-w-sm break-words leading-relaxed">
                           {log.details || '-'}
                         </span>
                       </td>
                       {(currentUser?.role === 'admin' || currentUser?.username === 'ctapia') && (
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-4 px-4 text-center">
                           <button
                             onClick={() => handleDeleteLogClick(log)}
-                            title="Eliminar registro de auditoría"
-                            className="p-1.5 text-[#78716C] hover:text-[#B91C1C] rounded-md hover:bg-[#FEF2F2] transition-colors duration-150 cursor-pointer opacity-0 group-hover:opacity-100 inline-flex items-center justify-center"
+                            title="Eliminar este registro de auditoría"
+                            className="p-2 text-slate-300 hover:text-red-600 rounded-xl hover:bg-red-50 transition-all cursor-pointer opacity-0 group-hover:opacity-100 inline-flex items-center justify-center"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -499,49 +502,49 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
         </div>
       </div>
 
-      <footer className="py-6 text-center mt-10 border-t border-[#E2DFD7]">
-        <p className="text-[10px] font-mono text-[#78716C] uppercase tracking-widest">
-          NOVANDINO LOGÍSTICA · AUDITORÍA CLOUD
+      <footer className="py-8 text-center mt-12 border-t border-slate-200/50 relative z-10">
+        <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-[0.2em]">
+          NOVANDINO LOGÍSTICA &bull; AUDITORÍA CLOUD EN TIEMPO REAL
         </p>
       </footer>
 
       {/* CONFIRMATION PASSWORD MODAL */}
       {(logToDelete || isDeletingAll) && (
-        <div className="fixed inset-0 z-[1000] bg-[#1C1917]/60 flex items-center justify-center p-4">
-          <div className="bg-[#FFFFFF] max-w-md w-full rounded-lg p-6 shadow-sm border border-[#E2DFD7] flex flex-col space-y-5">
-            <div className="flex justify-between items-start pb-4 border-b border-[#E2DFD7]">
+        <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white max-w-md w-full rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 flex flex-col space-y-6">
+            <div className="flex justify-between items-start">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-[#FEF2F2] border border-[#B91C1C]/20 text-[#B91C1C] rounded-md">
-                  <ShieldAlert size={18} />
+                <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
+                  <ShieldAlert size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#1C1917] text-base">Confirmar Eliminación</h3>
-                  <p className="text-[10px] font-mono font-semibold text-[#B91C1C] uppercase tracking-wider">Acción Administrativa</p>
+                  <h3 className="font-extrabold text-[#1c1917] text-lg uppercase tracking-tight">Confirmar Eliminación</h3>
+                  <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-1">Acción Administrativa</p>
                 </div>
               </div>
-              <button
+              <button 
                 onClick={() => {
                   setLogToDelete(null);
                   setIsDeletingAll(false);
                 }}
-                className="p-1.5 hover:bg-[#EFECE6] rounded-md transition-colors text-[#78716C] hover:text-[#1C1917] cursor-pointer"
+                className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-400"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
-
-            <p className="text-xs text-[#57534E] leading-relaxed">
+            
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">
               {isDeletingAll ? (
-                <span>¿Estás seguro de que deseas <strong className="text-[#B91C1C]">vaciar todo el historial de auditoría</strong>? Esta acción no se puede deshacer.</span>
+                <span>¿Está absolutamente seguro de que desea <strong className="text-red-600">VACIAR TODO el historial de auditoría</strong>? Esta acción borrará permanentemente todos los registros y no se puede deshacer.</span>
               ) : (
-                <span>Para eliminar el registro de <strong className="text-[#1C1917] font-mono">@{logToDelete?.username}</strong> ({logToDelete?.action}), confirma ingresando tu clave maestra.</span>
+                <span>Para eliminar el registro de <strong className="text-slate-800">@{logToDelete?.username} ({logToDelete?.action})</strong>, debe confirmar ingresando su contraseña de administrador.</span>
               )}
             </p>
 
-            <div className="space-y-1.5">
-              <label className="text-[11px] text-[#57534E] uppercase tracking-wider font-semibold block">Clave Maestra de Autorización</label>
+            <div className="space-y-2">
+              <label className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Clave Maestra de Autorización</label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716C]" />
+                <Lock className="absolute left-4 top-[1.125rem] w-4 h-4 text-slate-400" />
                 <input
                   type="password"
                   value={adminPasswordConfirm}
@@ -550,9 +553,9 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
                     setPasswordError(false);
                   }}
                   autoFocus
-                  placeholder="Ingresa clave maestra..."
-                  className={`w-full py-2.5 pl-10 pr-4 bg-[#F7F6F2] border rounded-md text-xs font-mono text-[#1C1917] outline-none transition-colors duration-150 ${
-                    passwordError ? 'border-[#B91C1C] bg-[#FEF2F2]' : 'border-[#E2DFD7] focus:border-[#461D77] focus:bg-[#FFFFFF]'
+                  placeholder="Ingrese clave maestra..."
+                  className={`w-full py-3.5 pl-11 pr-4 bg-slate-50 border-2 rounded-xl text-sm font-bold text-slate-800 outline-none transition-all ${
+                    passwordError ? 'border-red-500 focus:border-red-500 bg-red-50' : 'border-transparent focus:border-[#461D77] focus:bg-white focus:shadow-md'
                   }`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleConfirmDelete();
@@ -560,23 +563,23 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
                 />
               </div>
               {passwordError && (
-                <p className="text-[11px] text-[#B91C1C] font-medium mt-1">Clave incorrecta</p>
+                <p className="text-[10px] text-red-600 font-extrabold uppercase tracking-widest mt-1">Clave Incorrecta</p>
               )}
             </div>
 
-            <div className="flex gap-2.5 pt-2 border-t border-[#E2DFD7]">
+            <div className="flex gap-3">
               <button
                 onClick={() => {
                   setLogToDelete(null);
                   setIsDeletingAll(false);
                 }}
-                className="flex-1 py-2.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E2DFD7] text-[#57534E] text-xs font-semibold uppercase tracking-wider rounded-md transition-colors duration-150 cursor-pointer"
+                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs font-black uppercase tracking-widest rounded-xl transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 py-2.5 bg-[#B91C1C] hover:bg-[#991B1B] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors duration-150 cursor-pointer"
+                className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-red-200 hover:scale-[1.02] active:scale-95"
               >
                 Confirmar y Eliminar
               </button>

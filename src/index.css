@@ -2,18 +2,14 @@
 
 @theme {
   --color-nucleo: #461D77;
-  --color-litio: #461D77;
-  --color-ionizado: #15803D;
-  --color-violeta: #461D77;
-  --color-calido: #ECEAE3;
-  --color-stone-surface: #FFFFFF;
-  --color-stone-muted: #E3E0D7;
-  --color-stone-well: #F3F1EC;
-  --color-stone-border: #D8D4CA;
-  --color-tecnico: #181615;
-  --color-mineral: #B45309;
-  --color-levanda: #E3E0D7;
-  --color-lavanda: #E3E0D7;
+  --color-litio: #4FD1C5;
+  --color-ionizado: #3FAA88;
+  --color-violeta: #7177EC;
+  --color-calido: #FAF5E6;
+  --color-tecnico: #171717;
+  --color-mineral: #C59E4D;
+  --color-levanda: #DCDDEE;
+  --color-lavanda: #DCDDEE;
 }
 
 .page-break-before {
@@ -113,20 +109,24 @@
 
 @layer base {
   html {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    background-color: #ECEAE3;
-    color: #181615;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3 {
-    letter-spacing: -0.025em;
+  h1, h2, h3, h4, h5, h6, .font-black, .font-\[900\], .font-\[950\] {
+    font-family: 'Helvetica', 'Inter', system-ui, sans-serif !important;
   }
 
-  .font-mono {
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
-    font-variant-numeric: tabular-nums;
+  /* Aplica IBM Plex Sans para textos técnicos, etiquetas pequeñas y descripciones secundarias */
+  .text-xs, .text-\[10px\], .text-\[11px\], .font-medium, .tracking-widest {
+    font-family: 'IBM Plex Sans', sans-serif !important;
+  }
+
+  /* Asegura que el peso 300 se use para lecturas 'Light' */
+  .font-light, .text-slate-400, .text-violeta\/40 {
+    font-family: 'IBM Plex Sans', sans-serif !important;
+    font-weight: 300 !important;
   }
 }
 
@@ -138,27 +138,44 @@
   scrollbar-width: none;
 }
 
-/* Crisp Editorial Scrollbar */
+/* Custom Premium Desktop Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #E3E0D7;
+  background: rgba(243, 244, 246, 0.4);
+  backdrop-filter: blur(8px);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #BDB8AC;
-  border-radius: 6px;
+  background: rgba(70, 29, 119, 0.15);
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transition: background 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #461D77;
+  background: rgba(70, 29, 119, 0.35);
+}
+
+/* Luxury active state pulses */
+@keyframes syncPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.95;
+    box-shadow: 0 0 0 0 rgba(79, 209, 197, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+    box-shadow: 0 0 12px 4px rgba(79, 209, 197, 0.2);
+  }
 }
 
 .live-sync-indicator {
-  transition: opacity 150ms ease-out;
+  animation: syncPulse 3s infinite ease-in-out;
 }
 
 .carousel-container {
@@ -166,116 +183,70 @@
 }
 
 .carousel-slide {
-  transition: transform 200ms ease-out, opacity 200ms ease-out;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
 }
 
-/* Architectural Surface Hierarchy (4 tiers, zero neon glow) */
-.surface-card {
-  background-color: #FFFFFF;
-  border: 1px solid #D8D4CA;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 1px 2px rgba(24, 22, 21, 0.05),
-    0 8px 20px -8px rgba(24, 22, 21, 0.08);
-}
-
-.surface-card-interactive {
-  background-color: #FFFFFF;
-  border: 1px solid #D8D4CA;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 1px 2px rgba(24, 22, 21, 0.05),
-    0 6px 16px -6px rgba(24, 22, 21, 0.07);
-  transition: border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out, background-color 150ms ease-out;
-}
-.surface-card-interactive:hover {
-  border-color: #461D77;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 2px 6px rgba(24, 22, 21, 0.07),
-    0 14px 26px -10px rgba(70, 29, 119, 0.16);
-  transform: translateY(-1px);
-}
-
-.surface-well {
-  background-color: #F2F0EA;
-  border: 1px solid #D5D0C5;
-  box-shadow: inset 0 1px 2px rgba(24, 22, 21, 0.05);
-}
-
-.surface-anchor-dark {
-  background-color: #181615;
-  color: #F7F6F2;
-  border: 1px solid #181615;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 2px 6px rgba(24, 22, 21, 0.16),
-    0 12px 24px -8px rgba(24, 22, 21, 0.22);
-}
-
-.surface-anchor-violet {
-  background-color: #461D77;
-  color: #FFFFFF;
-  border: 1px solid #381661;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 2px 6px rgba(70, 29, 119, 0.2),
-    0 12px 24px -8px rgba(70, 29, 119, 0.28);
-}
-
+/* Premium Desktop Interactive Elements */
 .premium-hover-card {
-  transition: border-color 150ms ease-out, background-color 150ms ease-out, box-shadow 150ms ease-out;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .premium-hover-card:hover {
-  border-color: #B8B2A4;
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 20px 25px -5px rgba(70, 29, 119, 0.05), 0 10px 10px -5px rgba(70, 29, 119, 0.03);
 }
 
 .premium-btn-transition {
-  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, opacity 150ms ease-out;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.premium-btn-transition:hover {
+  transform: translateY(-1.5px);
+}
+.premium-btn-transition:active {
+  transform: translateY(0.5px);
 }
 
 .premium-glass {
-  background: #FFFFFF;
-  border: 1px solid #D8D4CA;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 1px 2px rgba(24, 22, 21, 0.05),
-    0 8px 20px -8px rgba(24, 22, 21, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-/* Dense editorial tables */
+/* Elegant tables for wide monitors */
 .premium-table {
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   width: 100%;
 }
 .premium-table th {
+  font-family: 'IBM Plex Sans', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 11px;
-  background-color: #E7E4DC;
-  color: #44403C;
-  border-bottom: 1px solid #D8D4CA;
-  padding: 10px 14px;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  background-color: rgba(70, 29, 119, 0.03);
+  color: #1a1523;
+  border-bottom: 2px solid rgba(70, 29, 119, 0.1);
+  padding: 12px 16px;
 }
 .premium-table td {
-  padding: 10px 14px;
-  font-size: 13px;
-  border-bottom: 1px solid #E5E2D9;
-  transition: background-color 150ms ease-out;
+  padding: 14px 16px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(220, 221, 238, 0.4);
+  transition: background-color 0.15s ease;
 }
 .premium-table tr:hover td {
-  background-color: #F5F3EE !important;
+  background-color: rgba(71, 119, 236, 0.03) !important;
 }
 
-/* Crisp focus states */
+/* Modern inputs and selects focus state */
 input, select, textarea {
-  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  transition: all 0.2s ease-in-out;
 }
-input:focus-visible, select:focus-visible, textarea:focus-visible {
+input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: #461D77 !important;
-  box-shadow: 0 0 0 2px rgba(70, 29, 119, 0.16);
+  border-color: #7177EC !important;
+  box-shadow: 0 0 0 4px rgba(113, 119, 236, 0.15);
 }
 
 /* Origami Paper Plane Animation (@keyframes sb-fold & facets) */
