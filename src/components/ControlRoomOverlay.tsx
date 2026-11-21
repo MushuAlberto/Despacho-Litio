@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
+  Maximize2,
   Minimize2,
+  Clock,
+  Tv,
   ZoomIn,
   ZoomOut,
+  RefreshCw,
+  Sparkles,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Layers,
+  Activity,
+  X
 } from 'lucide-react';
 import { useMiningShiftClock, useScreenWakeLock } from '../hooks/useControlRoom';
 import { AppView } from './App';
@@ -19,6 +30,8 @@ interface ControlRoomOverlayProps {
 export const ControlRoomOverlay: React.FC<ControlRoomOverlayProps> = ({
   isFullscreen,
   onToggleFullscreen,
+  currentView,
+  onNavigate,
   zoomLevel,
   onSetZoomLevel
 }) => {
@@ -26,8 +39,10 @@ export const ControlRoomOverlay: React.FC<ControlRoomOverlayProps> = ({
   useScreenWakeLock(isFullscreen);
 
   const [isIdle, setIsIdle] = useState(false);
+  const [hudMinimized, setHudMinimized] = useState(false);
   const idleTimerRef = useRef<any>(null);
 
+  // Auto-hide cursor and dim HUD after 4 seconds of mouse inactivity in fullscreen
   useEffect(() => {
     if (!isFullscreen) {
       setIsIdle(false);
@@ -64,56 +79,72 @@ export const ControlRoomOverlay: React.FC<ControlRoomOverlayProps> = ({
   if (!isFullscreen) return null;
 
   return (
-    <aside
-      aria-label="Controles Sala de Control"
-      className={`fixed top-4 right-4 z-[99] transition-opacity duration-200 ease-out no-print select-none ${
-        isIdle ? 'opacity-25 hover:opacity-100' : 'opacity-100'
-      }`}
-    >
-      <div className="bg-[#1C1917] border border-stone-700 text-white rounded-lg shadow-lg px-3 py-2 flex items-center gap-3">
-        <div className="flex items-center gap-3 pr-3 border-r border-stone-700">
-          <div className="flex items-center gap-2 text-xs font-mono tabular-nums">
-            <span className="font-semibold text-stone-200">{shiftInfo.shiftName}</span>
-            <span className="text-stone-500">/</span>
-            <span className="text-white font-bold">{shiftInfo.timeString}</span>
+    <>
+      {/* Floating HUD at Top-Right */}
+      <aside
+        aria-label="Controles Sala de Control"
+        className={`fixed top-4 right-4 z-[99] transition-all duration-300 no-print select-none ${
+          isIdle ? 'opacity-25 hover:opacity-100' : 'opacity-100'
+        }`}
+      >
+        <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 text-white rounded-2xl shadow-2xl p-2.5 flex items-center gap-3">
+          
+          {/* Shift Indicator and Live Clock */}
+          <div className="flex items-center gap-2.5 px-2.5 py-1 bg-white/5 rounded-xl border border-white/10">
+            <div className="relative flex items-center justify-center">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping absolute" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 relative" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-[11px] font-black tracking-wide uppercase text-emerald-400">
+                <span>{shiftInfo.shiftName}</span>
+                <span className="text-white/40">&bull;</span>
+                <span className="font-mono text-white text-xs">{shiftInfo.timeString}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-medium">
+                <span>Restan {shiftInfo.remainingShiftTime}</span>
+                <div className="w-12 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-400 rounded-full transition-all duration-1000"
+                    style={{ width: `${shiftInfo.shiftProgressPercent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <span className="text-[11px] font-mono tabular-nums text-stone-400 hidden sm:inline">
-            -{shiftInfo.remainingShiftTime}
-          </span>
-        </div>
 
-        <div className="flex items-center gap-1">
+          {/* Wallboard Zoom Controls for Large TV Screens */}
+          <div className="flex items-center gap-1 bg-white/5 rounded-xl p-0.5 border border-white/10">
+            <button
+              onClick={() => onSetZoomLevel(Math.max(0.85, zoomLevel - 0.1))}
+              className="p-1.5 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer"
+              title="Reducir escala de pantalla"
+            >
+              <ZoomOut size={13} />
+            </button>
+            <span className="text-[10px] font-mono font-bold px-1 text-purple-200">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button
+              onClick={() => onSetZoomLevel(Math.min(1.4, zoomLevel + 0.1))}
+              className="p-1.5 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer"
+              title="Aumentar escala para monitores de pared (TV)"
+            >
+              <ZoomIn size={13} />
+            </button>
+          </div>
+
+          {/* Quick Exit Fullscreen */}
           <button
-            type="button"
-            onClick={() => onSetZoomLevel(Math.max(0.85, zoomLevel - 0.1))}
-            className="p-1.5 hover:bg-stone-800 rounded-md text-stone-300 hover:text-white transition-colors duration-150 cursor-pointer"
-            title="Reducir escala de pantalla"
+            onClick={onToggleFullscreen}
+            className="flex items-center gap-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 hover:text-white border border-rose-500/40 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+            title="Salir de pantalla completa (Esc)"
           >
-            <ZoomOut size={14} />
-          </button>
-          <span className="text-xs font-mono tabular-nums font-semibold px-1 text-stone-200">
-            {Math.round(zoomLevel * 100)}%
-          </span>
-          <button
-            type="button"
-            onClick={() => onSetZoomLevel(Math.min(1.4, zoomLevel + 0.1))}
-            className="p-1.5 hover:bg-stone-800 rounded-md text-stone-300 hover:text-white transition-colors duration-150 cursor-pointer"
-            title="Aumentar escala para monitores"
-          >
-            <ZoomIn size={14} />
+            <Minimize2 size={13} />
+            <span className="hidden sm:inline">Salir</span>
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={onToggleFullscreen}
-          className="flex items-center gap-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white border border-stone-600 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors duration-150 cursor-pointer"
-          title="Salir de pantalla completa (Esc)"
-        >
-          <Minimize2 size={13} />
-          <span className="hidden sm:inline">Salir</span>
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };

@@ -46,7 +46,7 @@ const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
     toPng(element, {
       width: width,
       height: height,
-      backgroundColor: '#F7F6F2',
+      backgroundColor: '#FAF5E6',
       style: {
         borderRadius: '0px',
         padding: '32px',
@@ -71,73 +71,73 @@ const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
   };
 
   return (
-    <div id={`chart-container-${title.replace(/\s+/g, '_')}`} className="bg-[#FFFFFF] p-6 md:p-8 rounded-lg border border-[#E2DFD7] min-h-[600px] w-full">
-      <div className="flex justify-between items-center mb-6 border-b border-[#E2DFD7] pb-3">
-        <h3 className="text-xs font-mono font-semibold text-[#461D77] uppercase tracking-wider">
-          Análisis Comparativo
+    <div id={`chart-container-${title.replace(/\s+/g, '_')}`} className="bg-white p-8 rounded-[2.5rem] border border-violeta/10 shadow-sm min-h-[600px] w-full">
+      <div className="flex justify-between items-center mb-6 border-b border-calido pb-3">
+        <h3 className="text-[10px] font-black text-violeta uppercase tracking-[0.3em]">
+          ANÁLISIS COMPARATIVO
         </h3>
-        <button
+        <button 
           onClick={handleDownload}
           disabled={data.length === 0}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold text-[#461D77] hover:text-white border border-[#E2DFD7] hover:border-[#461D77] hover:bg-[#461D77] rounded-md transition-colors duration-150 disabled:opacity-40 cursor-pointer uppercase tracking-wider"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black text-violeta hover:text-white border border-violeta/20 hover:bg-violeta rounded-xl transition-all active:scale-95 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-violeta cursor-pointer uppercase tracking-wider"
           title="Descargar gráfico como imagen PNG"
         >
-          <Download className="w-3.5 h-3.5" /> Descargar PNG
+          <Download className="w-3 h-3" /> Descargar PNG
         </button>
       </div>
-
+      
       <div style={{ width: '100%', height: '500px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 30, right: 30, left: 10, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFECE6" />
-
-            <XAxis
-              dataKey="name"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10, fontWeight: 700, fill: '#57534E' }}
-              interval={0}
-              angle={-45}
-              textAnchor="end"
-              height={70}
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            
+            <XAxis 
+              dataKey="name" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }} 
+              interval={0} 
+              angle={-45} 
+              textAnchor="end" 
+              height={70} 
             />
 
             {/* Eje Izquierdo: Tonelaje */}
-            <YAxis
-              yAxisId="left"
-              orientation="left"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10, fill: '#78716C' }}
+            <YAxis 
+              yAxisId="left" 
+              orientation="left" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 10, fill: '#94a3b8' }} 
             />
 
             {/* Eje Derecho: Horas */}
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10, fill: '#B45309' }}
+            <YAxis 
+              yAxisId="right" 
+              orientation="right" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 10, fill: '#C59E4D' }} 
               tickFormatter={(v) => formatDecimalToHHMM(Number(v))}
             />
 
-            <Tooltip
-              cursor={{ fill: '#F7F6F2' }}
-              contentStyle={{ borderRadius: '8px', border: '1px solid #E2DFD7', boxShadow: '0 2px 6px rgba(28,25,23,0.06)', fontSize: '12px' }}
+            <Tooltip 
+              cursor={{ fill: '#f8fafc' }}
+              contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
               formatter={(val: any, name: any) => [
                 String(name).toLowerCase().includes('hrs') ? formatDecimalToHHMM(Number(val)) : Math.round(Number(val)).toLocaleString(),
                 name
               ]}
             />
 
-            <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '25px', fontSize: '11px', fontWeight: '700' }} iconType="circle" />
+            <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '25px', fontSize: '11px', fontWeight: '900' }} iconType="circle" />
 
             {/* Barras de Tonelaje */}
-            <Bar yAxisId="left" dataKey="Ton_Prog" fill={COLORS.progTon} name="Prog. Ton" barSize={22} radius={[4, 4, 0, 0]} isAnimationActive={false}>
+            <Bar yAxisId="left" dataKey="Ton_Prog" fill={COLORS.progTon} name="Prog. Ton" barSize={22} radius={[4, 4, 0, 0]}>
                <LabelList dataKey="Ton_Prog" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: COLORS.progTon }} formatter={(v: any) => Math.round(v)} />
             </Bar>
             
-            <Bar yAxisId="left" dataKey="Ton_Real" fill={COLORS.realTon} name="Real Ton" barSize={22} radius={[4, 4, 0, 0]} isAnimationActive={false}>
+            <Bar yAxisId="left" dataKey="Ton_Real" fill={COLORS.realTon} name="Real Ton" barSize={22} radius={[4, 4, 0, 0]}>
                <LabelList dataKey="Ton_Real" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: COLORS.realTon }} formatter={(v: any) => Math.round(v)} />
             </Bar>
 
@@ -150,7 +150,6 @@ const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
               name="Meta Hrs" 
               strokeWidth={2} 
               dot={{ r: 4, fill: '#fff', strokeWidth: 2 }}
-              isAnimationActive={false}
             >
               <LabelList dataKey="faenaMetaHours" position="top" style={{ fontSize: '9px', fontWeight: '800', fill: COLORS.metaHrs }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={12} />
             </Line>
@@ -163,7 +162,6 @@ const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
               name="Real Hrs" 
               strokeWidth={3} 
               dot={{ r: 5, fill: '#fff', strokeWidth: 3 }}
-              isAnimationActive={false}
             >
               <LabelList dataKey="faenaRealHours" position="top" style={{ fontSize: '10px', fontWeight: '900', fill: COLORS.realHrs }} formatter={(v: any) => formatDecimalToHHMM(v)} offset={12} />
             </Line>
@@ -175,4 +173,4 @@ const CambioAnalisisComparativoChart: React.FC<Props> = ({ data, title }) => {
   );
 };
 
-export default React.memo(CambioAnalisisComparativoChart);
+export default CambioAnalisisComparativoChart;

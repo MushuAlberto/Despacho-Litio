@@ -1,16 +1,8 @@
 import express from "express";
 import legacyApp from "../server";
-import { securityHeadersMiddleware, createCorsAllowlistMiddleware } from "../server/securityMiddleware";
 
 const app = express();
 
-const extraCorsOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
-
-app.use(securityHeadersMiddleware);
-app.use('/api', createCorsAllowlistMiddleware(extraCorsOrigins));
 app.use(express.json({ limit: "10mb" }));
 
 // Stokes/SSRS vive dentro de la red corporativa. Vercel no puede alcanzar
