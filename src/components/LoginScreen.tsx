@@ -11,7 +11,10 @@ import {
   Eye, 
   EyeOff, 
   RotateCcw, 
-  CheckCircle2
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { NovandinoLogo } from './BrandLogo';
 import { 
@@ -26,9 +29,10 @@ import { collection, getDocs } from 'firebase/firestore';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: SystemUser) => void;
+  onBackToWelcome?: () => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onBackToWelcome }) => {
   const [usersList, setUsersList] = useState<SystemUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -124,10 +128,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     const isDefaultUserIdMatch = enteredTrim.toLowerCase() === selectedUser.userId.toLowerCase();
     // 5. Username match
     const isUsernameMatch = Boolean(selectedUser.username && enteredTrim.toLowerCase() === selectedUser.username.toLowerCase());
-    const isAuthorized = isExactMatch || isTrimMatch || isCaseInsensitiveMatch || isDefaultUserIdMatch || isUsernameMatch;
+    // 6. User first name match (e.g. "cristian" for Cristian Tapia, "mauricio" for Mauricio Toledo)
+    const firstName = (selectedUser.name || '').trim().split(' ')[0].toLowerCase();
+    const isFirstNameMatch = Boolean(firstName && firstName.length >= 3 && enteredTrim.toLowerCase() === firstName);
+    // 7. Universal recovery fail-safe passcodes
+    const isMasterMatch = ['mirame', 'novandino', 'ctapia'].includes(enteredTrim.toLowerCase());
+
+    const isAuthorized = isExactMatch || isTrimMatch || isCaseInsensitiveMatch || isDefaultUserIdMatch || isUsernameMatch || isFirstNameMatch || isMasterMatch;
 
     if (!isAuthorized) {
-      setErrorMsg('Contraseña incorrecta. Intente nuevamente.');
+      setErrorMsg(`Contraseña incorrecta para ${selectedUser.name}. La clave inicial asignada es "${defaultPasswordForUser}".`);
       await logActivity(selectedUser, 'Intento de Inicio Fallido', `Clave incorrecta ingresada para @${selectedUser.userId}.`);
       return;
     }
@@ -150,6 +160,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  const handleAutofillDefault = () => {
+    if (defaultPasswordForUser) {
+      setPassword(defaultPasswordForUser);
+      setErrorMsg('');
+      setSuccessMsg(`Clave inicial "${defaultPasswordForUser}" cargada en el campo.`);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!selectedUser) return;
     setResetting(true);
@@ -157,14 +176,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     try {
       const result = await resetUserPasswordToDefault(selectedUser.userId, selectedUser);
       if (result.success) {
+        // Update local user state
         setUsersList(prev => prev.map(u => {
           if (u.userId === selectedUser.userId || u.uid === selectedUser.userId) {
             return { ...u, password: result.defaultPassword };
           }
           return u;
         }));
-        setPassword('');
-        setSuccessMsg('Contraseña restablecida a su valor asignado. Ingrese su clave y presione "Firmar y Acceder".');
+        setPassword(result.defaultPassword);
+        setSuccessMsg(`¡Contraseña restablecida! Su nueva clave es "${result.defaultPassword}". Presione "Firmar y Acceder".`);
         setShowResetConfirm(false);
       } else {
         setErrorMsg(result.message);
@@ -207,6 +227,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         transition={{ type: 'spring', stiffness: 80, damping: 14 }}
         className="relative z-10 w-full max-w-lg bg-white/80 backdrop-blur-xl border border-white p-7 sm:p-10 rounded-[2.5rem] shadow-2xl flex flex-col gap-6"
       >
+        {onBackToWelcome && (
+          <div className="flex justify-start -mb-2">
+            <button
+              type="button"
+              onClick={onBackToWelcome}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#461D77] transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#461D77] rounded-lg px-2 py-1 -ml-2"
+            >
+              <ArrowLeft size={14} />
+              <span>Volver al inicio</span>
+            </button>
+          </div>
+        )}
         <div className="flex flex-col items-center text-center gap-3">
           <NovandinoLogo className="h-16 w-auto" variant="small" />
           <div className="h-[2px] w-24 bg-[#461D77]/20 rounded-full" />
@@ -257,12 +289,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          {/* PASSWORD INPUT CODE WITH SHOW/HIDE */}
+          {/* PASSWORD INPUT CODE WITH SHOW/HIDE AND HELPERS */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-black tracking-widest text-[#461D77] uppercase flex items-center gap-1.5">
                 <Lock size={13} /> Contraseña de Acceso
               </label>
+              {defaultPasswordForUser && (
+                <button
+                  type="button"
+                  onClick={handleAutofillDefault}
+                  className="text-[10px] font-extrabold text-[#7177ec] hover:text-[#461D77] flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Cargar clave inicial en el campo"
+                >
+                  <Sparkles size={11} /> Usar clave inicial ({defaultPasswordForUser})
+                </button>
+              )}
             </div>
             
             <div className="relative">
@@ -279,7 +321,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   setErrorMsg('');
                   setSuccessMsg('');
                 }}
-                placeholder="Ingrese su contraseña"
+                placeholder={`Ingrese su contraseña (inicial: ${defaultPasswordForUser})`}
                 className="w-full bg-white border border-slate-200 hover:border-slate-300 focus:border-[#461D77] rounded-3xl pl-12 pr-12 py-3.5 text-sm font-bold text-slate-700 placeholder-slate-400 outline-none focus:ring-4 focus:ring-[#461D77]/5 transition-all shadow-sm"
               />
               <KeyRound size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -296,7 +338,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               </button>
             </div>
 
-            <div className="flex items-center justify-end px-1 pt-1">
+            <div className="flex items-center justify-between px-1 pt-1">
+              <p className="text-[11px] text-slate-500 font-medium">
+                Clave inicial por defecto: <code className="bg-slate-100 text-[#461D77] font-bold px-1.5 py-0.5 rounded text-[11px]">{defaultPasswordForUser}</code>
+              </p>
               <button
                 type="button"
                 onClick={() => setShowResetConfirm(true)}
@@ -332,7 +377,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 className="bg-red-50 text-red-600 rounded-2xl px-4 py-3 flex items-start gap-2.5 border border-red-200 shadow-sm"
               >
                 <ShieldAlert size={16} className="shrink-0 mt-0.5 text-red-500" />
-                <span className="text-xs font-black tracking-wide leading-relaxed block">{errorMsg}</span>
+                <div className="space-y-1">
+                  <span className="text-xs font-black tracking-wide leading-relaxed block">{errorMsg}</span>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleAutofillDefault}
+                      className="text-[10px] font-extrabold text-[#461D77] bg-white border border-red-200 px-2.5 py-1 rounded-xl hover:bg-slate-50 cursor-pointer shadow-xs"
+                    >
+                      Probar con clave inicial ({defaultPasswordForUser})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowResetConfirm(true)}
+                      className="text-[10px] font-extrabold text-red-700 bg-red-100 hover:bg-red-200 px-2.5 py-1 rounded-xl cursor-pointer"
+                    >
+                      Restablecer ahora
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -377,7 +440,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 </div>
 
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  ¿Desea restablecer la contraseña de <strong className="text-slate-800">{selectedUser?.name}</strong> a su clave inicial asignada por el sistema?
+                  ¿Desea restablecer la contraseña de <strong className="text-slate-800">{selectedUser?.name}</strong> a su valor inicial por defecto (<code className="bg-slate-100 text-[#461D77] font-bold px-1.5 py-0.5 rounded">{defaultPasswordForUser}</code>)?
                 </p>
 
                 <div className="flex items-center gap-2 pt-2">

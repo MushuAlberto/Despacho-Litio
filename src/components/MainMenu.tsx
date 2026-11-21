@@ -81,9 +81,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       badge: 'OPERACIÓN DE CAMPO',
       status: currentUser?.role === 'admin' ? '6 MÓDULOS ACTIVOS' : '5 MÓDULOS ACTIVOS',
       description: currentUser?.role === 'admin'
-        ? 'Informes de Despacho Novandino y SQM NY, Reporte Stokes (clanfdbsw06), Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.'
-        : 'Informes de Despacho Novandino y SQM NY, Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.',
+        ? 'Módulo integral Salar de Atacama. Acceso a Informes de Despacho Novandino y SQM NY, Reporte Stokes (clanfdbsw06), Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.'
+        : 'Módulo integral Salar de Atacama. Acceso a Informes de Despacho Novandino y SQM NY, Llegada de Equipos, Análisis Técnico DdD y Galería Operativa.',
       icon: Building2,
+      gradient: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10',
+      borderColor: 'border-[#461D77]/30',
+      iconBg: 'bg-[#461D77] text-white',
+      badgeBg: 'bg-[#461D77]/10 text-[#461D77]',
     },
     {
       id: 'PQL',
@@ -92,8 +96,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       subtitle: 'PLANTA QUÍMICA LITIO',
       badge: 'PLANTA QUÍMICA',
       status: 'CONECTADO',
-      description: 'Seguimiento de cumplimiento de despacho M&Q y Jorquera, volumen transportado y desviaciones operacionales.',
+      description: 'Análisis y seguimiento de cumplimiento de despacho M&Q, volumen transportado y desviaciones operacionales.',
       icon: Factory,
+      gradient: 'from-blue-500/10 via-indigo-500/5 to-indigo-600/10',
+      borderColor: 'border-indigo-500/30',
+      iconBg: 'bg-indigo-600 text-white',
+      badgeBg: 'bg-indigo-500/10 text-indigo-700',
     },
     {
       id: 'CLB',
@@ -101,9 +109,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       fullName: 'CENTRO LOGÍSTICO BAQUEDANO',
       subtitle: 'CENTRO LOGÍSTICO BAQUEDANO',
       badge: 'CENTRO LOGÍSTICO',
-      status: 'EN PREPARACIÓN',
-      description: 'Espacio operativo reservado para futuros módulos de consolidación y transferencia en Baquedano.',
+      status: 'MÓDULO EN BLANCO',
+      description: 'Módulo integral Centro Logístico Baquedano. Espacio en blanco listo para la asignación de nuevos componentes.',
       icon: Warehouse,
+      gradient: 'from-emerald-500/10 via-teal-500/5 to-teal-600/10',
+      borderColor: 'border-teal-500/30',
+      iconBg: 'bg-teal-700 text-white',
+      badgeBg: 'bg-teal-500/10 text-teal-800',
     },
     {
       id: 'PANG',
@@ -111,9 +123,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       fullName: 'PUERTO ANGAMOS',
       subtitle: 'PUERTO ANGAMOS',
       badge: 'BASE OPERATIVA',
-      status: 'EN PREPARACIÓN',
-      description: 'Espacio operativo reservado para trazabilidad de arribo y despacho portuario en Angamos.',
+      status: 'MÓDULO EN BLANCO',
+      description: 'Módulo integral Puerto Angamos. Espacio en blanco listo para la asignación de nuevos componentes.',
       icon: MapPin,
+      gradient: 'from-amber-500/10 via-orange-500/5 to-amber-600/10',
+      borderColor: 'border-amber-500/30',
+      iconBg: 'bg-amber-600 text-white',
+      badgeBg: 'bg-amber-500/10 text-amber-800',
     },
   ];
 
@@ -128,12 +144,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     const updateTime = () => {
       const now = new Date();
       setTime(now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
-
-      const options: Intl.DateTimeFormatOptions = {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      
+      const options: Intl.DateTimeFormatOptions = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
       };
       setDateStr(now.toLocaleDateString('es-CL', options));
     };
@@ -151,12 +167,40 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     }
   };
 
+  // Stagger animations config
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 25 },
+    show: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        type: 'spring', 
+        stiffness: 100, 
+        damping: 15 
+      }
+    }
+  };
+
   const cardsData: Array<{
     id: 'llegada' | 'informe-novandino' | 'informe-sqm' | 'memoria' | 'ddd' | 'galeria' | 'cambioTurno' | 'lce' | 'users' | 'logs' | 'slit' | 'stokes';
     title: string;
     subtitle: string;
     description: string;
     icon: any;
+    color: string;
+    iconBg: string;
+    accentColor: string;
     isFeature?: boolean;
     badge: string;
     status: string;
@@ -167,9 +211,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       id: 'informe-novandino',
       title: 'Informe Operativo Novandino',
       subtitle: 'Dashboard Principal',
-      description: 'Informe diario consolidado de turnos, estadísticas de despachos de litio y exportación a PDF o PNG.',
+      description: 'Informe diario consolidado de turnos, estadísticas de despachos de litio en tiempo real y exportación profesional automatizada a reportes PDF o formato de imagen de alta resolución.',
       icon: FileBarChart,
-      isFeature: true,
+      color: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10 border-[#461D77]/20',
+      iconBg: 'bg-[#461D77]/10 text-[#461D77]',
+      accentColor: '#461D77',
+      isFeature: true, // Takes more grid columns on desktop for visual weight
       badge: 'MÓDULO DESPACHO',
       status: 'ACTIVO',
       group: 'supervision' as const
@@ -178,9 +225,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       id: 'informe-sqm',
       title: 'Informe Operativo SQM NY',
       subtitle: 'Dashboard SQM NY',
-      description: 'Consolidado diario de turnos orientado a seguimiento SQM NY con exportación automatizada.',
+      description: 'Informe diario consolidado de turnos, estadísticas de despachos de litio en tiempo real y exportación profesional automatizada a reportes PDF o formato de imagen de alta resolución.',
       icon: FileBarChart,
-      isFeature: true,
+      color: 'from-violet-500/10 via-[#461D77]/5 to-[#461D77]/10 border-[#461D77]/20',
+      iconBg: 'bg-[#461D77]/10 text-[#461D77]',
+      accentColor: '#461D77',
+      isFeature: true, // Takes more grid columns on desktop for visual weight
       badge: 'MÓDULO DESPACHO',
       status: 'ACTIVO',
       group: 'supervision' as const
@@ -188,9 +238,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     {
       id: 'llegada' as const,
       title: 'Llegada de Equipos',
-      subtitle: 'Tránsito y Flujo',
-      description: 'Verificación de arribo, frecuencia de cargas y control de flotas en tránsito hacia faenas de litio.',
+      subtitle: 'Tránsito & Flujo',
+      description: 'Análisis minucioso del flujo de transporte, verificación de llegada, frecuencia de cargas estimadas y control integral de flotas en tránsito hacia faenas de litio.',
       icon: Truck,
+      color: 'from-teal-500/10 via-[#3FAA88]/5 to-[#3FAA88]/10 border-[#3FAA88]/20',
+      iconBg: 'bg-[#3FAA88]/10 text-[#3FAA88]',
+      accentColor: '#3FAA88',
       isFeature: true,
       badge: 'LOGÍSTICA IN SITU',
       status: 'ACTIVO',
@@ -200,8 +253,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       id: 'lce' as const,
       title: 'Control LCE',
       subtitle: 'Cumplimiento Salar',
-      description: 'Balance de cloruro de litio equivalente y monitoreo de cumplimiento in-situ en el Salar de Atacama.',
+      description: 'Tablero de control y balance de cloruro de litio (LCE) equivalente. Monitoreo constante del cumplimiento de despacho in-situ en el Salar de Atacama.',
       icon: ClipboardList,
+      color: 'from-cyan-500/10 via-[#4FD1C5]/5 to-[#4FD1C5]/10 border-[#4FD1C5]/20',
+      iconBg: 'bg-[#4FD1C5]/15 text-[#2cbba5]',
+      accentColor: '#4FD1C5',
       badge: 'SALAR DE ATACAMA',
       status: 'ESTADÍSTICAS',
       group: 'jefe_turno' as const
@@ -210,8 +266,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       id: 'ddd' as const,
       title: 'Análisis Técnico',
       subtitle: 'Diálogo de Desempeño',
-      description: 'Indicadores del Tablero M1 estructurados para reuniones operativas de Diálogo de Desempeño (DdD).',
+      description: 'Análisis detallado de indicadores del Tablero M1. Herramientas técnicas estructuradas para reuniones operativas sistemáticas de Desempeño (DdD).',
       icon: BarChart3,
+      color: 'from-amber-600/10 via-[#C59E4D]/5 to-[#C59E4D]/10 border-[#C59E4D]/25',
+      iconBg: 'bg-[#C59E4D]/15 text-[#b28b3b]',
+      accentColor: '#C59E4D',
       badge: 'SALA REUNIÓN M1',
       status: 'ESTRATÉGICO',
       group: 'supervision' as const
@@ -219,10 +278,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     {
       id: 'cambioTurno' as const,
       title: 'Cambio de Turno',
-      subtitle: 'Relevo y Rendimiento',
-      description: 'Entrega e inicio de jornadas con cálculo de traslape, tonelaje y rendimiento de flota.',
+      subtitle: 'Relevo & Rendimiento',
+      description: 'Sincronización fluida de datos operativos para la entrega e inicio de jornadas de trabajo, con cálculo automático de traslape y rendimiento de flota.',
       icon: RefreshCw,
-      badge: 'ENTREGA DE TURNO',
+      color: 'from-sky-500/10 via-[#7177EC]/5 to-[#7177EC]/10 border-[#7177EC]/20',
+      iconBg: 'bg-[#7177EC]/10 text-[#7177EC]',
+      accentColor: '#7177EC',
+      badge: 'ENTREGA DE SECCIÓN',
       status: 'SINCRONIZADO',
       group: 'jefe_turno' as const
     },
@@ -230,8 +292,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       id: 'galeria' as const,
       title: 'Galería Operativa',
       subtitle: 'Registro de Evidencia',
-      description: 'Archivo visual de reportes gráficos e incidencias operacionales en terreno.',
+      description: 'Galería visual autoadministrable de fotos y reportes gráficos tomados en terreno. Soporta carga instantánea, carrusel y catalogación de novedades.',
       icon: ImageIcon,
+      color: 'from-purple-500/10 via-levanda/10 to-levanda/20 border-violeta/15',
+      iconBg: 'bg-violeta/10 text-violeta',
+      accentColor: '#7177EC',
       badge: 'SOPORTE EN TERRENO',
       status: 'REGISTRO',
       group: 'supervision' as const
@@ -240,298 +305,251 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       id: 'memoria' as const,
       title: 'Memoria Histórica',
       subtitle: 'Historial de Respaldos',
-      description: 'Bitácora de jornadas operativas anteriores con recuperación directa de consolidados.',
+      description: 'Base de conocimiento y bitácora de respaldo de jornadas operativas anteriores. Recupera, visualiza e importa consolidados históricos con un solo clic.',
       icon: History,
-      badge: 'ARCHIVO',
-      status: 'HISTÓRICO',
+      color: 'from-zinc-500/10 via-slate-100 to-slate-200 border-slate-300/40',
+      iconBg: 'bg-slate-500/10 text-slate-700',
+      accentColor: '#171717',
+      badge: 'ARCHIVO SEGURADO',
+      status: 'SISTEMA LOCAL',
       group: 'jefe_turno' as const
     },
     {
       id: 'stokes' as const,
       title: 'Reporte Stokes',
-      subtitle: 'Extracción y Consolidado',
-      description: 'Ingesta desde ReportServer (clanfdbsw06) y normalización de orígenes Salar Atacama (MOP 1 a 6).',
+      subtitle: 'Extracción & Consolidado',
+      description: 'Generación automatizada de reportes desde Microsoft ReportServer (clanfdbsw06). Normalización inteligente de orígenes Salar Atacama (MOP 1, 2, 3, 4 y 6).',
       icon: Database,
+      color: 'from-violet-600/10 via-[#461D77]/5 to-[#7177EC]/10 border-[#461D77]/25',
+      iconBg: 'bg-[#461D77]/10 text-[#461D77]',
+      accentColor: '#461D77',
       isFeature: true,
-      badge: 'REPORT SERVER',
+      badge: 'AUTOMATIZACIÓN NTLM',
       status: 'CONECTADO',
       group: 'supervision' as const,
       adminOnly: true
     }
   ];
 
-  const roleLabel = currentUser?.role === 'admin'
-    ? 'Administrador'
-    : currentUser?.role === 'jefe_turno'
-    ? 'Jefe de Turno'
-    : 'Supervisión';
+  // Módulo SLIT has been removed as requested
 
   return (
-    <div className="min-h-screen w-full bg-[#ECEAE3] text-[#181615] flex flex-col justify-between">
-      {/* Main Content Safe Area */}
-      <div className="w-full max-w-[102rem] mx-auto px-4 sm:px-6 py-6 md:py-8 flex-grow flex flex-col gap-8">
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#FAF8F5] via-[#ECEAF0] to-[#E5E5ED] relative overflow-x-hidden overflow-y-auto flex flex-col justify-between">
+      
+      {/* Decorative High-End Tech background grid overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#7177ec04_1px,transparent_1px),linear-gradient(to_bottom,#7177ec04_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-70 pointer-events-none z-0" />
+      
+      {/* Dynamic backdrop glows */}
+      <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-[#7177EC]/4 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#461D77]/3 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-1/2 right-10 w-[300px] h-[300px] bg-[#3FAA88]/3 rounded-full blur-[100px] pointer-events-none" />
 
-        {/* ASYMMETRIC EDITORIAL HEADER (12-COL) WITH HIGH-CONTRAST SHIFT ANCHOR */}
-        <section className="surface-card rounded-lg overflow-hidden border-t-2 border-t-[#461D77]">
-          <div className="grid grid-cols-1 lg:grid-cols-12">
-            {/* Left 8 cols: Operational Title & Context */}
-            <div className="lg:col-span-8 p-6 sm:p-8 flex flex-col justify-between gap-6 bg-[#FFFFFF]">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-[#461D77]">
-                  <span>Subgerencia Logística Litio</span>
-                  <span className="text-[#BDB8AC]" aria-hidden="true">/</span>
-                  <span className="text-[#57534E]">Novandino</span>
-                </div>
-                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-[-0.03em] text-[#181615] leading-[1.08] max-w-3xl text-balance">
-                  CENTRO DE CONTROL LOGÍSTICA LITIO
-                </h1>
-                <p className="text-sm text-[#57534E] max-w-2xl leading-relaxed">
-                  Plataforma operativa para control de despachos, arribo de equipos, análisis DdD y emisión de informes oficiales de jornada.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-4 border-t border-[#E5E2D9] font-mono text-[11px] text-[#57534E]">
-                <span className="flex items-center gap-1.5">
-                  <strong className="text-[#181615] font-bold tabular-nums text-xs">04</strong> ZONAS OPERATIVAS
-                </span>
-                <span className="text-[#BDB8AC]" aria-hidden="true">·</span>
-                <span>SdA · PQL · CLB · PANG</span>
-              </div>
+      {/* Main Content Safe Area wrapper */}
+      <div className="relative z-10 w-full max-w-[102rem] mx-auto px-6 py-6 md:py-10 flex-grow flex flex-col gap-6 md:gap-10">
+        
+        {/* HERO SECTION - Welcome and general operational context */}
+        <section className="w-full bg-gradient-to-r from-[#1e1b4b] via-[#311042] to-[#110e2e] rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-xl border-t border-white/10">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-violeta/15 rounded-full blur-[100px] -mr-16 -mt-16 pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-litio/15 rounded-full blur-[120px] pointer-events-none" />
+          
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left Content */}
+            <div className="lg:col-span-7 space-y-4">
+              <h1 className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight uppercase leading-tight">
+                <span className="block">CENTRO DE CONTROL LOGISTICA LITIO</span>
+                <span className="text-[#4FD1C5] block mt-1">NOVANDINO</span>
+              </h1>
+              <p className="text-slate-300 font-medium text-sm md:text-base leading-relaxed">
+                Plataforma integral de control técnico para la Subgerencia de Logística de Litio. 
+                Seleccione un módulo operativo para registrar despachos, verificar llegada de equipos, 
+                ejecutar diálogos de desempeño y exportar los informes oficiales de la jornada.
+              </p>
             </div>
 
-            {/* Right 4 cols: High-Contrast Carbon Ink Operator & Clock Anchor */}
-            <div className="lg:col-span-4 bg-[#181615] text-[#F7F6F2] p-6 sm:p-8 flex flex-col justify-between gap-5 border-t lg:border-t-0 lg:border-l border-[#2E2A28]">
-              <div className="flex items-center justify-between border-b border-white/12 pb-3">
-                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-[#BDB8AC]">
-                  Sesión de Turno
-                </span>
-                <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#C4A6EB]">
-                  En Línea
+            {/* Right Content - Operational Status Panel */}
+            <div className="lg:col-span-5 bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 -ml-5" />
+                  <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
+                    SISTEMA EN LÍNEA
+                  </span>
+                </div>
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                  TURNO ACTIVO
                 </span>
               </div>
 
-              <div className="space-y-4">
-                <div className="font-mono text-3xl sm:text-4xl font-bold tabular-nums tracking-[-0.03em] text-white leading-none">
-                  {time || '--:--:--'}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-3.5 space-y-1">
+                  <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Zonas Operativas</p>
+                  <p className="text-xl font-black text-white">4 MÓDULOS</p>
+                  <p className="text-[9px] text-[#4FD1C5] font-bold">SdA &bull; PQL &bull; CLB &bull; PANG</p>
                 </div>
-
-                <div className="pt-1">
-                  <p className="font-mono text-[10px] font-medium uppercase tracking-wider text-[#A8A29E]">
-                    Operador Activo
-                  </p>
-                  <p className="text-base font-bold text-white mt-0.5 tracking-tight">
-                    {currentUser?.name || 'Analista Activo'}
-                  </p>
-                  <p className="font-mono text-xs text-[#D6D3CD] mt-0.5">
-                    {roleLabel}
-                  </p>
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-3.5 space-y-1">
+                  <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Control Técnico</p>
+                  <p className="text-xl font-black text-white">100% ACTIVO</p>
+                  <p className="text-[9px] text-emerald-400 font-bold">Reportes en Tiempo Real</p>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-white/12 font-mono text-[11px] text-[#A8A29E] capitalize truncate">
-                {dateStr}
+              <div className="pt-1 flex items-center justify-between text-[10px] font-bold text-slate-300 bg-white/5 px-4 py-2.5 rounded-xl border border-white/5">
+                <span className="uppercase text-slate-400 font-extrabold">
+                  {currentUser?.role === 'admin' 
+                    ? 'ADMINISTRADOR' 
+                    : currentUser?.role === 'jefe_turno' 
+                    ? 'JEFE DE TURNO' 
+                    : 'SUPERVISOR'}:
+                </span>
+                <span className="text-white font-black">{currentUser?.name || 'Analista Activo'}</span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* DIRECTORY / MODULE SELECTOR */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.16, ease: 'easeOut' }}
-          className="space-y-6 w-full"
+        {/* BENTO GRID MODULE SELECTOR */}
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="space-y-12 w-full z-10 relative"
         >
           {!openedLocation ? (
-            /* MAIN LEVEL: 4 OPERATIONAL ZONE MODULES (7/5 PRIMARY + 6/6 RECESSED RESERVED) */
-            <div className="space-y-5">
-              <div className="flex items-baseline justify-between pb-3 border-b border-[#D5D0C5]">
+            /* MAIN LEVEL: 4 OPERATIONAL ZONE MODULES */
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-300/40">
+                <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
                 <div>
-                  <h2 className="text-sm font-bold text-[#181615] uppercase tracking-wider">
-                    Zonas Operativas
-                  </h2>
-                  <p className="text-xs text-[#57534E] mt-0.5">
-                    Seleccione una faena o centro logístico para acceder a sus módulos.
+                  <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">MÓDULOS OPERATIVOS DE CAMPO</h3>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                    SELECCIONE UNA ZONA PARA INGRESAR
                   </p>
                 </div>
-                <span className="font-mono text-[11px] font-semibold text-[#57534E] hidden sm:inline tabular-nums">
-                  02 ACTIVAS · 02 RESERVADAS
-                </span>
               </div>
-
-              {/* Tier 1: Active Operational Zones (7 + 5 = 12 cols) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full">
-                {locationModules
-                  .filter(loc => loc.id === 'SdA' || loc.id === 'PQL')
-                  .map((loc) => {
-                    const IconComponent = loc.icon;
-                    const isSdA = loc.id === 'SdA';
-                    const isUnlocked = isSdA || unlockedLocations[loc.id];
-
-                    return (
-                      <button
-                        key={loc.id}
-                        type="button"
-                        onClick={() => {
-                          if (isUnlocked) {
-                            setOpenedLocation(loc.id);
-                          } else {
-                            setLocationPasswordPrompt({
-                              id: loc.id,
-                              name: `${loc.title} - ${loc.fullName}`,
-                            });
-                          }
-                        }}
-                        className={`group surface-card-interactive rounded-lg p-6 sm:p-7 flex flex-col justify-between text-left cursor-pointer ${
-                          isSdA
-                            ? 'lg:col-span-7 border-t-2 border-t-[#461D77]'
-                            : 'lg:col-span-5'
-                        }`}
-                      >
-                        <div className="space-y-5 w-full">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-11 h-11 rounded-md flex items-center justify-center border transition-colors duration-150 ${
-                                isSdA
-                                  ? 'bg-[#461D77] text-white border-[#461D77] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
-                                  : 'bg-[#F2F0EA] text-[#461D77] border-[#D8D4CA] group-hover:bg-[#461D77] group-hover:text-white group-hover:border-[#461D77]'
-                              }`}>
-                                <IconComponent size={20} strokeWidth={1.75} />
-                              </div>
-                              <div>
-                                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-[#57534E]">
-                                  {loc.badge}
-                                </p>
-                                <p className="text-xs font-semibold text-[#181615] mt-0.5">
-                                  {loc.subtitle}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="text-right shrink-0">
-                              <span className={`font-mono text-[11px] font-bold uppercase tabular-nums flex items-center justify-end gap-1.5 ${
-                                isSdA ? 'text-[#461D77]' : isUnlocked ? 'text-[#15803D]' : 'text-[#B45309]'
-                              }`}>
-                                {!isUnlocked && <Lock size={11} />}
-                                {loc.status}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <h3 className={`font-extrabold text-[#181615] tracking-[-0.03em] leading-none ${
-                              isSdA ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
-                            }`}>
-                              {loc.title}
-                            </h3>
-                            <p className="text-[#57534E] text-xs sm:text-[13px] leading-relaxed max-w-xl">
-                              {loc.description}
-                            </p>
-                          </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full auto-rows-fr">
+                {locationModules.map((loc) => {
+                  const IconComponent = loc.icon;
+                  const isSdA = loc.id === 'SdA';
+                  const isInProcess = !isSdA; // PQL, CLB, PANG are in process
+                  const isUnlocked = isSdA || unlockedLocations[loc.id];
+                  
+                  return (
+                    <motion.button
+                      key={loc.id}
+                      variants={itemVariants}
+                      onClick={() => {
+                        if (isUnlocked) {
+                          setOpenedLocation(loc.id);
+                        } else {
+                          setLocationPasswordPrompt({
+                            id: loc.id,
+                            name: `${loc.title} - ${loc.fullName}`,
+                          });
+                        }
+                      }}
+                      className={`group relative bg-white/80 hover:bg-white border ${
+                        isInProcess && !isUnlocked 
+                          ? 'border-amber-400/50 hover:border-amber-500/70' 
+                          : 'border-black/[0.04] hover:border-black/[0.08]'
+                      } rounded-[2.2rem] ${isInProcess ? 'pt-11 pb-8 px-8' : 'p-8'} shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer col-span-1 min-h-[18rem] lg:min-h-[19.5rem]`}
+                    >
+                      {/* IN-PROCESS TOP RIBBON / BANNER */}
+                      {isInProcess && (
+                        <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-[0.25em] shadow-xs z-20">
+                          <Lock size={12} strokeWidth={2.5} className="text-amber-100" />
+                          <span>EN PROCESO</span>
                         </div>
+                      )}
 
-                        <div className="w-full pt-4 mt-6 border-t border-[#E5E2D9] flex items-center justify-between text-xs font-bold">
-                          <span className={isUnlocked ? 'text-[#461D77]' : 'text-[#B45309]'}>
-                            {isSdA
-                              ? 'Ingresar a Salar de Atacama'
-                              : isUnlocked
-                              ? 'Ingresar a Planta Química Litio'
-                              : 'Desbloquear zona'}
-                          </span>
-                          <span className="text-[#57534E] group-hover:text-[#461D77] transition-colors duration-150">
-                            {!isUnlocked ? (
-                              <Lock size={15} />
-                            ) : (
-                              <ChevronRight size={17} className="group-hover:translate-x-0.5 transition-transform duration-150" />
+                      {/* Decorative Apple-style light reflection */}
+                      <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-white/20 to-transparent rounded-bl-[6rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      
+                      <div className="space-y-4 relative z-10 w-full">
+                        <div className="flex items-center justify-between w-full">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm ${loc.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                            <IconComponent size={24} strokeWidth={1.5} />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {isInProcess && !isUnlocked && (
+                              <span className="text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase bg-amber-500/10 text-amber-700 border border-amber-500/20 flex items-center gap-1">
+                                <Lock size={10} strokeWidth={2.5} /> PROTEGIDO
+                              </span>
                             )}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-              </div>
-
-              {/* Tier 2: Reserved / In Preparation Zones (6 + 6 = 12 cols, compact recessed strip) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 w-full">
-                {locationModules
-                  .filter(loc => loc.id === 'CLB' || loc.id === 'PANG')
-                  .map((loc) => {
-                    const IconComponent = loc.icon;
-                    const isUnlocked = unlockedLocations[loc.id];
-
-                    return (
-                      <button
-                        key={loc.id}
-                        type="button"
-                        onClick={() => {
-                          if (isUnlocked) {
-                            setOpenedLocation(loc.id);
-                          } else {
-                            setLocationPasswordPrompt({
-                              id: loc.id,
-                              name: `${loc.title} - ${loc.fullName}`,
-                            });
-                          }
-                        }}
-                        className="group lg:col-span-6 surface-well hover:bg-[#FFFFFF] hover:border-[#BDB8AC] rounded-lg px-5 py-4 transition-all duration-150 ease-out flex items-center justify-between gap-4 text-left cursor-pointer"
-                      >
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div className="w-10 h-10 rounded-md bg-[#FFFFFF] border border-[#D8D4CA] text-[#57534E] group-hover:text-[#461D77] flex items-center justify-center shrink-0 transition-colors duration-150">
-                            <IconComponent size={18} strokeWidth={1.75} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-[#57534E]">
-                              <span>{loc.badge}</span>
-                              <span className="text-[#BDB8AC]" aria-hidden="true">·</span>
-                              <span className={isUnlocked ? 'text-[#15803D]' : 'text-[#B45309]'}>
-                                {isUnlocked ? 'DESBLOQUEADA' : loc.status}
-                              </span>
-                            </div>
-                            <div className="flex items-baseline gap-2.5 mt-0.5">
-                              <h3 className="font-bold text-lg text-[#181615] tracking-tight shrink-0">
-                                {loc.title}
-                              </h3>
-                              <span className="text-xs text-[#57534E] truncate">
-                                {loc.fullName}
-                              </span>
-                            </div>
+                            <span className={`text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase ${
+                              isSdA ? 'bg-[#461D77]/10 text-[#461D77]' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {loc.badge}
+                            </span>
                           </div>
                         </div>
+                        
+                        <div className="space-y-2">
+                          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">{loc.subtitle}</p>
+                          <h2 className="font-[900] text-slate-800 tracking-tighter transition-colors text-xl flex items-center justify-between">
+                            <span>{loc.title}</span>
+                            {isInProcess && !isUnlocked && (
+                              <Lock size={16} className="text-amber-500/70" />
+                            )}
+                          </h2>
+                          <p className="text-slate-500 text-xs leading-relaxed font-medium line-clamp-3">
+                            {loc.description}
+                          </p>
+                        </div>
+                      </div>
 
-                        <div className="flex items-center gap-2 shrink-0 text-xs font-semibold text-[#57534E] group-hover:text-[#461D77]">
-                          <span className="hidden sm:inline font-mono text-[11px]">
-                            {isUnlocked ? 'Abrir' : 'Clave'}
-                          </span>
-                          {!isUnlocked ? (
-                            <Lock size={14} className="text-[#B45309]" />
+                      <div className="w-full pt-4 mt-6 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className={`${
+                          isInProcess && !isUnlocked 
+                            ? 'text-amber-700 font-extrabold flex items-center gap-1.5' 
+                            : 'text-slate-500 group-hover:text-[#461D77]'
+                        } transition-colors`}>
+                          {isSdA 
+                            ? 'Ingresar a la Zona' 
+                            : isUnlocked 
+                            ? 'Zona Desbloqueada' 
+                            : 'Desbloquear con Clave'}
+                        </span>
+                        <div className={`w-8 h-8 rounded-full ${
+                          isInProcess && !isUnlocked ? 'bg-amber-500 text-white' : loc.iconBg
+                        } group-hover:bg-[#461D77] group-hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm`}>
+                          {isInProcess && !isUnlocked ? (
+                            <Lock size={14} />
                           ) : (
-                            <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform duration-150" />
+                            <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                           )}
                         </div>
-                      </button>
-                    );
-                  })}
+                      </div>
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
           ) : (
             /* INSIDE OPENED LOCATION MODULE */
             <div className="space-y-6">
               {/* LOCATION HEADER */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-3.5 border-b border-[#D5D0C5]">
-                <div>
-                  <span className="font-mono text-[11px] font-semibold text-[#461D77] uppercase tracking-wider">
-                    {locationModules.find(l => l.id === openedLocation)?.id} · {locationModules.find(l => l.id === openedLocation)?.fullName}
-                  </span>
-                  <h2 className="text-2xl font-extrabold text-[#181615] tracking-[-0.025em] mt-0.5">
-                    Módulos de {locationModules.find(l => l.id === openedLocation)?.title}
-                  </h2>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-300/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#461D77] to-indigo-500 shadow-sm" />
+                  <div>
+                    <h3 className="text-xl font-black text-[#1e1b4b] uppercase tracking-wider leading-none">
+                      MÓDULO {locationModules.find(l => l.id === openedLocation)?.title}
+                    </h3>
+                    <p className="text-[10px] font-bold text-[#461D77] uppercase tracking-widest mt-1">
+                      {locationModules.find(l => l.id === openedLocation)?.id} - {locationModules.find(l => l.id === openedLocation)?.fullName}
+                    </p>
+                  </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setOpenedLocation(null)}
-                  className="flex items-center gap-2 px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#F2F0EA] border border-[#D8D4CA] shadow-[0_1px_2px_rgba(24,22,21,0.05)] rounded-md text-xs font-semibold text-[#181615] transition-colors duration-150 cursor-pointer whitespace-nowrap shrink-0"
+                  className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white border border-slate-300/80 rounded-2xl text-[10px] font-black text-slate-700 uppercase tracking-wider transition-all duration-200 hover:shadow-md cursor-pointer active:scale-95"
                 >
-                  <ArrowLeft size={14} /> Volver a Zonas
+                  <ArrowLeft size={14} /> Volver a Módulos
                 </button>
               </div>
 
@@ -539,25 +557,25 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                 <>
                   {/* TAB SWITCHER: SUPERVISIÓN / JEFE TURNO INSIDE SdA */}
                   {currentUser?.role !== 'supervision' && (
-                    <div className="inline-flex items-center gap-1 surface-well p-1 rounded-md">
-                      <button
+                    <div className="flex items-center justify-center gap-3 bg-white/60 border border-slate-200/80 p-2 rounded-3xl max-w-sm mx-auto shadow-sm my-4 backdrop-blur-md">
+                      <button 
                         type="button"
                         onClick={() => setActiveTab('supervision')}
-                        className={`px-4 py-1.5 rounded text-xs font-semibold transition-all duration-150 cursor-pointer ${
-                          activeTab === 'supervision'
-                            ? 'bg-[#181615] text-white shadow-[0_1px_2px_rgba(24,22,21,0.2)]'
-                            : 'text-[#57534E] hover:text-[#181615]'
+                        className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
+                          activeTab === 'supervision' 
+                            ? 'bg-[#461D77] text-white shadow-sm' 
+                            : 'text-slate-600 hover:text-[#461D77] hover:bg-white/50'
                         }`}
                       >
                         Supervisión
                       </button>
-                      <button
+                      <button 
                         type="button"
                         onClick={handleJefeTurnoClick}
-                        className={`px-4 py-1.5 rounded text-xs font-semibold transition-all duration-150 cursor-pointer ${
-                          activeTab === 'jefe_turno'
-                            ? 'bg-[#181615] text-white shadow-[0_1px_2px_rgba(24,22,21,0.2)]'
-                            : 'text-[#57534E] hover:text-[#181615]'
+                        className={`flex-1 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all cursor-pointer text-center ${
+                          activeTab === 'jefe_turno' 
+                            ? 'bg-[#7177EC] text-white shadow-sm' 
+                            : 'text-slate-600 hover:text-[#7177EC] hover:bg-white/50'
                         }`}
                       >
                         Jefe Turno
@@ -566,7 +584,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   )}
 
                   {/* CARDS GRID FOR SELECTED TAB INSIDE SdA */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full auto-rows-fr">
                     {cardsData
                       .filter(c => {
                         if (c.adminOnly && currentUser?.role !== 'admin') {
@@ -575,218 +593,229 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                         return c.group === activeTab;
                       })
                       .map((card, idx) => {
-                        const IconComponent = card.icon;
-                        const isNovandino = card.id === 'informe-novandino';
+                      const IconComponent = card.icon;
+                      const isNovandino = card.id === 'informe-novandino';
+                      
+                      return (
+                        <motion.button
+                          key={`${card.id}-${idx}`}
+                          variants={itemVariants}
+                          onClick={() => onSelectView(card.id)}
+                          className={`group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer min-h-[19.5rem] lg:min-h-[21rem] ${
+                            isNovandino ? 'md:col-span-2 lg:col-span-2' : 'col-span-1'
+                          }`}
+                        >
+                          <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/15 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                          
+                          <div className="flex items-center justify-between w-full relative z-10">
+                            <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-[#461D77] transition-colors uppercase">
+                              {card.badge}
+                            </span>
+                            
+                            <span className={`text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase ${
+                              card.id === 'informe-novandino' || card.id === 'informe-sqm' || card.id === 'llegada'
+                                ? 'bg-emerald-500/10 text-emerald-600'
+                                : card.id === 'ddd'
+                                ? 'bg-amber-500/10 text-amber-700'
+                                : card.id === 'lce'
+                                ? 'bg-cyan-500/10 text-cyan-600'
+                                : 'bg-purple-500/10 text-purple-700'
+                            }`}>
+                              &bull; {card.status}
+                            </span>
+                          </div>
 
-                        if (isNovandino) {
-                          return (
-                            <button
-                              key={`${card.id}-${idx}`}
-                              type="button"
-                              onClick={() => onSelectView(card.id)}
-                              className="group md:col-span-2 lg:col-span-2 surface-anchor-violet hover:bg-[#3B1766] rounded-lg p-6 sm:p-7 transition-all duration-150 ease-out flex flex-col justify-between text-left cursor-pointer hover:-translate-y-0.5"
-                            >
-                              <div className="flex items-center justify-between w-full mb-5">
-                                <span className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[#DDD0F2] uppercase">
-                                  {card.badge} · MÓDULO PRINCIPAL
-                                </span>
-                                <span className="font-mono text-[10px] font-bold text-white uppercase tracking-wider">
-                                  {card.status}
-                                </span>
-                              </div>
-
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-5 my-auto">
-                                <div className="w-12 h-12 rounded-md bg-white/12 border border-white/20 text-white flex items-center justify-center shrink-0">
-                                  <IconComponent size={22} strokeWidth={1.75} />
-                                </div>
-                                <div className="space-y-1.5">
-                                  <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#DDD0F2]">
-                                    {card.subtitle}
-                                  </p>
-                                  <h3 className="font-extrabold text-white tracking-[-0.025em] text-2xl sm:text-3xl leading-tight">
-                                    {card.title}
-                                  </h3>
-                                  <p className="text-[#EAE2F8] text-xs sm:text-[13px] leading-relaxed max-w-xl">
-                                    {card.description}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="w-full pt-4 mt-6 border-t border-white/15 flex items-center justify-between text-xs font-bold text-white">
-                                <span>Abrir módulo principal</span>
-                                <ChevronRight size={17} className="group-hover:translate-x-1 transition-transform duration-150" />
-                              </div>
-                            </button>
-                          );
-                        }
-
-                        return (
-                          <button
-                            key={`${card.id}-${idx}`}
-                            type="button"
-                            onClick={() => onSelectView(card.id)}
-                            className="group surface-card-interactive rounded-lg p-6 flex flex-col justify-between text-left cursor-pointer col-span-1"
-                          >
-                            <div className="flex items-center justify-between w-full mb-4 font-mono text-[10px] font-semibold uppercase tracking-wider">
-                              <span className="text-[#57534E]">
-                                {card.badge}
-                              </span>
-                              <span className="text-[#461D77] font-bold">
-                                {card.status}
-                              </span>
+                          <div className="space-y-4 my-auto relative z-10">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm ${card.iconBg} group-hover:scale-110 group-hover:rotate-3`}>
+                              <IconComponent size={24} strokeWidth={1.5} />
                             </div>
-
-                            <div className="space-y-3 my-auto">
-                              <div className="w-10 h-10 rounded-md flex items-center justify-center border bg-[#F2F0EA] text-[#461D77] border-[#D8D4CA] group-hover:bg-[#461D77] group-hover:text-white group-hover:border-[#461D77] transition-colors duration-150">
-                                <IconComponent size={19} strokeWidth={1.75} />
-                              </div>
-
-                              <div className="space-y-1">
-                                <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#57534E]">
-                                  {card.subtitle}
-                                </p>
-                                <h3 className="font-bold text-[#181615] tracking-tight text-lg">
-                                  {card.title}
-                                </h3>
-                                <p className="text-[#57534E] text-xs leading-relaxed line-clamp-2">
-                                  {card.description}
-                                </p>
-                              </div>
+                            
+                            <div className="space-y-1">
+                              <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">{card.subtitle}</p>
+                              <h2 className={`font-[900] text-slate-800 tracking-tighter transition-colors ${
+                                isNovandino ? 'text-2xl lg:text-3xl' : 'text-xl'
+                              }`}>
+                                {card.title}
+                              </h2>
+                              <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 font-medium">
+                                {card.description}
+                              </p>
                             </div>
+                          </div>
 
-                            <div className="w-full pt-4 mt-5 border-t border-[#E5E2D9] flex items-center justify-between text-xs font-semibold">
-                              <span className="text-[#57534E] group-hover:text-[#461D77] transition-colors">
-                                Abrir módulo
-                              </span>
-                              <ChevronRight size={15} className="text-[#57534E] group-hover:text-[#461D77] group-hover:translate-x-0.5 transition-all duration-150" />
+                          <div className="w-full pt-4 mt-4 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
+                            <span className="text-slate-500 group-hover:text-[#461D77] transition-colors">ACCEDER AL COMPONENTE</span>
+                            <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-[#461D77] group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300 shadow-sm">
+                              <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                             </div>
-                          </button>
-                        );
-                      })}
+                          </div>
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 </>
               ) : openedLocation === 'PQL' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
-                  {/* CUMPLIMIENTO M&Q */}
-                  <button
-                    type="button"
-                    onClick={() => onSelectView('cumplimiento-mq')}
-                    className="group surface-card-interactive rounded-lg p-6 flex flex-col justify-between text-left cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between w-full mb-4 font-mono text-[10px] font-semibold uppercase tracking-wider">
-                      <span className="text-[#57534E]">PLANTA QUÍMICA</span>
-                      <span className="text-[#461D77] font-bold">ACTIVO</span>
-                    </div>
-                    <div className="space-y-3 my-auto">
-                      <div className="w-10 h-10 rounded-md flex items-center justify-center bg-[#F2F0EA] text-[#461D77] border border-[#D8D4CA] group-hover:bg-[#461D77] group-hover:text-white group-hover:border-[#461D77] transition-colors duration-150">
-                        <ClipboardList size={19} strokeWidth={1.75} />
+                <div className="space-y-6">
+                  {/* PQL CARDS GRID */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full auto-rows-fr">
+                    {/* CUMPLIMIENTO M&Q */}
+                    <motion.button
+                      variants={itemVariants}
+                      onClick={() => onSelectView('cumplimiento-mq')}
+                      className="group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer min-h-[19.5rem] lg:min-h-[21rem]"
+                    >
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/15 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      
+                      <div className="flex items-center justify-between w-full relative z-10">
+                        <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-indigo-600 transition-colors uppercase">
+                          PLANTA QUÍMICA
+                        </span>
+                        
+                        <span className="text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase bg-indigo-500/10 text-indigo-600">
+                          &bull; ACTIVO
+                        </span>
                       </div>
-                      <div className="space-y-1">
-                        <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#57534E]">
-                          Desempeño y Productividad
-                        </p>
-                        <h3 className="font-bold text-[#181615] tracking-tight text-lg">
-                          Cumplimiento M&Q
-                        </h3>
-                        <p className="text-[#57534E] text-xs leading-relaxed line-clamp-2">
-                          Monitoreo de vueltas solicitadas vs reales, toneladas transportadas y días críticos del mes.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-full pt-4 mt-5 border-t border-[#E5E2D9] flex items-center justify-between text-xs font-semibold">
-                      <span className="text-[#57534E] group-hover:text-[#461D77]">Abrir módulo</span>
-                      <ChevronRight size={15} className="text-[#57534E] group-hover:text-[#461D77] group-hover:translate-x-0.5 transition-all duration-150" />
-                    </div>
-                  </button>
 
-                  {/* CUMPLIMIENTO JORQUERA */}
-                  <button
-                    type="button"
-                    onClick={() => onSelectView('cumplimiento-jorquera')}
-                    className="group surface-card-interactive rounded-lg p-6 flex flex-col justify-between text-left cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between w-full mb-4 font-mono text-[10px] font-semibold uppercase tracking-wider">
-                      <span className="text-[#57534E]">PLANTA QUÍMICA</span>
-                      <span className="text-[#461D77] font-bold">ACTIVO</span>
-                    </div>
-                    <div className="space-y-3 my-auto">
-                      <div className="w-10 h-10 rounded-md flex items-center justify-center bg-[#F2F0EA] text-[#461D77] border border-[#D8D4CA] group-hover:bg-[#461D77] group-hover:text-white group-hover:border-[#461D77] transition-colors duration-150">
-                        <ClipboardList size={19} strokeWidth={1.75} />
+                      <div className="space-y-4 my-auto relative z-10">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm bg-indigo-600 text-white group-hover:scale-110 group-hover:rotate-3">
+                          <ClipboardList size={24} strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Desempeño & Productividad</p>
+                          <h2 className="font-[900] text-slate-800 tracking-tighter transition-colors text-2xl lg:text-3xl">
+                            Cumplimiento M&Q
+                          </h2>
+                          <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 font-medium">
+                            Monitoreo de vueltas solicitadas vs reales, toneladas transportadas, días críticos del mes y productividad diaria de la operación.
+                          </p>
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#57534E]">
-                          Desempeño y Productividad
-                        </p>
-                        <h3 className="font-bold text-[#181615] tracking-tight text-lg">
-                          Cumplimiento Jorquera
-                        </h3>
-                        <p className="text-[#57534E] text-xs leading-relaxed line-clamp-2">
-                          Monitoreo de vueltas solicitadas vs reales, toneladas transportadas y productividad diaria Jorquera.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-full pt-4 mt-5 border-t border-[#E5E2D9] flex items-center justify-between text-xs font-semibold">
-                      <span className="text-[#57534E] group-hover:text-[#461D77]">Abrir módulo</span>
-                      <ChevronRight size={15} className="text-[#57534E] group-hover:text-[#461D77] group-hover:translate-x-0.5 transition-all duration-150" />
-                    </div>
-                  </button>
 
-                  {/* INFORME OPERATIVO SLIT (FEATURED ANCHOR) */}
-                  <button
-                    type="button"
-                    onClick={() => onSelectView('informe-operativo')}
-                    className="group surface-anchor-violet hover:bg-[#3B1766] rounded-lg p-6 transition-all duration-150 ease-out flex flex-col justify-between text-left cursor-pointer hover:-translate-y-0.5"
-                  >
-                    <div className="flex items-center justify-between w-full mb-4 font-mono text-[10px] font-semibold uppercase tracking-wider">
-                      <span className="text-[#DDD0F2]">PLANTA QUÍMICA · SLIT</span>
-                      <span className="text-white font-bold">ACTIVO</span>
-                    </div>
-                    <div className="space-y-3 my-auto">
-                      <div className="w-10 h-10 rounded-md flex items-center justify-center bg-white/12 text-white border border-white/20">
-                        <FileText size={19} strokeWidth={1.75} />
+                      <div className="w-full pt-4 mt-4 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className="text-slate-500 group-hover:text-indigo-600 transition-colors">ACCEDER AL COMPONENTE</span>
+                        <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300 shadow-sm">
+                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#DDD0F2]">
-                          Informe Operacional SLIT
-                        </p>
-                        <h3 className="font-extrabold text-white tracking-tight text-xl">
-                          Informe Operativo
-                        </h3>
-                        <p className="text-[#EAE2F8] text-xs leading-relaxed line-clamp-2">
-                          Informe operacional en dos piezas: resumen gerencial PNG para correo y adjunto PDF con tendencia.
-                        </p>
+                    </motion.button>
+
+                    {/* CUMPLIMIENTO JORQUERA */}
+                    <motion.button
+                      variants={itemVariants}
+                      onClick={() => onSelectView('cumplimiento-jorquera')}
+                      className="group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer min-h-[19.5rem] lg:min-h-[21rem]"
+                    >
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-white/15 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      
+                      <div className="flex items-center justify-between w-full relative z-10">
+                        <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-indigo-600 transition-colors uppercase">
+                          PLANTA QUÍMICA
+                        </span>
+                        
+                        <span className="text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase bg-indigo-500/10 text-indigo-600">
+                          &bull; ACTIVO
+                        </span>
                       </div>
-                    </div>
-                    <div className="w-full pt-4 mt-5 border-t border-white/15 flex items-center justify-between text-xs font-bold text-white">
-                      <span>Abrir módulo principal</span>
-                      <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform duration-150" />
-                    </div>
-                  </button>
+
+                      <div className="space-y-4 my-auto relative z-10">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm bg-indigo-600 text-white group-hover:scale-110 group-hover:rotate-3">
+                          <ClipboardList size={24} strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Desempeño & Productividad</p>
+                          <h2 className="font-[900] text-slate-800 tracking-tighter transition-colors text-2xl lg:text-3xl">
+                            Cumplimiento Jorquera
+                          </h2>
+                          <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 font-medium">
+                            Monitoreo de vueltas solicitadas vs reales, toneladas transportadas, días críticos del mes y productividad diaria de la operación Jorquera.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="w-full pt-4 mt-4 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className="text-slate-500 group-hover:text-indigo-600 transition-colors">ACCEDER AL COMPONENTE</span>
+                        <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300 shadow-sm">
+                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </motion.button>
+
+                    {/* INFORME OPERATIVO SLIT (TERCER MÓDULO PQL) */}
+                    <motion.button
+                      variants={itemVariants}
+                      onClick={() => onSelectView('informe-operativo')}
+                      className="group relative bg-white/80 hover:bg-white border border-black/[0.04] hover:border-black/[0.08] rounded-[2.2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.01),0_1px_2px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out hover:scale-[1.015] active:scale-[0.985] hover:shadow-[0_20px_50px_rgba(70,29,119,0.05),0_1px_5px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left overflow-hidden cursor-pointer min-h-[19.5rem] lg:min-h-[21rem]"
+                    >
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-[4rem] pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+                      
+                      <div className="flex items-center justify-between w-full relative z-10">
+                        <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-emerald-600 transition-colors uppercase">
+                          PLANTA QUÍMICA &bull; SLIT
+                        </span>
+                        
+                        <span className="text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase bg-emerald-500/10 text-emerald-600">
+                          &bull; ACTIVO
+                        </span>
+                      </div>
+
+                      <div className="space-y-4 my-auto relative z-10">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm bg-[#4B1F82] text-white group-hover:scale-110 group-hover:rotate-3">
+                          <FileText size={24} strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Informe Operacional SLIT</p>
+                          <h2 className="font-[900] text-slate-800 tracking-tighter transition-colors text-2xl lg:text-3xl">
+                            Informe Operativo
+                          </h2>
+                          <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 font-medium">
+                            Informe operacional en dos piezas: resumen gerencial para correo en PNG y documento adjunto en PDF con tendencia y detalle de planta.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="w-full pt-4 mt-4 border-t border-black/[0.04] flex items-center justify-between text-[10px] font-black tracking-widest uppercase transition-colors relative z-10">
+                        <span className="text-slate-500 group-hover:text-emerald-600 transition-colors">ACCEDER AL COMPONENTE</span>
+                        <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-[#4B1F82] group-hover:text-white flex items-center justify-center text-slate-500 transition-all duration-300 shadow-sm">
+                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </motion.button>
+                  </div>
                 </div>
               ) : (
-                <div className="w-full surface-well rounded-lg p-12 text-center flex flex-col items-center justify-center space-y-4">
-                  <div className="w-12 h-12 rounded-md bg-[#FFFFFF] border border-[#D8D4CA] flex items-center justify-center text-[#57534E]">
-                    <Layers size={22} strokeWidth={1.5} />
+                <motion.div
+                  variants={itemVariants}
+                  className="w-full bg-white/80 border-2 border-dashed border-slate-300/80 rounded-[2.5rem] p-12 lg:p-16 text-center shadow-sm flex flex-col items-center justify-center space-y-5"
+                >
+                  <div className="w-20 h-20 rounded-3xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-400 shadow-inner">
+                    <Layers size={38} strokeWidth={1.25} />
                   </div>
-                  <div className="max-w-md space-y-1.5">
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#B45309]">
-                      EN PREPARACIÓN
+                  
+                  <div className="max-w-md space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 bg-slate-100 text-slate-500 rounded-full border border-slate-200/60">
+                      MÓDULO EN BLANCO
                     </span>
-                    <h3 className="text-xl font-bold text-[#181615] tracking-tight pt-1">
-                      {locationModules.find(l => l.id === openedLocation)?.title} · {locationModules.find(l => l.id === openedLocation)?.fullName}
+                    <h3 className="text-2xl font-black text-tecnico uppercase tracking-tight">
+                      {locationModules.find(l => l.id === openedLocation)?.title} - {locationModules.find(l => l.id === openedLocation)?.fullName}
                     </h3>
-                    <p className="text-[#57534E] text-xs leading-relaxed">
-                      Esta zona se encuentra reservada para la incorporación de futuros módulos operativos.
+                    <p className="text-slate-500 text-xs font-medium leading-relaxed">
+                      Este módulo se encuentra actualmente en blanco y disponible para la incorporación de nuevos dashboards, informes o herramientas operativas.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setOpenedLocation(null)}
-                    className="px-5 py-2.5 bg-[#181615] hover:bg-[#2E2A28] text-white text-xs font-semibold uppercase tracking-wider rounded-md transition-colors duration-150 cursor-pointer"
-                  >
-                    Volver a Zonas
-                  </button>
-                </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setOpenedLocation(null)}
+                      className="px-6 py-3 bg-nucleo text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-md hover:bg-black transition-all active:scale-95"
+                    >
+                      Volver a Módulos
+                    </button>
+                  </div>
+                </motion.div>
               )}
             </div>
           )}
@@ -794,13 +823,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       {/* FOOTER BAR */}
-      <footer className="py-5 bg-[#E5E2D9] border-t border-[#D5D0C5] mt-10">
-        <div className="max-w-[102rem] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="font-mono text-[11px] text-[#44403C] uppercase tracking-wider">
-            NOVANDINO · SUBGERENCIA LOGÍSTICA LITIO · DESPACHO LITIO
+      <footer className="relative z-10 py-8 bg-white/40 border-t border-slate-200/55 text-center mt-12">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-[0.2em]">
+            NOVANDINO &bull; SUBGERENCIA LOGÍSTICA LITIO &bull; DESPACHO LITIO
           </p>
-          <p className="font-mono text-[11px] text-[#57534E]">
-            PWA diseñada por Cristian Tapia Espinoza
+          <p className="text-[10px] text-slate-400 font-bold tracking-widest">
+            PWA creada y diseñada por Cristian Tapia Espinoza
           </p>
         </div>
       </footer>

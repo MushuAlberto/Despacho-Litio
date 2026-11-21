@@ -26,16 +26,18 @@ interface BrandLogoProps {
 }
 
 export const NovandinoLogo: React.FC<BrandLogoProps> = ({ className = '', variant = 'medium' }) => {
-  const [logoSrc, setLogoSrc] = useState<string>('/novandino.png');
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     let active = true;
     const tryLoad = async () => {
       try {
+        // Try the main novandino.png first
         const b64 = await getBase64FromUrl('/novandino.png');
         if (active) setLogoSrc(b64);
-      } catch {
+      } catch (err) {
+        // Fallback to logo novandino.png if first fails
         try {
           const b64Fallback = await getBase64FromUrl('/logo novandino.png');
           if (active) setLogoSrc(b64Fallback);
@@ -54,26 +56,20 @@ export const NovandinoLogo: React.FC<BrandLogoProps> = ({ className = '', varian
   if (logoSrc && !hasError) {
     let imgHeightClass = "h-32";
     if (variant === 'small') {
-      imgHeightClass = "h-full max-h-[70px]";
+      imgHeightClass = "h-[70px]";
     } else if (variant === 'large') {
       imgHeightClass = "h-40";
     } else if (variant === 'print') {
       imgHeightClass = "h-32";
     }
-
+    
     return (
-      <div className={`inline-flex items-center justify-center ${className}`}>
+      <div className={`flex items-center justify-center ${className}`} style={{ display: 'inline-flex' }}>
         <img
           src={logoSrc}
           alt="Novandino Logo"
           className={`${imgHeightClass} w-auto object-contain max-w-full`}
-          onError={() => {
-            if (logoSrc === '/novandino.png') {
-              setLogoSrc('/logo novandino.png');
-            } else {
-              setHasError(true);
-            }
-          }}
+          onError={() => setHasError(true)}
         />
       </div>
     );
@@ -81,10 +77,10 @@ export const NovandinoLogo: React.FC<BrandLogoProps> = ({ className = '', varian
 
   let height = 120;
   let width = 500;
-
+  
   if (variant === 'small') {
     height = 70;
-    width = 310;
+    width = 250;
   } else if (variant === 'large') {
     height = 160;
     width = 600;
@@ -94,10 +90,11 @@ export const NovandinoLogo: React.FC<BrandLogoProps> = ({ className = '', varian
   }
 
   return (
-    <div className={`inline-flex items-center select-none ${className}`}>
+    <div className={`flex items-center select-none ${className}`} style={{ display: 'inline-flex' }}>
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-full max-w-full max-h-full block"
+        className="w-full h-auto"
+        style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -108,33 +105,33 @@ export const NovandinoLogo: React.FC<BrandLogoProps> = ({ className = '', varian
           {/* Right thick chevron fold */}
           <path d="M 50,20 L 85,55 L 50,90 L 30,70 L 55,45 L 30,20 Z" fill="#461D77" opacity="0.9" />
         </g>
-
+        
         {/* Brand Name */}
         <text
-          x={variant === 'small' ? 70 : 115}
+          x={variant === 'small' ? 72 : 115}
           y={variant === 'small' ? 44 : 70}
           fill="#461D77"
           fontFamily="'Inter', 'Space Grotesk', system-ui, sans-serif"
-          fontSize={variant === 'small' ? 28 : 48}
+          fontSize={variant === 'small' ? 32 : 48}
           fontWeight="900"
           letterSpacing="-0.04em"
         >
           NOVANDINO
         </text>
-
+        
         {/* Lithium tag/pill */}
         <rect
-          x={variant === 'small' ? 250 : 395}
-          y={variant === 'small' ? 20 : 30}
-          width={variant === 'small' ? 44 : 54}
+          x={variant === 'small' ? 198 : 395}
+          y={variant === 'small' ? 22 : 30}
+          width={variant === 'small' ? 40 : 54}
           height={variant === 'small' ? 26 : 38}
           rx={variant === 'small' ? 8 : 12}
           stroke="#461D77"
           strokeWidth="3.5"
         />
         <text
-          x={variant === 'small' ? 272 : 422}
-          y={variant === 'small' ? 37 : 56}
+          x={variant === 'small' ? 218 : 422}
+          y={variant === 'small' ? 39 : 56}
           textAnchor="middle"
           fill="#461D77"
           fontFamily="'Inter', 'Space Grotesk', system-ui, sans-serif"
@@ -143,17 +140,17 @@ export const NovandinoLogo: React.FC<BrandLogoProps> = ({ className = '', varian
         >
           + Li
         </text>
-
+        
         {/* Slogan */}
         <text
-          x={variant === 'small' ? 71 : 118}
+          x={variant === 'small' ? 73 : 118}
           y={variant === 'small' ? 58 : 94}
           fill="#7177EC"
           opacity="0.85"
           fontFamily="'Inter', 'JetBrains Mono', monospace"
           fontSize={variant === 'small' ? 7.5 : 10.5}
           fontWeight="800"
-          letterSpacing="0.32em"
+          letterSpacing="0.4em"
         >
           SOMOS LITIO, SOMOS FUTURO
         </text>
