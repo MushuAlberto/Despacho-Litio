@@ -8,7 +8,7 @@ import { SimpleMarkdown } from './SimpleMarkdown';
 import { analyzeProductData } from '../services/localAnalysisService';
 import { cleanNumeric, parseExcelTime, normalizeHeader } from '../utils/dataProcessor';
 import { generateShiftReportPDF } from '../utils/pdfGenerator';
-import { db, isQuotaExceededError } from '../services/firebase';
+import { db, isQuotaExceededError, isConnectionUnavailableError, waitForFirestoreReady } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from './Toast';
 import { getCurrentUser } from '../auth/authStore';
@@ -401,6 +401,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
 
   useEffect(() => {
     const fetchAiSettings = async () => {
+      if (!(await waitForFirestoreReady())) return;
       try {
         const docRef = doc(db, 'system_config', 'ai_settings');
         const docSnap = await getDoc(docRef);
@@ -425,7 +426,7 @@ export default function CambioDeTurno({ onBack }: CambioDeTurnoProps) {
           }
         }
       } catch (err) {
-        if (!isQuotaExceededError(err)) {
+        if (!isQuotaExceededError(err) && !isConnectionUnavailableError(err)) {
           console.error('Error fetching AI settings in CambioDeTurno:', err);
         }
       }

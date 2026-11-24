@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, logActivity, SystemUser, handleFirestoreError, OperationType } from '../services/firebase';
+import { db, logActivity, SystemUser, handleFirestoreError, OperationType, waitForFirestoreReady, isQuotaExceededError, isConnectionUnavailableError } from '../services/firebase';
 import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { Calendar, Search, ArrowLeft, RefreshCw, ClipboardList, Clock, Loader2, Trash2, ShieldAlert, Lock, X, Download } from 'lucide-react';
 
@@ -38,6 +38,11 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
   const fetchLogs = async () => {
     setLoading(true);
     try {
+      if (!(await waitForFirestoreReady())) {
+        setLogs([]);
+        setFilteredLogs([]);
+        return;
+      }
       const qSnap = await getDocs(collection(db, 'activity_logs'));
       const fetched: ActivityLog[] = [];
       qSnap.forEach((docSnap) => {
@@ -53,12 +58,16 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({ currentUser,
           timestamp: item.timestamp || ''
         });
       });
-      // Sort client-side by timestamp descending
       fetched.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       
       setLogs(fetched);
       setFilteredLogs(fetched);
     } catch (error) {
+      if (isQuotaExceededError(error) || isConnectionUnavailableError(error)) {
+        setLogs([]);
+        setFilteredLogs([]);
+        return;
+      }
       console.error('Error fetching logs from Firestore:', error);
       handleFirestoreError(error, OperationType.LIST, 'activity_logs');
     } finally {

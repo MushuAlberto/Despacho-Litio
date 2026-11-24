@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { 
   initializeFirestore, 
+  disableNetwork,
   doc, 
   getDoc,
   getDocs, 
@@ -15,8 +16,7 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  experimentalAutoDetectLongPolling: false,
+  experimentalAutoDetectLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth();
 
@@ -36,11 +36,29 @@ export interface FirestoreErrorInfo {
   authInfo: {
     userId?: string | null;
     email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
   }
 }
 
 let firestoreWriteBlocked = false;
 let firestoreReadBlocked = false;
+let firestoreQuotaExceeded = false;
+let firestoreUnavailable = false;
+let networkDisabled = false;
+
+function disableFirestoreNetworkSafely() {
+  if (networkDisabled) return;
+  networkDisabled = true;
+  void disableNetwork(db).catch(() => {
+    // Ignore disableNetwork failures during teardown/startup
+  });
+}
 
 export function isFirestoreWriteBlocked(): boolean {
   return firestoreWriteBlocked;
@@ -48,6 +66,14 @@ export function isFirestoreWriteBlocked(): boolean {
 
 export function isFirestoreReadBlocked(): boolean {
   return firestoreReadBlocked;
+}
+
+export function isFirestoreQuotaExceeded(): boolean {
+  return firestoreQuotaExceeded;
+}
+
+export function isFirestoreUnavailable(): boolean {
+  return firestoreUnavailable;
 }
 
 export function setFirestoreWriteBlocked(blocked: boolean) {
@@ -61,30 +87,62 @@ export function setFirestoreReadBlocked(blocked: boolean) {
 export function isQuotaExceededError(error: unknown): boolean {
   if (!error) return false;
   const msg = error instanceof Error ? error.message : String(error);
+  const code = typeof error === 'object' && error !== null && 'code' in error ? String((error as any).code) : '';
   const isExceeded = (
+    code === 'resource-exhausted' ||
     msg.includes('resource-exhausted') ||
+    msg.includes('RESOURCE_EXHAUSTED') ||
     msg.includes('Quota exceeded') ||
     msg.includes('Quota limit exceeded') ||
     msg.includes('quota metric') ||
-    (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 'resource-exhausted')
+    msg.includes('429')
   );
   if (isExceeded) {
+    firestoreQuotaExceeded = true;
     firestoreWriteBlocked = true;
     firestoreReadBlocked = true;
+    disableFirestoreNetworkSafely();
   }
   return isExceeded;
 }
 
+export function isConnectionUnavailableError(error: unknown): boolean {
+  if (!error) return false;
+  const msg = error instanceof Error ? error.message : String(error);
+  const code = typeof error === 'object' && error !== null && 'code' in error ? String((error as any).code) : '';
+  const isUnavailable = (
+    code === 'unavailable' ||
+    msg.includes('code=unavailable') ||
+    msg.includes('the client is offline') ||
+    msg.includes('Could not reach Cloud Firestore backend') ||
+    msg.includes('The operation could not be completed')
+  );
+  if (isUnavailable) {
+    firestoreUnavailable = true;
+    firestoreWriteBlocked = true;
+    firestoreReadBlocked = true;
+    disableFirestoreNetworkSafely();
+  }
+  return isUnavailable;
+}
+
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  if (isQuotaExceededError(error)) {
-    console.warn(`[Firestore Quota] Limit reached for operation ${operationType} on ${path || 'database'}. Falling back gracefully to local state.`);
+  if (isQuotaExceededError(error) || isConnectionUnavailableError(error)) {
+    console.warn(`[Firestore Offline/Quota] Operation ${operationType} on ${path || 'database'} skipped; operating in local mode.`);
     return;
   }
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: 'anonymous',
-      email: null,
+      userId: auth.currentUser?.uid || null,
+      email: auth.currentUser?.email || null,
+      emailVerified: auth.currentUser?.emailVerified ?? null,
+      isAnonymous: auth.currentUser?.isAnonymous ?? null,
+      tenantId: auth.currentUser?.tenantId || null,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
     },
     operationType,
     path
@@ -93,22 +151,39 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Verify connection on boot
-export async function testConnection() {
-  if (isFirestoreReadBlocked()) return;
+// Verify connection on boot before attaching listeners or running queries
+export async function testConnection(): Promise<boolean> {
+  if (isFirestoreReadBlocked()) return false;
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
+    return true;
   } catch (error) {
     if (isQuotaExceededError(error)) {
-      console.warn("Firestore daily quota limit reached on boot test.");
-      return;
+      console.warn("Firestore daily quota limit reached on boot test; operating in local mode.");
+      return false;
+    }
+    if (isConnectionUnavailableError(error)) {
+      console.warn("Firestore backend unavailable on boot test; operating in local mode.");
+      return false;
     }
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
+      console.warn("Please check your Firebase configuration; operating in local mode.");
+      return false;
     }
+    return false;
   }
 }
-testConnection();
+
+export const connectionCheckPromise: Promise<boolean> = testConnection();
+
+export async function waitForFirestoreReady(): Promise<boolean> {
+  try {
+    const ok = await connectionCheckPromise;
+    return ok && !isFirestoreReadBlocked();
+  } catch {
+    return false;
+  }
+}
 
 export interface SystemUser {
   userId: string;
@@ -137,64 +212,77 @@ export const INITIAL_PREDEFINED_USERS: SystemUser[] = [
   { userId: 'parce', username: 'parce', password: 'parce', name: 'Patricio Arce', role: 'supervision', enableAi: true },
 ];
 
-export async function bootstrapPredefinedUsers() {
-  if (isFirestoreWriteBlocked()) return;
-  const pathForGet = 'users';
+export async function bootstrapPredefinedUsers(): Promise<SystemUser[] | null> {
+  const ready = await waitForFirestoreReady();
+  if (!ready || isFirestoreReadBlocked()) return null;
+
   try {
     const q = query(collection(db, 'users'));
     const snap = await getDocs(q);
     
-    // Store existing user IDs currently in Firestore
+    // Store existing user IDs and parsed users currently in Firestore
     const existingUserIds = new Set<string>();
+    const loadedUsers: SystemUser[] = [];
     snap.forEach((docSnap) => {
       existingUserIds.add(docSnap.id);
+      const data = docSnap.data() as SystemUser;
+      loadedUsers.push({
+        ...data,
+        userId: data.userId || docSnap.id,
+        uid: data.uid || docSnap.id
+      });
     });
 
-    // We clean up legacy temporary test users (jefe1, super1, etc.) to keep the roster clean
-    const { deleteDoc } = await import('firebase/firestore');
-    const legacyIds = ['jefe1', 'jefe2', 'super1', 'super2', 'super3'];
-    for (const legacyId of legacyIds) {
-      if (existingUserIds.has(legacyId)) {
-        try {
-          await deleteDoc(doc(db, 'users', legacyId));
-          existingUserIds.delete(legacyId);
-        } catch (e) {
-          // Ignore
+    if (!isFirestoreWriteBlocked()) {
+      // Clean up legacy temporary test users (jefe1, super1, etc.)
+      const legacyIds = ['jefe1', 'jefe2', 'super1', 'super2', 'super3'];
+      for (const legacyId of legacyIds) {
+        if (existingUserIds.has(legacyId)) {
+          try {
+            await deleteDoc(doc(db, 'users', legacyId));
+            existingUserIds.delete(legacyId);
+            const idx = loadedUsers.findIndex(u => u.userId === legacyId || u.uid === legacyId);
+            if (idx !== -1) loadedUsers.splice(idx, 1);
+          } catch {
+            // Ignore
+          }
         }
+      }
+
+      // Bootstrap only predefined users that DO NOT exist in Firestore yet
+      let countBootstrapped = 0;
+      for (const user of INITIAL_PREDEFINED_USERS) {
+        if (!existingUserIds.has(user.userId)) {
+          const userDocRef = doc(db, 'users', user.userId);
+          const payload = {
+            ...user,
+            lastLogin: new Date().toISOString()
+          };
+          await setDoc(userDocRef, payload);
+          loadedUsers.push(payload);
+          countBootstrapped++;
+        }
+      }
+      
+      if (countBootstrapped > 0) {
+        console.log(`Successfully bootstrapped ${countBootstrapped} missing official roster accounts.`);
       }
     }
 
-    // Now, we bootstrap only predefined SQM users that DO NOT exist in the database yet.
-    // If a user document already exists in Firestore, we DO NOT write to it at all.
-    // This perfectly preserves user-changed passwords and prevents them from ever being overwritten
-    // when new software modules, updates, or code versions are introduced.
-    let countBootstrapped = 0;
-    for (const user of INITIAL_PREDEFINED_USERS) {
-      if (!existingUserIds.has(user.userId)) {
-        console.log(`Bootstrapping missing official SQM user: ${user.userId}`);
-        const userDocRef = doc(db, 'users', user.userId);
-        await setDoc(userDocRef, {
-          ...user,
-          lastLogin: new Date().toISOString()
-        });
-        countBootstrapped++;
-      }
-    }
-    
-    if (countBootstrapped > 0) {
-      console.log(`Successfully bootstrapped ${countBootstrapped} missing official roster accounts.`);
-    }
+    return loadedUsers;
   } catch (error) {
-    if (isQuotaExceededError(error)) {
-      console.warn('Firestore write quota exceeded during user bootstrap; skipped.');
-      return;
+    if (isQuotaExceededError(error) || isConnectionUnavailableError(error)) {
+      console.warn('Firestore unavailable during user bootstrap; using local roster.');
+      return null;
     }
     console.error('Error auto-bootstrapping predefined users:', error);
+    return null;
   }
 }
 
 export async function logActivity(user: SystemUser | null, action: string, details: string) {
-  if (isFirestoreWriteBlocked()) return;
+  const ready = await waitForFirestoreReady();
+  if (!ready || isFirestoreWriteBlocked()) return;
   const logId = `log_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   const pathForWrite = 'activity_logs';
   try {
@@ -210,8 +298,8 @@ export async function logActivity(user: SystemUser | null, action: string, detai
     };
     await setDoc(logDocRef, logPayload);
   } catch (error) {
-    if (isQuotaExceededError(error)) {
-      console.warn('Firestore write quota reached; skipping activity log entry.');
+    if (isQuotaExceededError(error) || isConnectionUnavailableError(error)) {
+      console.warn('Firestore unavailable; skipping activity log entry.');
       return;
     }
     handleFirestoreError(error, OperationType.WRITE, `${pathForWrite}/${logId}`);
@@ -284,8 +372,9 @@ export async function saveOperationalReportToFirebase(
   user?: SystemUser | null,
   summary?: string
 ): Promise<boolean> {
-  if (isFirestoreWriteBlocked()) {
-    console.warn(`Firestore write quota reached; operational report for ${date} preserved in local storage.`);
+  const ready = await waitForFirestoreReady();
+  if (!ready || isFirestoreWriteBlocked()) {
+    console.warn(`Firestore unavailable/quota reached; operational report for ${date} preserved in local storage.`);
     return true;
   }
   const cleanDate = date.trim();
@@ -343,8 +432,8 @@ export async function saveOperationalReportToFirebase(
 
     return true;
   } catch (error) {
-    if (isQuotaExceededError(error)) {
-      console.warn(`Firestore write quota reached when saving report for ${date}. Data remains in local storage.`);
+    if (isQuotaExceededError(error) || isConnectionUnavailableError(error)) {
+      console.warn(`Firestore unavailable/quota reached when saving report for ${date}. Data remains in local storage.`);
       return false;
     }
     console.error(`Error saving operational report for date ${date} to Firebase:`, error);
@@ -357,8 +446,9 @@ export async function saveOperationalReportToFirebase(
  * Retrieves all operational report backups stored in Firebase Firestore.
  */
 export async function getOperationalReportsFromFirebase(): Promise<OperationalReportDoc[]> {
-  if (isFirestoreReadBlocked()) {
-    console.warn('Firestore read quota reached; using locally saved reports.');
+  const ready = await waitForFirestoreReady();
+  if (!ready || isFirestoreReadBlocked()) {
+    console.warn('Firestore unavailable/quota reached; using locally saved reports.');
     return [];
   }
   const pathForGet = 'operational_reports';
@@ -384,8 +474,8 @@ export async function getOperationalReportsFromFirebase(): Promise<OperationalRe
     // Sort descending by date
     return reports.sort((a, b) => b.date.localeCompare(a.date));
   } catch (error) {
-    if (isQuotaExceededError(error)) {
-      console.warn('Firestore daily read quota limit reached; returning local cached operational reports.');
+    if (isQuotaExceededError(error) || isConnectionUnavailableError(error)) {
+      console.warn('Firestore unavailable/quota reached; returning local cached operational reports.');
       return [];
     }
     console.error('Error fetching operational reports from Firebase:', error);
@@ -398,6 +488,8 @@ export async function getOperationalReportsFromFirebase(): Promise<OperationalRe
  * Deletes an operational report backup document from Firebase.
  */
 export async function deleteOperationalReportFromFirebase(reportId: string, user?: SystemUser | null): Promise<boolean> {
+  const ready = await waitForFirestoreReady();
+  if (!ready || isFirestoreWriteBlocked()) return false;
   const pathForDelete = `operational_reports/${reportId}`;
   try {
     await deleteDoc(doc(db, 'operational_reports', reportId));
@@ -408,6 +500,9 @@ export async function deleteOperationalReportFromFirebase(reportId: string, user
     );
     return true;
   } catch (error) {
+    if (isQuotaExceededError(error) || isConnectionUnavailableError(error)) {
+      return false;
+    }
     console.error(`Error deleting operational report ${reportId} from Firebase:`, error);
     handleFirestoreError(error, OperationType.DELETE, pathForDelete);
     return false;
@@ -449,7 +544,8 @@ export async function updateUserPassword(
   }
 
   try {
-    if (!isFirestoreWriteBlocked()) {
+    const ready = await waitForFirestoreReady();
+    if (ready && !isFirestoreWriteBlocked()) {
       const userDocRef = doc(db, 'users', userId);
       const snap = await getDoc(userDocRef);
       if (snap.exists()) {
@@ -475,7 +571,9 @@ export async function updateUserPassword(
       }
     }
   } catch (err) {
-    console.warn('Error writing updated password to Firestore:', err);
+    if (!isQuotaExceededError(err) && !isConnectionUnavailableError(err)) {
+      console.warn('Error writing updated password to Firestore:', err);
+    }
   }
 
   // Update in localStorage
@@ -515,10 +613,14 @@ export async function resetUserPasswordToDefault(
   const defaultPassword = cleanId;
 
   try {
-    const userDocRef = doc(db, 'users', cleanId);
-    const snap = await getDoc(userDocRef);
+    const ready = await waitForFirestoreReady();
+    let existingData: any = null;
+    if (ready && !isFirestoreReadBlocked()) {
+      const userDocRef = doc(db, 'users', cleanId);
+      const snap = await getDoc(userDocRef);
+      existingData = snap.exists() ? snap.data() : null;
+    }
 
-    const existingData = snap.exists() ? snap.data() : null;
     const name = existingData?.name || userProfile?.name || cleanId;
     const role = existingData?.role || userProfile?.role || 'supervision';
 
@@ -532,8 +634,8 @@ export async function resetUserPasswordToDefault(
       lastPasswordUpdate: new Date().toISOString()
     };
 
-    if (!isFirestoreWriteBlocked()) {
-      await setDoc(userDocRef, payload, { merge: true });
+    if (ready && !isFirestoreWriteBlocked()) {
+      await setDoc(doc(db, 'users', cleanId), payload, { merge: true });
     }
 
     // Update localStorage if currently stored

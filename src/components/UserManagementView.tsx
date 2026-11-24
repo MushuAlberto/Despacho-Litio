@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { db, logActivity, SystemUser, isFirestoreWriteBlocked } from '../services/firebase';
+import { db, logActivity, SystemUser, INITIAL_PREDEFINED_USERS, isFirestoreWriteBlocked, waitForFirestoreReady, isQuotaExceededError, isConnectionUnavailableError } from '../services/firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { Lock, Plus, Trash2, ArrowLeft, Loader2, CheckCircle, ShieldAlert, X, Cpu, Save } from 'lucide-react';
 import { authenticatedFetch } from '../auth/authenticatedFetch';
@@ -93,14 +93,21 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
   const fetchUsers = async () => {
     setLoading(true);
     try {
+      if (!(await waitForFirestoreReady())) {
+        setUsers(INITIAL_PREDEFINED_USERS);
+        return;
+      }
       const qSnap = await getDocs(collection(db, 'users'));
       const list: SystemUser[] = [];
       qSnap.forEach((docSnap) => {
         list.push(docSnap.data() as SystemUser);
       });
-      setUsers(list);
+      setUsers(list.length > 0 ? list : INITIAL_PREDEFINED_USERS);
     } catch (error) {
-      console.error('Error loading users:', error);
+      if (!isQuotaExceededError(error) && !isConnectionUnavailableError(error)) {
+        console.error('Error loading users:', error);
+      }
+      setUsers(INITIAL_PREDEFINED_USERS);
     } finally {
       setLoading(false);
     }
@@ -109,6 +116,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
   const fetchSettings = async () => {
     setLoadingSettings(true);
     try {
+      if (!(await waitForFirestoreReady())) {
+        return;
+      }
       const docRef = doc(db, 'system_config', 'ai_settings');
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
@@ -134,7 +144,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
         if (!isFirestoreWriteBlocked()) {
           try {
             await setDoc(docRef, defaultSettings);
-          } catch (e) {
+          } catch {
             // Ignore if quota exceeded
           }
         }
@@ -147,7 +157,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
         });
       }
     } catch (error) {
-      console.error('Error loading AI settings:', error);
+      if (!isQuotaExceededError(error) && !isConnectionUnavailableError(error)) {
+        console.error('Error loading AI settings:', error);
+      }
     } finally {
       setLoadingSettings(false);
     }

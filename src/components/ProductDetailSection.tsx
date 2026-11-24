@@ -9,7 +9,7 @@ import {
   ClipboardEdit, AlertCircle, Loader2, Sparkles
 } from 'lucide-react';
 import { formatDateToCL, formatNumberWithDecimals } from '../utils/dataProcessor';
-import { db, isQuotaExceededError } from '../services/firebase';
+import { db, isQuotaExceededError, isConnectionUnavailableError, waitForFirestoreReady } from '../services/firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { authenticatedFetch } from '../auth/authenticatedFetch';
 
@@ -212,6 +212,11 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
         return;
       }
 
+      if (!(await waitForFirestoreReady())) {
+        lastFetchTime = now;
+        return;
+      }
+
       try {
         const docRef = doc(db, 'system_config', 'ai_settings');
         const docSnap = await getDoc(docRef);
@@ -239,9 +244,8 @@ export const ProductDetailSection: React.FC<ProductDetailSectionProps> = ({
           }
         }
       } catch (err) {
-        if (isQuotaExceededError(err)) {
-          // If Firestore quota is reached, keep default enabled state and prevent further calls
-          lastFetchTime = now; // Prevent repeating calls on error
+        if (isQuotaExceededError(err) || isConnectionUnavailableError(err)) {
+          lastFetchTime = now;
           return;
         }
         console.error('Error fetching AI settings in ProductDetail:', err);

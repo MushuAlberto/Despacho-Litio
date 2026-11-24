@@ -5,7 +5,7 @@ import {
   User as FirebaseUser
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../services/firebase';
+import { auth, db, waitForFirestoreReady, isQuotaExceededError, isConnectionUnavailableError } from '../services/firebase';
 import { IAuthProvider, SystemUser } from './types';
 
 /**
@@ -14,6 +14,9 @@ import { IAuthProvider, SystemUser } from './types';
  */
 export async function fetchUserProfile(uid: string): Promise<SystemUser | null> {
   try {
+    const ready = await waitForFirestoreReady();
+    if (!ready) return null;
+
     const userDocRef = doc(db, 'users', uid);
     const snap = await getDoc(userDocRef);
 
@@ -34,7 +37,9 @@ export async function fetchUserProfile(uid: string): Promise<SystemUser | null> 
 
     return null;
   } catch (error) {
-    console.error('Error fetching user profile from Firestore:', error);
+    if (!isQuotaExceededError(error) && !isConnectionUnavailableError(error)) {
+      console.error('Error fetching user profile from Firestore:', error);
+    }
     return null;
   }
 }
@@ -97,13 +102,17 @@ export class FirebaseAuthProvider implements IAuthProvider {
       };
 
       try {
-        await setDoc(doc(db, 'users', uid), {
-          ...newProfile,
-          lastLogin: new Date().toISOString()
-        });
+        if (await waitForFirestoreReady()) {
+          await setDoc(doc(db, 'users', uid), {
+            ...newProfile,
+            lastLogin: new Date().toISOString()
+          });
+        }
         profile = newProfile;
       } catch (err) {
-        console.warn('Could not auto-create profile document:', err);
+        if (!isQuotaExceededError(err) && !isConnectionUnavailableError(err)) {
+          console.warn('Could not auto-create profile document:', err);
+        }
         profile = newProfile;
       }
     }
@@ -117,7 +126,9 @@ export class FirebaseAuthProvider implements IAuthProvider {
 
     // 4. Update last login timestamp asynchronously
     try {
-      await setDoc(doc(db, 'users', uid), { lastLogin: new Date().toISOString() }, { merge: true });
+      if (await waitForFirestoreReady()) {
+        await setDoc(doc(db, 'users', uid), { lastLogin: new Date().toISOString() }, { merge: true });
+      }
     } catch (e) {
       // Non-blocking
     }

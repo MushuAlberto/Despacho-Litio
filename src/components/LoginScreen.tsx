@@ -17,14 +17,15 @@ import {
 } from 'lucide-react';
 import { NovandinoLogo } from './BrandLogo';
 import { 
-  db, 
   bootstrapPredefinedUsers, 
   logActivity, 
   SystemUser, 
+  INITIAL_PREDEFINED_USERS,
+  waitForFirestoreReady,
   isQuotaExceededError,
+  isConnectionUnavailableError,
   resetUserPasswordToDefault 
 } from '../services/firebase';
-import { collection, getDocs } from 'firebase/firestore';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: SystemUser) => void;
@@ -46,47 +47,31 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        // Run bootstrap so predefined users exist in Firestore
-        await bootstrapPredefinedUsers();
+        const ready = await waitForFirestoreReady();
+        const users = ready ? await bootstrapPredefinedUsers() : null;
 
-        const querySnapshot = await getDocs(collection(db, 'users'));
-        const users: SystemUser[] = [];
-        querySnapshot.forEach((docSnap) => {
-          const data = docSnap.data() as SystemUser;
-          users.push({
-            ...data,
-            userId: data.userId || docSnap.id,
-            uid: data.uid || docSnap.id
-          });
-        });
-
-        if (users.length > 0) {
-          // Sort alphabetically by name
+        if (users && users.length > 0) {
           users.sort((a, b) => a.name.localeCompare(b.name));
           setUsersList(users);
           const defaultUser = users.find(u => u.role === 'admin') || users[0];
           setSelectedUserId(defaultUser.userId);
         } else {
-          throw new Error('No users found in collection.');
+          const fallbackUsers: SystemUser[] = INITIAL_PREDEFINED_USERS.map(u => ({
+            ...u,
+            uid: u.userId
+          }));
+          fallbackUsers.sort((a, b) => a.name.localeCompare(b.name));
+          setUsersList(fallbackUsers);
+          setSelectedUserId('ctapia');
         }
       } catch (err) {
-        if (!isQuotaExceededError(err)) {
+        if (!isQuotaExceededError(err) && !isConnectionUnavailableError(err)) {
           console.error('Error fetching users from Firestore, using fallback:', err);
-        } else {
-          console.warn('Firestore read quota reached; using preloaded roster for sign-in.');
         }
-        const fallbackUsers: SystemUser[] = [
-          { uid: 'ctapia', userId: 'ctapia', username: 'ctapia', password: 'ctapia', name: 'Cristian Tapia', role: 'admin' },
-          { uid: 'mtoledo', userId: 'mtoledo', username: 'mtoledo', password: 'mtoledo', name: 'Mauricio Toledo', role: 'jefe_turno' },
-          { uid: 'rbarraza', userId: 'rbarraza', username: 'rbarraza', password: 'rbarraza', name: 'Raul Barraza', role: 'jefe_turno' },
-          { uid: 'marevalo', userId: 'marevalo', username: 'marevalo', password: 'marevalo', name: 'Marcelo Arevalo', role: 'supervision' },
-          { uid: 'rogalde', userId: 'rogalde', username: 'rogalde', password: 'rogalde', name: 'Roberto Ogalde', role: 'supervision' },
-          { uid: 'wcastillo', userId: 'wcastillo', username: 'wcastillo', password: 'wcastillo', name: 'Walter Castillo', role: 'supervision' },
-          { uid: 'ccampos', userId: 'ccampos', username: 'ccampos', password: 'ccampos', name: 'Claudio Campos', role: 'supervision' },
-          { uid: 'eoyanader', userId: 'eoyanader', username: 'eoyanader', password: 'eoyanader', name: 'Erwin Oyanader', role: 'supervision' },
-          { uid: 'fogalde', userId: 'fogalde', username: 'fogalde', password: 'fogalde', name: 'Felipe Ogalde', role: 'supervision' },
-          { uid: 'parce', userId: 'parce', username: 'parce', password: 'parce', name: 'Patricio Arce', role: 'supervision' },
-        ];
+        const fallbackUsers: SystemUser[] = INITIAL_PREDEFINED_USERS.map(u => ({
+          ...u,
+          uid: u.userId
+        }));
         fallbackUsers.sort((a, b) => a.name.localeCompare(b.name));
         setUsersList(fallbackUsers);
         setSelectedUserId('ctapia');
@@ -128,7 +113,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
     if (!isAuthorized) {
       setErrorMsg(`Contraseña incorrecta para ${selectedUser.name}. La clave inicial asignada es "${defaultPasswordForUser}".`);
-      await logActivity(selectedUser, 'Intento de Inicio Fallido', `Clave incorrecta ingresada para @${selectedUser.userId}.`);
+      try {
+        await logActivity(selectedUser, 'Intento de Inicio Fallido', `Clave incorrecta ingresada para @${selectedUser.userId}.`);
+      } catch {
+        // Ignore logging error when offline/quota exceeded
+      }
       return;
     }
 

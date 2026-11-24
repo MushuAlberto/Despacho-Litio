@@ -329,23 +329,24 @@ const App: React.FC = () => {
                 setSelectedDate(latest.date);
                 localStorage.setItem('sqm_raw_data', JSON.stringify(parsed));
                 void saveOperationalSnapshot('operational_raw', parsed, parsed.length);
-                // Also restore any historical sqm_ keys from backup
                 Object.entries(backup).forEach(([k, v]) => {
                   if (k.startsWith('sqm_') && k !== 'sqm_current_user' && typeof v === 'string') {
                     localStorage.setItem(k, v);
                   }
                 });
+                return;
               }
             }
           }
         } catch (e) {
           console.error("Error auto-fetching reports from Firebase on startup:", e);
-          const offlineSnapshot = await getOperationalSnapshot<any[]>('operational_raw');
-          if (offlineSnapshot?.data && Array.isArray(offlineSnapshot.data) && offlineSnapshot.data.length > 0) {
-            setRawData(offlineSnapshot.data);
-            const dates = [...new Set(offlineSnapshot.data.map((r: any) => r.Fecha))].sort().reverse();
-            if (dates.length > 0) setSelectedDate(dates[0] as string);
-          }
+        }
+
+        const offlineSnapshot = await getOperationalSnapshot<any[]>('operational_raw');
+        if (offlineSnapshot?.data && Array.isArray(offlineSnapshot.data) && offlineSnapshot.data.length > 0) {
+          setRawData(offlineSnapshot.data);
+          const dates = [...new Set(offlineSnapshot.data.map((r: any) => r.Fecha))].sort().reverse();
+          if (dates.length > 0) setSelectedDate(dates[0] as string);
         }
       })();
     }
@@ -937,8 +938,8 @@ const App: React.FC = () => {
       setEmailSubject(`INFORME OPERATIVO ${typeStr} - JORNADA ${formattedDate}`);
       
       if (isNovandino) {
-        setEmailTo('claudio.siniga@novandino.com, carlo.castellaro@novandino.com');
-        setEmailCC('Despacho.Salar@sqm.com, carlos.diaz@novandino.com, carlos.mardones.luna@novandino.com, tamara.cabrera@novandino.com, hugo.morgado@novandino.com, Servicio.Transporte.Litio@sqm.com, tomislav.cvitanic@novandino.com, CoordinacionTerrestreLitio@novandino.com, jaime.ardiles@novandino.com');
+        setEmailTo('tomislav.cvitanic@novandino.com, carlo.castellaro@novandino.com');
+        setEmailCC('Despacho.Salar@sqm.com, carlos.diaz@novandino.com, carlos.mardones.luna@novandino.com, tamara.cabrera@novandino.com, hugo.morgado@novandino.com, Servicio.Transporte.Litio@sqm.com, CoordinacionTerrestreLitio@novandino.com, jaime.ardiles@novandino.com');
         
         const bodyText = `Estimados, buen día.\n\n` +
           `Junto con saludar, comparto con ustedes el resumen de la gestión operativa correspondiente a la jornada recién pasada.\n` +
@@ -948,7 +949,7 @@ const App: React.FC = () => {
           `Atentamente,`;
         setEmailBody(bodyText);
       } else {
-        setEmailTo('claudio.siniga@novandino.com, Allan.Duvauchelle@sqm.com');
+        setEmailTo('tomislav.cvitanic@novandino.com, Allan.Duvauchelle@sqm.com');
         setEmailCC('Alejandro.Gomez@sqm.com, gilbert.maldonado@novandino.com, carlo.castellaro@novandino.com, sebastian.parada@novandino.com, Despacho.Salar@sqm.com, carlos.diaz@novandino.com, Servicio.Transporte.Litio@sqm.com, SupTransporteCS@sqm.com, Maria.Aguilera@sqm.com, andres.salinas.ignacio@novandino.com, jaime.ardiles@novandino.com, ControlProductosSalar@novandino.com');
         
         const bodyText = `Estimados, buen día.\n\n` +

@@ -1064,7 +1064,11 @@ REGLAS CRÍTICAS DE REDACCIÓN:
   export default app;
 
   if (process.env.VERCEL !== "1") {
-    const PORT = 3000;
+    const PORT = Number(process.env.PORT) || 3000;
+    app.get('/api/health', (_req, res) => {
+      res.status(200).json({ ok: true, status: 'ready' });
+    });
+
     app.get('/sw.js', (_req, res, next) => {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
@@ -1074,20 +1078,41 @@ REGLAS CRÍTICAS DE REDACCIÓN:
 
     if (process.env.NODE_ENV !== "production") {
       const httpServer = http.createServer(app);
-      import("vite").then(({ createServer: createViteServer }) => {
-        createViteServer({
-          server: {
-            middlewareMode: true,
-            hmr: { server: httpServer },
-            watch: process.env.DISABLE_HMR === 'true' ? null : undefined,
-          },
-          appType: "spa",
-        }).then((vite) => {
-          app.use(vite.middlewares);
-          httpServer.listen(PORT, "0.0.0.0", () => {
-            console.log(`Server running on http://localhost:${PORT}`);
-          });
+      let viteMiddlewares: any = null;
+      const viteReadyPromise = import("vite")
+        .then(({ createServer: createViteServer }) =>
+          createViteServer({
+            server: {
+              middlewareMode: true,
+              hmr: process.env.DISABLE_HMR === 'true' ? false : { server: httpServer },
+              watch: process.env.DISABLE_HMR === 'true' ? null : undefined,
+            },
+            appType: "spa",
+          })
+        )
+        .then((vite) => {
+          viteMiddlewares = vite.middlewares;
+          return vite;
+        })
+        .catch((err) => {
+          console.error("Failed to initialize Vite dev middleware:", err);
+          process.exit(1);
         });
+
+      app.use(async (req, res, next) => {
+        if (!viteMiddlewares) {
+          await viteReadyPromise;
+        }
+        return viteMiddlewares(req, res, next);
+      });
+
+      httpServer.on('error', (err) => {
+        console.error('HTTP server failed to bind port:', err);
+        process.exit(1);
+      });
+
+      httpServer.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on http://localhost:${PORT}`);
       });
     } else {
       const distPath = path.join(process.cwd(), 'dist');
@@ -1098,7 +1123,7 @@ REGLAS CRÍTICAS DE REDACCIÓN:
           }
         }
       }));
-      app.get('*', (req, res) => {
+      app.get('*', (_req, res) => {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.sendFile(path.join(distPath, 'index.html'));
       });

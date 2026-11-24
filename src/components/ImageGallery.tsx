@@ -11,7 +11,8 @@ import { collection, onSnapshot, query, setDoc, doc, deleteDoc } from 'firebase/
 import { 
   db, handleFirestoreError, OperationType, logActivity, 
   OperationalReportDoc, getOperationalReportsFromFirebase, safeParseBackupJSON,
-  isQuotaExceededError, isFirestoreWriteBlocked 
+  isQuotaExceededError, isConnectionUnavailableError, isFirestoreQuotaExceeded,
+  waitForFirestoreReady, isFirestoreWriteBlocked 
 } from '../services/firebase';
 import ChartCard from './ChartCard';
 import { ProductDetailSection } from './ProductDetailSection';
@@ -105,107 +106,137 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
   // Live Subscription to operational_reports in Firestore
   useEffect(() => {
-    const qReports = query(collection(db, 'operational_reports'));
-    const unsubscribeReports = onSnapshot(qReports, (snapshot) => {
-      const fetchedReports: OperationalReportDoc[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data && data.backupData && data.date) {
-          fetchedReports.push({
-            id: docSnap.id,
-            date: data.date,
-            backupData: data.backupData,
-            updatedAt: data.updatedAt || new Date().toISOString(),
-            updatedBy: data.updatedBy || 'Sistema SQM',
-            summary: data.summary || ''
-          });
-        }
-      });
-      // Sort descending by date
-      fetchedReports.sort((a, b) => b.date.localeCompare(a.date));
-      setCloudReports(fetchedReports);
+    let active = true;
+    let unsubscribeReports: (() => void) | null = null;
 
-      // Auto-load latest report from Firebase if operationalData is currently empty
-      if (fetchedReports.length > 0) {
-        setOperationalData((prev) => {
-          if (!prev || prev.length === 0) {
-            const latest = fetchedReports[0];
-            try {
-              const backup = safeParseBackupJSON(latest.backupData);
-              if (backup['sqm_raw_data']) {
-                const parsed = typeof backup['sqm_raw_data'] === 'string'
-                  ? JSON.parse(backup['sqm_raw_data'])
-                  : backup['sqm_raw_data'];
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  // Restore sqm_ keys
-                  Object.entries(backup).forEach(([k, v]) => {
-                    if (k.startsWith('sqm_') && typeof v === 'string') {
-                      localStorage.setItem(k, v);
-                    }
-                  });
-                  localStorage.setItem('sqm_raw_data', JSON.stringify(parsed));
-                  setLastSyncedDate(latest.date);
-                  setFirebaseNotice(`Datos de jornada ${formatDateToCL(latest.date)} cargados automáticamente desde Firebase.`);
-                  setTimeout(() => setFirebaseNotice(null), 5000);
-                  if (onDataLoaded) onDataLoaded(parsed, latest.date);
-                  return parsed;
-                }
-              }
-            } catch (err) {
-              console.error('Error auto-loading latest report from Firebase:', err);
-            }
-          }
-          return prev;
-        });
-      }
-    }, (error) => {
-      if (isQuotaExceededError(error)) {
-        console.warn('Firestore daily quota reached on operational_reports listener; operating in local mode.');
-        setQuotaNotice(true);
+    (async () => {
+      const ready = await waitForFirestoreReady();
+      if (!active) return;
+      if (!ready) {
+        if (isFirestoreQuotaExceeded()) {
+          setQuotaNotice(true);
+        }
         return;
       }
-      handleFirestoreError(error, OperationType.GET, 'operational_reports');
-    });
 
-    return () => unsubscribeReports();
+      const qReports = query(collection(db, 'operational_reports'));
+      unsubscribeReports = onSnapshot(qReports, (snapshot) => {
+        const fetchedReports: OperationalReportDoc[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data && data.backupData && data.date) {
+            fetchedReports.push({
+              id: docSnap.id,
+              date: data.date,
+              backupData: data.backupData,
+              updatedAt: data.updatedAt || new Date().toISOString(),
+              updatedBy: data.updatedBy || 'Sistema SQM',
+              summary: data.summary || ''
+            });
+          }
+        });
+        fetchedReports.sort((a, b) => b.date.localeCompare(a.date));
+        setCloudReports(fetchedReports);
+
+        if (fetchedReports.length > 0) {
+          setOperationalData((prev) => {
+            if (!prev || prev.length === 0) {
+              const latest = fetchedReports[0];
+              try {
+                const backup = safeParseBackupJSON(latest.backupData);
+                if (backup['sqm_raw_data']) {
+                  const parsed = typeof backup['sqm_raw_data'] === 'string'
+                    ? JSON.parse(backup['sqm_raw_data'])
+                    : backup['sqm_raw_data'];
+                  if (Array.isArray(parsed) && parsed.length > 0) {
+                    Object.entries(backup).forEach(([k, v]) => {
+                      if (k.startsWith('sqm_') && typeof v === 'string') {
+                        localStorage.setItem(k, v);
+                      }
+                    });
+                    localStorage.setItem('sqm_raw_data', JSON.stringify(parsed));
+                    setLastSyncedDate(latest.date);
+                    setFirebaseNotice(`Datos de jornada ${formatDateToCL(latest.date)} cargados automáticamente desde Firebase.`);
+                    setTimeout(() => setFirebaseNotice(null), 5000);
+                    if (onDataLoaded) onDataLoaded(parsed, latest.date);
+                    return parsed;
+                  }
+                }
+              } catch (err) {
+                console.error('Error auto-loading latest report from Firebase:', err);
+              }
+            }
+            return prev;
+          });
+        }
+      }, (error) => {
+        if (isQuotaExceededError(error) || isConnectionUnavailableError(error)) {
+          console.warn('Firestore unavailable/quota reached on operational_reports listener; operating in local mode.');
+          setQuotaNotice(isFirestoreQuotaExceeded());
+          return;
+        }
+        handleFirestoreError(error, OperationType.GET, 'operational_reports');
+      });
+    })();
+
+    return () => {
+      active = false;
+      if (unsubscribeReports) unsubscribeReports();
+    };
   }, [onDataLoaded]);
 
   // Live Persistence via Firestore for Gallery Images
   useEffect(() => {
-    const q = query(collection(db, 'gallery_images'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedImages: GalleryImage[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        fetchedImages.push({
-          id: docSnap.id,
-          url: data.url,
-          name: data.name,
-          date: data.date,
-          createdAt: data.createdAt
-        });
-      });
-      // Sort images by createdAt descending, fallback to id
-      fetchedImages.sort((a, b) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (timeA !== timeB) return timeB - timeA;
-        return b.id.localeCompare(a.id);
-      });
-      setImages(fetchedImages);
-      setHasLoaded(true);
-    }, (error) => {
-      if (isQuotaExceededError(error)) {
-        console.warn('Firestore daily quota reached on gallery_images listener; operating in local mode.');
-        setQuotaNotice(true);
+    let active = true;
+    let unsubscribe: (() => void) | null = null;
+
+    (async () => {
+      const ready = await waitForFirestoreReady();
+      if (!active) return;
+      if (!ready) {
+        if (isFirestoreQuotaExceeded()) {
+          setQuotaNotice(true);
+        }
         setHasLoaded(true);
         return;
       }
-      handleFirestoreError(error, OperationType.GET, 'gallery_images');
-    });
 
-    return () => unsubscribe();
+      const q = query(collection(db, 'gallery_images'));
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const fetchedImages: GalleryImage[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          fetchedImages.push({
+            id: docSnap.id,
+            url: data.url,
+            name: data.name,
+            date: data.date,
+            createdAt: data.createdAt
+          });
+        });
+        fetchedImages.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          if (timeA !== timeB) return timeB - timeA;
+          return b.id.localeCompare(a.id);
+        });
+        setImages(fetchedImages);
+        setHasLoaded(true);
+      }, (error) => {
+        if (isQuotaExceededError(error) || isConnectionUnavailableError(error)) {
+          console.warn('Firestore unavailable/quota reached on gallery_images listener; operating in local mode.');
+          setQuotaNotice(isFirestoreQuotaExceeded());
+          setHasLoaded(true);
+          return;
+        }
+        handleFirestoreError(error, OperationType.GET, 'gallery_images');
+      });
+    })();
+
+    return () => {
+      active = false;
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   // Determine all available operational report dates across operationalData, cloudReports, Firestore images, and prop
